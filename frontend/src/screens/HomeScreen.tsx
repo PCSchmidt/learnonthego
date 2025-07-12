@@ -50,7 +50,10 @@ const HomeScreen: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Welcome to LearnOnTheGo</Text>
         <Text style={styles.subtitle}>
-          Convert any topic into personalized audio lectures
+          Convert topics into personalized audio lectures
+        </Text>
+        <Text style={styles.version}>
+          v1.0.0 - Last updated: {new Date().toLocaleString()}
         </Text>
       </View>
 
@@ -118,6 +121,12 @@ const styles = StyleSheet.create({
     color: '#e0e7ff',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  version: {
+    fontSize: 14,
+    color: '#e0e7ff',
+    textAlign: 'center',
+    marginTop: 4,
   },
   actionButtons: {
     padding: 20,
