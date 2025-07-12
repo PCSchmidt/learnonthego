@@ -3,3 +3,22 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 pydantic==2.5.0
 pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# AI and External API Integration
+httpx==0.26.0          # For async HTTP requests to OpenRouter API
+aiofiles==23.2.1       # For async file operations
+python-dotenv==1.0.0   # For environment variable management
+
+# Security and Authentication
+python-jose[cryptography]==3.3.0  # For JWT tokens
+passlib[bcrypt]==1.7.4            # For password hashing
+cryptography>=41.0.0              # For API key encryption (flexible version)
+
+# Text Processing and PDF Support
+pdfplumber==0.9.0      # For PDF text extraction
+beautifulsoup4==4.12.2 # For HTML cleaning
+markdown==3.5.2        # For markdown processing
+
+# Audio Processing (future TTS integration)
+requests==2.31.0       # For HTTP requests to TTS services

@@ -8,16 +8,28 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+      - MOCK_MODE=true
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/learnonthego
-      - JWT_SECRET_KEY=dev-secret-key-not-for-production
+      - JWT_SECRET_KEY=dev-jwt-secret-key-for-docker-development
+      - ENCRYPTION_MASTER_KEY=dev-encryption-master-key-32-chars-min-123456789
       - CLOUDINARY_CLOUD_NAME=demo
       - CLOUDINARY_API_KEY=demo
       - CLOUDINARY_API_SECRET=demo
+      - AI_SERVICES_ENABLED=true
+      - PDF_PROCESSING_ENABLED=true
+      - TTS_ENABLED=true
+      - ENCRYPTION_ENABLED=true
     volumes:
       - ./backend:/app
       - backend_cache:/root/.cache
+      - backend_uploads:/app/temp_uploads
+      - backend_audio:/app/temp_audio
     depends_on:
       - db
+      - redis
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
@@ -58,3 +70,9 @@ volumes:
   postgres_data:
   redis_data:
   backend_cache:
+  backend_uploads:
+  backend_audio:
+
+networks:
+  default:
+    name: learnonthego_network_phase1

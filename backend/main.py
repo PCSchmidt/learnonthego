@@ -1,25 +1,29 @@
 """
-LearnOnTheGo FastAPI Backend
-A mobile-first app that converts text topics or PDF documents into personalized audio lectures.
+LearnOnTheGo Backend - Phase 1 AI Integration
+FastAPI application with OpenRouter LLM integration for lecture generation
 """
 
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 import os
+from datetime import datetime
+
+# Import API routes
+from api.lectures import router as lectures_router
 
 # Initialize FastAPI app
 app = FastAPI(
     title="LearnOnTheGo API",
-    description="Convert text topics or PDF documents into personalized audio lectures",
-    version="1.0.0",
+    description="Backend API for generating personalized audio lectures from text topics and PDF documents",
+    version="1.0.0 - Phase 1",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# CORS middleware for frontend communication
+# CORS middleware for React Native frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -27,16 +31,17 @@ app.add_middleware(
         "http://localhost:19006",  # Expo default
         "https://learnonthego-bice.vercel.app",
         "https://*.vercel.app",
+        "*"  # For development - restrict in production
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Security
-security = HTTPBearer()
+# Include API routes
+app.include_router(lectures_router)
 
-# Pydantic models
+# Pydantic models for existing endpoints
 class HealthResponse(BaseModel):
     status: str
     message: str
@@ -63,21 +68,30 @@ class StatusResponse(BaseModel):
     deployment: dict
 
 # Routes
-@app.get("/", response_model=HealthResponse)
+@app.get("/", response_model=dict)
 async def root():
-    """Root endpoint"""
-    return HealthResponse(
-        status="success",
-        message="LearnOnTheGo API is running!",
-        version="1.0.0"
-    )
+    """Root endpoint - API health check"""
+    return {
+        "message": "LearnOnTheGo API - Phase 1 AI Integration",
+        "version": "1.0.0",
+        "status": "running",
+        "timestamp": datetime.utcnow().isoformat(),
+        "docs": "/docs",
+        "phase": "Phase 1 - AI Integration",
+        "features": {
+            "openrouter_integration": True,
+            "pdf_processing": True,
+            "tts_generation": True,
+            "api_key_encryption": True
+        }
+    }
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint for monitoring"""
     return HealthResponse(
         status="healthy",
-        message="All systems operational",
+        message="Phase 1 AI services operational",
         version="1.0.0"
     )
 
@@ -85,8 +99,8 @@ async def health_check():
 async def api_health():
     """API health check"""
     return HealthResponse(
-        status="healthy",
-        message="API is ready to generate lectures",
+        status="healthy", 
+        message="AI integration ready - OpenRouter, PDF, TTS services available",
         version="1.0.0"
     )
 
@@ -140,12 +154,112 @@ async def list_lectures():
         "message": "Authentication required - coming in Phase 1"
     }
 
+@app.get("/api/config")
+async def get_api_config():
+    """
+    Get API configuration and available features for Phase 1
+    
+    Returns:
+        API configuration for frontend integration
+    """
+    return {
+        "features": {
+            "text_to_lecture": True,
+            "pdf_to_lecture": True,
+            "custom_voices": True,
+            "multiple_models": True,
+            "user_api_keys": True,
+            "real_time_generation": True
+        },
+        "limits": {
+            "max_duration": 60,
+            "min_duration": 5,
+            "max_pdf_size_mb": 50,
+            "max_pdf_pages": 200,
+            "max_topic_length": 500,
+            "max_context_length": 2000
+        },
+        "supported_formats": {
+            "input": ["text", "pdf"],
+            "output": ["mp3"],
+            "pdf_types": ["text-based only"]
+        },
+        "providers": {
+            "llm": ["openrouter"],
+            "tts": ["elevenlabs", "fallback"],
+            "models": [
+                "anthropic/claude-3.5-sonnet",
+                "openai/gpt-4o",
+                "meta-llama/llama-3.1-405b-instruct"
+            ]
+        },
+        "phase": "Phase 1 - AI Integration Active"
+    }
+
+@app.get("/api/audio/{lecture_id}")
+async def download_audio(lecture_id: str):
+    """
+    Download audio file for a lecture
+    
+    Args:
+        lecture_id: Unique lecture identifier
+        
+    Returns:
+        Audio file download
+    """
+    try:
+        # Look for audio file in temp_audio directory
+        audio_dir = "temp_audio"
+        
+        # Try different file formats
+        for ext in [".mp3", "_fallback.txt"]:
+            audio_path = os.path.join(audio_dir, f"lecture_{lecture_id}{ext}")
+            if os.path.exists(audio_path):
+                if ext == ".mp3":
+                    return FileResponse(
+                        audio_path,
+                        media_type="audio/mpeg",
+                        filename=f"lecture_{lecture_id}.mp3"
+                    )
+                else:
+                    return FileResponse(
+                        audio_path,
+                        media_type="text/plain",
+                        filename=f"lecture_{lecture_id}_fallback.txt"
+                    )
+        
+        # If no file found, check if it might be in chunks
+        chunk_files = []
+        for i in range(10):  # Check up to 10 chunks
+            chunk_path = os.path.join(audio_dir, f"lecture_{lecture_id}_chunk_{i:02d}.mp3")
+            if os.path.exists(chunk_path):
+                chunk_files.append(chunk_path)
+        
+        if chunk_files:
+            # Return first chunk for now (in production, would concatenate)
+            return FileResponse(
+                chunk_files[0],
+                media_type="audio/mpeg",
+                filename=f"lecture_{lecture_id}_part1.mp3"
+            )
+        
+        raise HTTPException(
+            status_code=404,
+            detail=f"Audio file not found for lecture {lecture_id}"
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve audio file: {str(e)}"
+        )
+
 @app.get("/status", response_model=StatusResponse)
 async def get_development_status():
     """Development status and progress tracking endpoint"""
     return StatusResponse(
         status="operational",
-        phase="Phase 1 - MVP Development",
+        phase="Phase 1 - AI Integration Complete",
         features_implemented=[
             "✅ FastAPI backend with Railway deployment",
             "✅ React Native frontend with Vercel deployment", 
@@ -154,22 +268,29 @@ async def get_development_status():
             "✅ Mock lecture generation API",
             "✅ Health monitoring endpoints",
             "✅ CORS configuration for frontend integration",
-            "✅ API documentation with Swagger/ReDoc"
+            "✅ API documentation with Swagger/ReDoc",
+            "✅ OpenRouter LLM service integration",
+            "✅ ElevenLabs TTS service with fallback",
+            "✅ PDF text extraction and processing",
+            "✅ AES-256 API key encryption service",
+            "✅ Complete lecture generation pipeline",
+            "✅ Structured API endpoints for AI features"
         ],
         next_features=[
-            "🔄 OpenRouter LLM integration",
-            "🔄 ElevenLabs TTS integration", 
-            "🔄 PDF upload and text extraction",
-            "🔄 User authentication with JWT",
-            "🔄 Encrypted API key storage",
-            "🔄 End-to-end lecture generation workflow"
+            "🔄 Database integration (SQLAlchemy + PostgreSQL)",
+            "🔄 User authentication and JWT implementation",
+            "🔄 Frontend AI service integration",
+            "🔄 File upload and management",
+            "🔄 User library and lecture storage",
+            "🔄 Rate limiting and usage tracking"
         ],
         deployment={
             "backend_url": "https://learnonthego-production.up.railway.app",
             "frontend_url": "https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app",
             "docs_url": "https://learnonthego-production.up.railway.app/docs",
-            "last_updated": "2025-07-11",
-            "build_status": "passing"
+            "last_updated": "2025-01-14",
+            "build_status": "phase_1_ai_integration_complete",
+            "ai_services": "integrated"
         }
     )
 
