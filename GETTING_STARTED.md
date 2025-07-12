@@ -1,5 +1,21 @@
 # LearnOnTheGo - Getting Started Guide
 
+## 🚀 Quick Access to Live Deployments
+
+**Current Status: Phase 0 Complete, Phase 1 In Progress**
+
+### Live Applications
+- **🌐 Frontend (React Native)**: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- **⚡ Backend API**: https://learnonthego-production.up.railway.app
+- **📚 API Documentation**: https://learnonthego-production.up.railway.app/docs
+- **🔍 Health Check**: https://learnonthego-production.up.railway.app/health
+
+### Development URLs
+- **Local Frontend**: http://localhost:19006 (when running `expo start --web`)
+- **API Testing Interface**: Open `api-test.html` in browser for interactive testing
+
+---
+
 ## Development Stack Setup (Railway + Vercel + Cloudinary)
 
 This guide follows the **Path 2: Python-First** approach with cost-optimized hosting.

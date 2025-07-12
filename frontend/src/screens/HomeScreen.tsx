@@ -33,9 +33,12 @@ const HomeScreen: React.FC = () => {
 
   const handleTestAPI = async () => {
     try {
-      const response = await fetch('https://learnonthego-production.up.railway.app/health');
+      const response = await fetch('https://learnonthego-production.up.railway.app/status');
       const data = await response.json();
-      Alert.alert('API Test', `Status: ${data.status}\nMessage: ${data.message}`);
+      Alert.alert(
+        'Development Status', 
+        `Phase: ${data.phase}\n\nNext: ${data.next_features.slice(0, 2).join('\n')}\n\nBackend: Online ✅\nFrontend: Online ✅`
+      );
     } catch (error) {
       Alert.alert('API Test Failed', 'Could not connect to backend');
     }
@@ -53,7 +56,10 @@ const HomeScreen: React.FC = () => {
           Convert topics into personalized audio lectures
         </Text>
         <Text style={styles.version}>
-          v1.0.0 - Last updated: {new Date().toLocaleString()}
+          Phase 1 MVP - Last updated: {new Date().toLocaleString()}
+        </Text>
+        <Text style={styles.phaseStatus}>
+          🚀 Backend & Frontend Deployed | Next: AI Integration
         </Text>
       </View>
 
@@ -127,6 +133,13 @@ const styles = StyleSheet.create({
     color: '#e0e7ff',
     textAlign: 'center',
     marginTop: 4,
+  },
+  phaseStatus: {
+    fontSize: 12,
+    color: '#10b981',
+    textAlign: 'center',
+    marginTop: 2,
+    fontWeight: '500',
   },
   actionButtons: {
     padding: 20,

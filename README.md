@@ -9,6 +9,30 @@
 
 LearnOnTheGo converts text topics or PDF documents into personalized audio lectures tailored to your preferred duration, difficulty level, and voice. Perfect for learning during walks, commutes, or workouts.
 
+## 🎯 Current Status
+
+**Phase 0 (Proof of Concept): ✅ COMPLETED**
+- ✅ Backend API deployed on Railway: https://learnonthego-production.up.railway.app
+- ✅ Frontend deployed on Vercel: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- ✅ Complete React Native app structure with navigation
+- ✅ Mock lecture generation endpoint working
+- ✅ Automatic CI/CD pipeline (dev branch → production)
+- ✅ Development environment fully configured
+
+**Phase 1 (MVP with AI): 🔄 IN PROGRESS**
+- 🔄 OpenRouter LLM integration for content generation
+- 🔄 ElevenLabs TTS integration for audio synthesis
+- 🔄 PDF processing with text extraction
+- 🔄 User authentication and API key management
+- ⏳ Real lecture generation workflow
+
+**Next Session Tasks:**
+1. Implement OpenRouter integration for LLM-powered content generation
+2. Add ElevenLabs TTS for high-quality audio synthesis
+3. Build PDF upload and text extraction pipeline
+4. Create user authentication system with encrypted API key storage
+5. Test end-to-end lecture generation flow
+
 ## ✨ Features
 
 - **Text-to-Lecture**: Convert any topic into structured audio content
