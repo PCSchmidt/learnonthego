@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD) for LearnOnTheGo
 
-**Document Version**: 1.2  
-**Date**: July 11, 2025  
-**Author**: Grok 3 (on behalf of the user)  
+**Document Version**: 2.0  
+**Date**: July 13, 2025  
+**Author**: AI Development Team  
 **App Name**: LearnOnTheGo
 
 ---
@@ -10,44 +10,121 @@
 ## 1. Overview
 
 ### 1.1 Purpose
-LearnOnTheGo is a mobile app that generates personalized, fact-filled audio lectures based on user-specified topics, questions, or uploaded PDF content, tailored to desired durations, difficulty levels, and voice preferences. It leverages large language models (LLMs) via API keys (including OpenRouter) and text-to-speech (TTS) services to create downloadable audio files for offline learning during activities like walking, commuting, or exercising.
+LearnOnTheGo is a mobile-first app that generates personalized, fact-filled audio lectures based on user-specified topics, questions, or uploaded PDF content, tailored to desired durations, difficulty levels, and voice preferences. It leverages large language models (LLMs) via OpenRouter and text-to-speech (TTS) services to create downloadable audio files for offline learning during activities like walking, commuting, or exercising.
 
 ### 1.2 Vision
 To empower users to learn complex topics in an engaging, accessible audio format, integrated into daily routines, with the flexibility to generate lectures from both freeform inputs and specific documents like PDFs.
 
 ### 1.3 Target Audience
-- Lifelong learners, students, professionals, and researchers
-- Users familiar with or willing to obtain API keys
-- Age range: 18–45, with a focus on technical topics but extensible to any subject
+- **Primary**: Lifelong learners, students, professionals, and researchers (18-45)
+- **Secondary**: Content creators, educators, and knowledge workers
+- **Technical Profile**: Users comfortable with API key management or willing to learn
+- **Use Cases**: Commuting, exercising, multitasking, accessibility needs
 
 ### 1.4 Success Metrics
-- User engagement: 50% of users generate 3+ lectures/month (including PDF-based)
-- Retention: 70% monthly active users after 3 months
-- Audio completion rate: 80% of lectures listened to in full
-- PDF feature adoption: 30% of lectures from PDFs within 6 months
-- User satisfaction: 4.5/5 average rating on app stores within 6 months
-- **Security incidents**: Zero critical vulnerabilities reported post-launch
-- **App uptime**: 99.9% for backend services; <1% crash rate on mobile
+- **User Acquisition**: 1,000 early access users within 3 months of launch
+- **User Engagement**: 50% of users generate 3+ lectures/month 
+- **Retention**: 70% monthly active users after 3 months
+- **Audio Completion**: 80% of lectures listened to completion
+- **PDF Adoption**: 30% of lectures from PDFs within 6 months
+- **User Satisfaction**: 4.5/5 average rating within 6 months
+- **Security**: Zero critical vulnerabilities; 99.9% uptime
+- **Performance**: <30s text-to-lecture, <45s PDF-to-lecture generation
 
-### 1.5 Current Implementation Status (July 11, 2025)
+### 1.5 Current Implementation Status (July 13, 2025)
 
-#### Phase 0 - Proof of Concept: ✅ COMPLETED
-- **Backend Infrastructure**: FastAPI server deployed on Railway with PostgreSQL
-- **Frontend Infrastructure**: React Native app deployed on Vercel with TypeScript
-- **CI/CD Pipeline**: Automatic deployments from dev branch to production
-- **Core Architecture**: Full-stack foundation with proper separation of concerns
-- **Development Environment**: Complete local development setup with Docker support
+#### ✅ COMPLETED PHASES
 
-#### Phase 1 - MVP Development: 🔄 IN PROGRESS
-**Completed Components:**
-- ✅ App navigation structure (Home, Create, Player, Settings screens)
-- ✅ Mock API endpoints for lecture generation testing
-- ✅ Deployment infrastructure and environment configuration
-- ✅ Asset pipeline and build optimization
+**Phase 0 - Proof of Concept: COMPLETED**
+- Backend Infrastructure: FastAPI server deployed on Railway with PostgreSQL
+- Frontend Infrastructure: React Native app deployed on Vercel with TypeScript
+- CI/CD Pipeline: Automatic deployments from dev branch to production
+- Core Architecture: Full-stack foundation with proper separation of concerns
+- Development Environment: Complete local development setup with Docker support
 
-**Next Implementation Tasks:**
-- 🔄 OpenRouter LLM integration for intelligent content generation
-- 🔄 ElevenLabs TTS integration for high-quality audio synthesis
+**Phase 1 - AI Integration: COMPLETED**
+- OpenRouter LLM integration with direct HTTP API (Claude 3.5, GPT-4o, Llama 3.1)
+- ElevenLabs TTS integration with Google TTS fallback
+- PDF processing with pdfplumber for text extraction
+- AES-256 API key encryption for user security
+- Complete lecture generation pipeline (Text/PDF → LLM → TTS → Audio)
+- BYOK (Bring Your Own Key) architecture for cost control
+- Mock mode for zero-cost development and testing
+- Production deployment with health monitoring
+
+**Phase 2a - Database Foundation: COMPLETED**
+- PostgreSQL database integration with SQLAlchemy 2.0.23 async
+- Complete User ORM with subscription tiers and preferences
+- Full CRUD API endpoints with validation and error handling
+- Async database session management and health monitoring
+- Comprehensive database test suite with validation
+- Docker development environment (Backend, DB, Frontend, Redis)
+
+**Phase 2b - Authentication: COMPLETED**
+- JWT token system with python-jose (create, verify, decode, refresh)
+- Password security with bcrypt hashing and 12 salt rounds
+- Complete authentication API endpoints (register, login, profile, refresh, logout)
+- Protected route middleware with dependency injection
+- Token refresh mechanism and password reset flow
+- Comprehensive authentication test suite (10/10 tests passing)
+- Production deployment with enterprise-grade security validation
+
+#### 🚧 CURRENT PHASE
+
+**Phase 2d - Frontend Integration: IN PROGRESS**
+- ✅ React Native Web deployment to Vercel (professional landing page)
+- ✅ Complete authentication services (API client, JWT management)
+- ✅ Authentication UI screens (Login, Register) with validation
+- ✅ Authentication context and state management
+- ✅ Protected routing and navigation system
+- 🔲 **CURRENT TASK**: Professional landing page optimization
+- 🔲 **NEXT TASK**: Authentication system integration testing
+- 🔲 **PRIORITY TASK**: CreateLectureScreen implementation
+
+#### 📋 NEXT PHASES
+
+**Phase 2d Immediate Roadmap (Next 4-6 hours):**
+
+**Track A: Professional Landing Page (30 minutes)**
+- Hero section with compelling value proposition
+- Feature highlights with benefit-focused messaging
+- Social proof and early access signup
+- Mobile-responsive design optimization
+
+**Track B: Authentication Integration (1 hour)**
+- Restore full authentication flow from backup code
+- End-to-end testing of user registration and login
+- JWT token management and secure storage validation
+- Protected route navigation and error handling
+
+**Track C: Core Lecture Creation (2-3 hours)**
+- CreateLectureScreen with topic input and settings
+- Integration with backend lecture generation API
+- Progress tracking and audio playback interface
+- Lecture history and library management
+
+#### Phase 2a - Database Foundation: ✅ COMPLETED  
+- ✅ PostgreSQL database integration with SQLAlchemy 2.0.23 async
+- ✅ Complete User ORM with subscription tiers and preferences
+- ✅ Full CRUD API endpoints with validation and error handling
+- ✅ Async database session management and health monitoring
+- ✅ Comprehensive database test suite with validation
+- ✅ Docker development environment (Backend, DB, Frontend, Redis)
+
+#### Phase 2b - Authentication: ✅ COMPLETED
+- ✅ JWT authentication system (create, verify, refresh) with 30min access tokens
+- ✅ bcrypt password security with 12 salt rounds for enterprise-grade protection
+- ✅ Complete authentication API (registration, login, profile, refresh, logout)
+- ✅ Protected route middleware with automatic user validation
+- ✅ Security implementation (SQL injection protection, account enumeration protection)
+- ✅ Comprehensive authentication testing (10/10 tests passing)
+- ✅ Production deployment with Docker environment validation
+
+#### Phase 2c - Social Authentication: 🔄 NEXT
+- 🔄 Google OAuth integration for one-click registration
+- 🔄 Apple Sign-In (required for iOS App Store)
+- 🔄 GitHub OAuth integration for developer users
+- 🔄 Account linking and social profile merging
 - 🔄 PDF upload and text extraction pipeline
 - 🔄 User authentication with JWT tokens
 - 🔄 Encrypted API key storage (AES-256)
