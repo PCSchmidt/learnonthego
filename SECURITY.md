@@ -40,7 +40,7 @@ We take security seriously. If you discover a security vulnerability, please fol
 - **File Storage**: Cloudinary with secure upload policies
 
 ### Authentication & Authorization
-- **JWT Tokens**: Short expiration (24 hours) with refresh token mechanism
+- **JWT Tokens**: Short expiration (30 minutes) with refresh token mechanism
 - **Rate Limiting**: 
   - Login attempts: 5 attempts per 15 minutes
   - Lecture generation: 10 per hour per user
