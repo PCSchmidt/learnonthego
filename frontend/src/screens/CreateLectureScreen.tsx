@@ -1,6 +1,6 @@
 /**
  * CreateLectureScreen - Form for creating new lectures
- * Phase 0: Basic text input for topic-based lecture generation
+ * Phase 2d: Integrated with authentication and backend API
  */
 
 import React, {useState} from 'react';
@@ -15,22 +15,29 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
+import lectureService, { LectureRequest, AVAILABLE_VOICES, DIFFICULTY_LEVELS } from '../services/lecture';
+import { StackNavigationProp } from '@react-navigation/stack';
 
-interface LectureRequest {
-  topic: string;
-  duration: number;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  voice: string;
-}
+// Navigation types
+type RootStackParamList = {
+  Home: undefined;
+  CreateLecture: undefined;
+  LecturePlayer: { lectureId: string };
+  Settings: undefined;
+};
+
+type CreateLectureNavigationProp = StackNavigationProp<RootStackParamList, 'CreateLecture'>;
 
 const CreateLectureScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<CreateLectureNavigationProp>();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<LectureRequest>({
     topic: '',
     duration: 15,
     difficulty: 'beginner',
-    voice: 'default',
+    voice: 'Rachel', // Default to first available voice
   });
 
   const handleCreateLecture = async () => {
@@ -47,50 +54,52 @@ const CreateLectureScreen: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        'https://learnonthego-production.up.railway.app/api/lectures/generate',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const lecture = await response.json();
+      const response = await lectureService.createLecture(formData);
       
-      Alert.alert(
-        'Lecture Created!',
-        `"${lecture.title}" has been generated successfully.\n\nThis is a Phase 0 mock response. In Phase 1, you'll get real audio lectures!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      if (response.success && response.data) {
+        Alert.alert(
+          'Lecture Created Successfully! 🎉',
+          `"${response.data.title}" has been generated.\n\nDuration: ${formData.duration} minutes\nDifficulty: ${formData.difficulty}\n\nYour lecture is ready to play!`,
+          [
+            {
+              text: 'Play Now',
+              onPress: () => {
+                // Navigate to lecture player
+                navigation.navigate('LecturePlayer', { lectureId: response.data?.id || '' });
+              },
+            },
+            {
+              text: 'View Library',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ]
+        );
+      } else {
+        throw new Error(response.error || 'Failed to create lecture');
+      }
     } catch (error) {
       console.error('Error creating lecture:', error);
       Alert.alert(
-        'Error',
-        'Failed to create lecture. Please check your connection and try again.'
+        'Generation Failed',
+        error instanceof Error ? error.message : 'Failed to create lecture. Please check your connection and try again.',
+        [
+          {
+            text: 'Retry',
+            onPress: handleCreateLecture,
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const difficulties = [
-    {label: 'Beginner', value: 'beginner'},
-    {label: 'Intermediate', value: 'intermediate'},
-    {label: 'Advanced', value: 'advanced'},
-  ];
-
+  const difficulties = DIFFICULTY_LEVELS;
+  const voices = AVAILABLE_VOICES;
   const durations = [5, 10, 15, 20, 30, 45, 60];
 
   return (
@@ -133,31 +142,52 @@ const CreateLectureScreen: React.FC = () => {
         <View style={styles.difficultyContainer}>
           {difficulties.map((diff) => (
             <TouchableOpacity
-              key={diff.value}
+              key={diff.id}
               style={[
                 styles.difficultyButton,
-                formData.difficulty === diff.value && styles.difficultyButtonActive,
+                formData.difficulty === diff.id && styles.difficultyButtonActive,
               ]}
-              onPress={() => setFormData({...formData, difficulty: diff.value as any})}>
+              onPress={() => setFormData({...formData, difficulty: diff.id as any})}>
               <Text
                 style={[
                   styles.difficultyButtonText,
-                  formData.difficulty === diff.value && styles.difficultyButtonTextActive,
+                  formData.difficulty === diff.id && styles.difficultyButtonTextActive,
                 ]}>
-                {diff.label}
+                {diff.name}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
+        <Text style={styles.label}>Voice Selection</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.voiceScroll}>
+          {voices.map((voice) => (
+            <TouchableOpacity
+              key={voice.id}
+              style={[
+                styles.voiceButton,
+                formData.voice === voice.id && styles.voiceButtonActive,
+              ]}
+              onPress={() => setFormData({...formData, voice: voice.id})}>
+              <Text
+                style={[
+                  styles.voiceButtonText,
+                  formData.voice === voice.id && styles.voiceButtonTextActive,
+                ]}>
+                {voice.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Phase 0 - Proof of Concept</Text>
+          <Text style={styles.infoTitle}>🎓 AI-Powered Lecture Generation</Text>
           <Text style={styles.infoText}>
-            This will generate a mock lecture response. In Phase 1, we'll add:
-            {'\n'}• Real AI-generated content
-            {'\n'}• Text-to-speech conversion
-            {'\n'}• Audio file downloads
-            {'\n'}• PDF document processing
+            Your lecture will be generated using:
+            {'\n'}• Advanced AI for structured content
+            {'\n'}• Professional text-to-speech conversion  
+            {'\n'}• Personalized to your chosen difficulty
+            {'\n'}• Ready in under 30 seconds
           </Text>
         </View>
 
@@ -166,9 +196,12 @@ const CreateLectureScreen: React.FC = () => {
           onPress={handleCreateLecture}
           disabled={isLoading}>
           {isLoading ? (
-            <ActivityIndicator color="#ffffff" />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="#ffffff" />
+              <Text style={styles.loadingText}>Generating your lecture...</Text>
+            </View>
           ) : (
-            <Text style={styles.createButtonText}>Create Lecture</Text>
+            <Text style={styles.createButtonText}>🚀 Create Lecture</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -296,6 +329,45 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#ffffff',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // Voice Selection Styles
+  voiceScroll: {
+    marginTop: 8,
+  },
+  voiceButton: {
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    minWidth: 140,
+    alignItems: 'center',
+  },
+  voiceButtonActive: {
+    backgroundColor: '#6366f1',
+    borderColor: '#6366f1',
+  },
+  voiceButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  voiceButtonTextActive: {
+    color: '#ffffff',
+  },
+  // Loading Styles
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

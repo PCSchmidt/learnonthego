@@ -73,6 +73,20 @@ class LectureService {
     return response;
   }
 
+  // Create new lecture (alias for generateLecture)
+  async createLecture(request: LectureRequest): Promise<ApiResponse<LectureResponse>> {
+    // Validate request first
+    const validationErrors = this.validateLectureRequest(request);
+    if (validationErrors.length > 0) {
+      return {
+        success: false,
+        error: validationErrors.join(', '),
+      };
+    }
+
+    return this.generateLecture(request);
+  }
+
   // Generate lecture from PDF file
   async generateLectureFromPDF(
     file: { uri: string; name: string; type: string },
