@@ -2,6 +2,7 @@
 Pydantic models for user-related API requests and responses
 """
 
+from typing import Optional
 from pydantic import BaseModel, Field, EmailStr, validator
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -24,6 +25,7 @@ class UserRegistration(BaseModel):
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, description="User password")
     confirm_password: str = Field(..., description="Password confirmation")
+    full_name: Optional[str] = Field(None, description="User's full name")
     
     @validator('confirm_password')
     def passwords_match(cls, v, values, **kwargs):
@@ -45,6 +47,19 @@ class UserResponse(BaseModel):
     access_token: Optional[str] = Field(None, description="JWT access token")
     token_type: Optional[str] = Field(None, description="Token type (bearer)")
     error: Optional[str] = Field(None, description="Error message if request failed")
+
+
+class UserDetails(BaseModel):
+    """Detailed user information for listing"""
+    id: int = Field(..., description="User ID")
+    email: str = Field(..., description="User email address")
+    full_name: Optional[str] = Field(None, description="User's full name")
+    subscription_tier: str = Field(..., description="User subscription tier")
+    is_verified: bool = Field(..., description="Whether email is verified")
+    is_active: bool = Field(..., description="Whether user account is active")
+    created_at: datetime = Field(..., description="Account creation timestamp")
+    lectures_generated_count: int = Field(default=0, description="Number of lectures generated")
+    total_audio_minutes: int = Field(default=0, description="Total audio minutes listened")
 
 
 class APIKeyUpdate(BaseModel):

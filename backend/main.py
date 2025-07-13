@@ -13,6 +13,11 @@ from datetime import datetime
 
 # Import API routes
 from api.lectures import router as lectures_router
+from api.users import router as users_router
+from api.auth import router as auth_router
+
+# Import database initialization
+from models import create_tables_async, check_database_health
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -40,6 +45,29 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(lectures_router)
+app.include_router(users_router)
+app.include_router(auth_router)
+
+
+# Database initialization on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on application startup"""
+    try:
+        # Create database tables if they don't exist
+        await create_tables_async()
+        print("✅ Database tables initialized successfully")
+        
+        # Check database health
+        is_healthy = await check_database_health()
+        if is_healthy:
+            print("✅ Database connection verified")
+        else:
+            print("⚠️ Database connection issues detected")
+            
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+        # Don't fail startup - allow app to run for debugging
 
 # Pydantic models for existing endpoints
 class HealthResponse(BaseModel):

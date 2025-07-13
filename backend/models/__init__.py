@@ -1,8 +1,28 @@
 """
 Models package for LearnOnTheGo backend
-Contains all Pydantic models for API requests and responses
+Contains both Pydantic models (API) and SQLAlchemy models (Database)
 """
 
+# Database configuration and base
+from models.database import (
+    Base,
+    engine,
+    async_engine,
+    SessionLocal,
+    AsyncSessionLocal,
+    get_async_db,
+    get_sync_db,
+    create_tables,
+    create_tables_async,
+    drop_tables_async,
+    check_database_health,
+    get_database_info
+)
+
+# SQLAlchemy ORM models (database entities)
+from models.user_orm import User as UserORM, SubscriptionTier
+
+# Pydantic models (API requests/responses)
 from models.lecture_models import (
     VoiceSettings,
     LectureRequest,
@@ -22,13 +42,32 @@ from models.user_models import (
     UserRegistration,
     UserLogin,
     UserResponse,
+    UserDetails,
     APIKeyUpdate,
     UserPreferencesUpdate,
     UserStatsResponse
 )
 
 __all__ = [
-    # Lecture models
+    # Database configuration and utilities
+    "Base",
+    "engine", 
+    "async_engine",
+    "SessionLocal",
+    "AsyncSessionLocal", 
+    "get_async_db",
+    "get_sync_db",
+    "create_tables",
+    "create_tables_async",
+    "drop_tables_async",
+    "check_database_health",
+    "get_database_info",
+    
+    # SQLAlchemy ORM models
+    "UserORM",
+    "SubscriptionTier",
+    
+    # Pydantic API models - Lecture
     "VoiceSettings",
     "LectureRequest",
     "PDFLectureRequest", 
@@ -41,11 +80,12 @@ __all__ = [
     "ContentSection",
     "DetailedLectureResponse",
     
-    # User models
+    # Pydantic API models - User  
     "User",
     "UserRegistration",
-    "UserLogin",
+    "UserLogin", 
     "UserResponse",
+    "UserDetails",
     "APIKeyUpdate",
     "UserPreferencesUpdate",
     "UserStatsResponse"

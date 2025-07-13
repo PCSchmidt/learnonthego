@@ -5,6 +5,13 @@ pydantic==2.5.0
 pydantic-settings==2.1.0
 email-validator==2.1.0
 
+# Database ORM and Migration
+sqlalchemy==2.0.23
+alembic==1.13.1
+psycopg2-binary==2.9.9  # PostgreSQL adapter for SQLAlchemy
+asyncpg==0.29.0         # Async PostgreSQL adapter for SQLAlchemy
+aiosqlite==0.19.0       # Async SQLite adapter for development
+
 # AI and External API Integration
 httpx==0.26.0          # For async HTTP requests to OpenRouter API
 aiofiles==23.2.1       # For async file operations
