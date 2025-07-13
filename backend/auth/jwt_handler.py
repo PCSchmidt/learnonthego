@@ -108,20 +108,19 @@ async def get_current_user(
         )
     
     # Find user in database
-    async for session in get_async_db():
-        result = await session.execute(
-            select(UserORM).where(UserORM.email == email)
+    result = await db.execute(
+        select(UserORM).where(UserORM.email == email)
+    )
+    user = result.scalar_one_or_none()
+    
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        user = result.scalar_one_or_none()
-        
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        return user
+    
+    return user
 
 
 async def get_current_active_user(

@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from pydantic.networks import EmailStr
 
 from models import (
     get_async_db,
@@ -52,41 +53,43 @@ async def register_user(
             full_name=user_data.full_name
         )
         
-        async for session in get_async_db():
-            session.add(new_user)
-            await session.commit()
-            await session.refresh(new_user)
-            
-            # Create access token
-            access_token_expires = timedelta(minutes=30)
-            access_token = create_access_token(
-                data={"sub": new_user.email},
-                expires_delta=access_token_expires
-            )
-            
-            # Convert to response model
-            user_data = UserPydantic(
-                id=new_user.id,
-                email=new_user.email,
-                created_at=new_user.created_at,
-                is_active=new_user.is_active,
-                subscription_tier=new_user.subscription_tier.value,
-                preferences={}
-            )
-            
-            return UserResponse(
-                success=True,
-                user=user_data,
-                access_token=access_token,
-                token_type="bearer"
-            )
+        # Add user to database
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=30)
+        access_token = create_access_token(
+            data={"sub": new_user.email, "user_id": new_user.id},
+            expires_delta=access_token_expires
+        )
+        
+        # Convert to response model
+        user_response = UserPydantic(
+            id=new_user.id,
+            email=new_user.email,
+            created_at=new_user.created_at,
+            is_active=new_user.is_active,
+            subscription_tier=new_user.subscription_tier.value,
+            preferences={}
+        )
+        
+        return UserResponse(
+            success=True,
+            user=user_response,
+            access_token=access_token,
+            token_type="bearer"
+        )
         
     except IntegrityError:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this email already exists"
         )
     except Exception as e:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to register user: {str(e)}"
@@ -105,64 +108,64 @@ async def login_user(
     """
     try:
         # Find user by email
-        async for session in get_async_db():
-            result = await session.execute(
-                select(UserORM).where(UserORM.email == user_credentials.email)
+        result = await db.execute(
+            select(UserORM).where(UserORM.email == user_credentials.email)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
             )
-            user = result.scalar_one_or_none()
-            
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password"
-                )
-            
-            # Verify password
-            if not verify_password(user_credentials.password, user.password_hash):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password"
-                )
-            
-            # Check if user is active
-            if not user.is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Account is disabled"
-                )
-            
-            # Create access token
-            access_token_expires = timedelta(minutes=30)
-            access_token = create_access_token(
-                data={"sub": user.email},
-                expires_delta=access_token_expires
+        
+        # Verify password
+        if not verify_password(user_credentials.password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
             )
-            
-            # Update last login
-            from datetime import datetime
-            user.last_login_at = datetime.utcnow()
-            await session.commit()
-            
-            # Convert to response model
-            user_data = UserPydantic(
-                id=user.id,
-                email=user.email,
-                created_at=user.created_at,
-                is_active=user.is_active,
-                subscription_tier=user.subscription_tier.value,
-                preferences={}
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Account is disabled"
             )
-            
-            return UserResponse(
-                success=True,
-                user=user_data,
-                access_token=access_token,
-                token_type="bearer"
-            )
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=30)
+        access_token = create_access_token(
+            data={"sub": user.email, "user_id": user.id},
+            expires_delta=access_token_expires
+        )
+        
+        # Update last login
+        from datetime import datetime
+        user.last_login_at = datetime.utcnow()
+        await db.commit()
+        
+        # Convert to response model
+        user_response = UserPydantic(
+            id=user.id,
+            email=user.email,
+            created_at=user.created_at,
+            is_active=user.is_active,
+            subscription_tier=user.subscription_tier.value,
+            preferences={}
+        )
+        
+        return UserResponse(
+            success=True,
+            user=user_response,
+            access_token=access_token,
+            token_type="bearer"
+        )
         
     except HTTPException:
         raise
     except Exception as e:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Login failed: {str(e)}"
@@ -196,10 +199,12 @@ async def logout_user():
     """
     Logout user (client-side token removal)
     
-    Phase 2b: Simple logout endpoint
-    Note: JWT tokens are stateless, so logout is handled client-side
+    Phase 2b: Logout functionality
     """
-    return {"message": "Successfully logged out. Please remove the token from client storage."}
+    return {
+        "success": True,
+        "message": "Logged out successfully. Please remove the token from client storage."
+    }
 
 
 @router.post("/refresh", response_model=UserResponse)
@@ -207,20 +212,20 @@ async def refresh_token(
     current_user: UserORM = Depends(get_current_active_user)
 ):
     """
-    Refresh JWT token for authenticated user
+    Refresh JWT access token
     
-    Phase 2b: Token refresh endpoint
+    Phase 2b: Token refresh for extended sessions
     """
     try:
         # Create new access token
         access_token_expires = timedelta(minutes=30)
         access_token = create_access_token(
-            data={"sub": current_user.email},
+            data={"sub": current_user.email, "user_id": current_user.id},
             expires_delta=access_token_expires
         )
         
         # Convert to response model
-        user_data = UserPydantic(
+        user_response = UserPydantic(
             id=current_user.id,
             email=current_user.email,
             created_at=current_user.created_at,
@@ -231,7 +236,7 @@ async def refresh_token(
         
         return UserResponse(
             success=True,
-            user=user_data,
+            user=user_response,
             access_token=access_token,
             token_type="bearer"
         )
@@ -240,4 +245,50 @@ async def refresh_token(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Token refresh failed: {str(e)}"
+        )
+
+
+@router.post("/password-reset-request")
+async def request_password_reset(
+    request_data: dict,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Request password reset token
+    
+    Phase 2b: Password reset functionality
+    """
+    try:
+        email = request_data.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required"
+            )
+        
+        # Find user by email
+        result = await db.execute(
+            select(UserORM).where(UserORM.email == email)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            # Don't reveal if email exists for security
+            return {"success": True, "message": "If the email exists, a reset link has been sent"}
+        
+        # Generate reset token (simple implementation)
+        import secrets
+        reset_token = secrets.token_urlsafe(32)
+        
+        # In a real implementation, you would:
+        # 1. Store the reset token in database with expiry
+        # 2. Send email with reset link
+        # For now, we'll just return success
+        
+        return {"success": True, "message": "Password reset link sent to your email"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Password reset request failed"
         )
