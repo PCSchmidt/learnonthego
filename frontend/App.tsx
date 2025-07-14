@@ -30,7 +30,12 @@ const App: React.FC = () => {
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
       const body = isRegister 
-        ? { email, password, full_name: 'Test User' }
+        ? { 
+            email, 
+            password, 
+            confirm_password: password,
+            full_name: 'Test User' 
+          }
         : { email, password };
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
