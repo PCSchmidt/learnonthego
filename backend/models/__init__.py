@@ -25,14 +25,9 @@ from models.lecture_orm import (
     Lecture,
     UserAPIKey,
     UsageLog,
-    UserAIPreferences,
-    AIProviderConfig,
     LectureSourceType,
     LectureStatus,
-    APIProvider,
-    LLMProvider,
-    TTSProvider,
-    QualityTier
+    APIProvider
 )
 
 # Pydantic models (API requests/responses)
@@ -79,17 +74,6 @@ __all__ = [
     # SQLAlchemy ORM models
     "UserORM",
     "SubscriptionTier",
-    "Lecture",
-    "UserAPIKey", 
-    "UsageLog",
-    "UserAIPreferences",
-    "AIProviderConfig",
-    "LectureSourceType",
-    "LectureStatus", 
-    "APIProvider",
-    "LLMProvider",
-    "TTSProvider",
-    "QualityTier",
     
     # Pydantic API models - Lecture
     "VoiceSettings",

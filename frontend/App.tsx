@@ -1,87 +1,22 @@
 /**
- * LearnOnTheGo - Multi-Provider AI System
- * Week 2 Frontend Complete - Production Ready!
+ * LearnOnTheGo - Web-Compatible Authentication Demo
+ * Track B: Authentication Integration Phase 2e
  */
 
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
+// Simple auth demo without complex dependencies
 const App: React.FC = () => {
-  return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>🎓 LearnOnTheGo</Text>
-        <Text style={styles.subtitle}>Multi-Provider AI System</Text>
-        <Text style={styles.description}>
-          Transform any topic into personalized audio lectures with our advanced AI system.
-        </Text>
-        <View style={styles.features}>
-          <Text style={styles.feature}>✅ 8 AI Providers Integrated</Text>
-          <Text style={styles.feature}>✅ Real-time Cost Optimization</Text>
-          <Text style={styles.feature}>✅ Multi-Provider Dashboard</Text>
-          <Text style={styles.feature}>✅ Automated Quality Control</Text>
-        </View>
-        <Text style={styles.status}>🚀 Week 2 Frontend Complete - Production Ready!</Text>
-      </View>
-    </View>
-  );
-};
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    padding: 20,
-    maxWidth: 600,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 24,
-    color: '#475569',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 18,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  features: {
-    alignItems: 'flex-start',
-    marginBottom: 30,
-  },
-  feature: {
-    fontSize: 16,
-    color: '#059669',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  status: {
-    fontSize: 20,
-    color: '#dc2626',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    backgroundColor: '#fef2f2',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#fecaca',
-  },
-});
-
-export default App;
+  // Simple backend API calls
+  const API_BASE_URL = 'https://learnonthego-production.up.railway.app';
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -142,36 +77,32 @@ export default App;
           <Text style={styles.successText}>Hello, {user.name}!</Text>
           <Text style={styles.successEmail}>Email: {user.email}</Text>
           
-          {/* Enhanced Multi-Provider Demo Button */}
+          {/* Enhanced TTS Demo Button */}
           <TouchableOpacity 
             style={styles.enhancedButton} 
             onPress={() => {
               // For demo purposes, we'll show an alert
-              // In a real app, this would navigate to EnhancedCreateLectureScreen
-              alert('🚀 Week 2: Multi-Provider AI System!\n\n' +
-                    '✅ AI Provider Dashboard\n' +
-                    '✅ Real-time cost optimization\n' +
-                    '✅ 8 provider integrations (3 LLM + 5 TTS)\n' +
+              // In a real app, this would navigate to EnhancedLectureScreen
+              alert('🚀 Enhanced TTS Features:\n\n' +
                     '✅ Smart provider selection\n' +
-                    '✅ Live provider status monitoring\n' +
-                    '✅ Up to 90% cost savings\n' +
-                    '✅ Quality tier management\n\n' +
-                    'Frontend integration complete!')
+                    '✅ Cost optimization (up to 90% savings)\n' +
+                    '✅ Audio caching\n' +
+                    '✅ Multiple quality tiers\n' +
+                    '✅ Real-time cost estimation\n\n' +
+                    'Ready for Phase 2f implementation!')
             }}
           >
-            <Text style={styles.enhancedButtonText}>🤖 Try Multi-Provider AI</Text>
+            <Text style={styles.enhancedButtonText}>🎯 Try Enhanced TTS</Text>
           </TouchableOpacity>
 
-          {/* Multi-Provider Cost Optimization Info */}
+          {/* Cost Savings Info */}
           <View style={styles.costSavingsContainer}>
-            <Text style={styles.costSavingsTitle}>🤖 Multi-Provider AI System</Text>
+            <Text style={styles.costSavingsTitle}>💰 TTS Cost Optimization</Text>
             <Text style={styles.costSavingsText}>
-              • 3 LLM providers: OpenRouter, OpenAI, Anthropic{'\n'}
-              • 5 TTS providers: Google, OpenAI, ElevenLabs, Unreal{'\n'}
-              • Smart routing with up to 90% savings{'\n'}
-              • Real-time cost analysis & optimization{'\n'}
-              • Provider health monitoring{'\n'}
-              • Quality tier management (Free/Standard/Premium)
+              • Google Standard: 4M chars FREE/month{'\n'}
+              • Unreal Speech: 90% cheaper than Google Neural{'\n'}
+              • OpenAI TTS: 6-10x cheaper than ElevenLabs{'\n'}
+              • Smart caching prevents duplicate costs
             </Text>
           </View>
 
@@ -180,16 +111,14 @@ export default App;
           </TouchableOpacity>
 
           <View style={styles.infoContainer}>
-            <Text style={styles.infoTitle}>🚀 Week 2: Multi-Provider AI Complete!</Text>
+            <Text style={styles.infoTitle}>🚀 Phase 2f: Enhanced TTS Ready!</Text>
             <Text style={styles.infoText}>
-              Frontend Integration Completed:{'\n'}
-              • AIProviderDashboard component{'\n'}
-              • CostOptimizerWidget with real-time analysis{'\n'}
-              • ProviderStatusIndicator for health monitoring{'\n'}
-              • EnhancedCreateLectureScreen with optimization{'\n'}
-              • Multi-provider service integration{'\n'}
-              • Cost-conscious UI/UX design{'\n'}
-              • Smart provider recommendations{'\n'}
+              New Features Implemented:{'\n'}
+              • Multi-provider TTS strategy{'\n'}
+              • Cost optimization (up to 90% savings){'\n'}
+              • Smart provider selection{'\n'}
+              • Audio caching system{'\n'}
+              • Real-time cost estimation{'\n'}
               • Quality tier management
             </Text>
           </View>
