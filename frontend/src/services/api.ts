@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Configuration
-const API_BASE_URL = __DEV__ 
+const API_BASE_URL = process.env.NODE_ENV === 'development'
   ? 'http://localhost:8000'  // Development
   : 'https://learnonthego-production.up.railway.app'; // Production
 

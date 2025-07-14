@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   entry: './index.web.js',
@@ -10,9 +11,10 @@ module.exports = {
     publicPath: '/',
   },
   resolve: {
-    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    extensions: ['.web.js', '.web.jsx', '.web.ts', '.web.tsx', '.js', '.jsx', '.ts', '.tsx'],
     alias: {
       'react-native$': 'react-native-web',
+      'react-native-safe-area-context': 'react-native-safe-area-context/lib/commonjs/SafeAreaContext.web.js',
     },
   },
   module: {
@@ -51,6 +53,9 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './public/index.html',
       filename: 'index.html',
+    }),
+    new webpack.DefinePlugin({
+      '__DEV__': JSON.stringify(process.env.NODE_ENV === 'development'),
     }),
   ],
   devServer: {
