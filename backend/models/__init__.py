@@ -21,6 +21,19 @@ from models.database import (
 
 # SQLAlchemy ORM models (database entities)
 from models.user_orm import User as UserORM, SubscriptionTier
+from models.lecture_orm import (
+    Lecture,
+    UserAPIKey,
+    UsageLog,
+    UserAIPreferences,
+    AIProviderConfig,
+    LectureSourceType,
+    LectureStatus,
+    APIProvider,
+    LLMProvider,
+    TTSProvider,
+    QualityTier
+)
 
 # Pydantic models (API requests/responses)
 from models.lecture_models import (
@@ -66,6 +79,17 @@ __all__ = [
     # SQLAlchemy ORM models
     "UserORM",
     "SubscriptionTier",
+    "Lecture",
+    "UserAPIKey", 
+    "UsageLog",
+    "UserAIPreferences",
+    "AIProviderConfig",
+    "LectureSourceType",
+    "LectureStatus", 
+    "APIProvider",
+    "LLMProvider",
+    "TTSProvider",
+    "QualityTier",
     
     # Pydantic API models - Lecture
     "VoiceSettings",

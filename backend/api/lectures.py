@@ -1,14 +1,16 @@
 """
-Lecture Generation API Routes for LearnOnTheGo
-Handles lecture creation from text topics and PDF documents
+Enhanced Lecture Generation API Routes for LearnOnTheGo
+Phase 2f: Multi-Provider TTS with Cost Optimization
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 import os
 from datetime import datetime
+from pydantic import BaseModel
 
 from services import create_lecture_service, LectureGenerationService
+from services.enhanced_tts_service import EnhancedTTSService, QUALITY_TIER, TTS_PROVIDER, TTSCostAnalyzer
 from models.lecture_models import (
     LectureRequest,
     LectureResponse,
@@ -22,8 +24,30 @@ from models.user_models import User
 
 router = APIRouter(prefix="/api/lectures", tags=["lectures"])
 
-# Initialize lecture service
+# Initialize services
 lecture_service = create_lecture_service()
+enhanced_tts = EnhancedTTSService()
+
+
+# Enhanced request models
+class EnhancedLectureRequest(BaseModel):
+    topic: str
+    duration: int  # minutes (5-60)
+    difficulty: str  # beginner, intermediate, advanced
+    voice_id: str
+    quality_tier: QUALITY_TIER = "standard"
+    provider_preference: Optional[TTS_PROVIDER] = None
+    language: str = "en"
+
+class CostEstimateRequest(BaseModel):
+    character_count: int
+    provider: Optional[TTS_PROVIDER] = None
+    
+class CostEstimateResponse(BaseModel):
+    provider: str
+    estimated_cost: float
+    free_tier_remaining: int
+    quality_score: float
 
 
 @router.post("/generate", response_model=LectureResponse)
@@ -34,18 +58,20 @@ async def generate_lecture_from_text(
     """
     Generate audio lecture from text topic
     
-    ⚠️ COST WARNING: This endpoint uses external APIs with costs:
-    - AI Content Generation: ~$0.001-0.003 per lecture
-    - Text-to-Speech: ~$0.50-2.00 per lecture (depending on length)
-    - Total estimated cost: $0.50-2.00 per lecture
+    🚀 ENHANCED: Now with smart TTS provider selection and cost optimization!
     
-    Users must provide their own API keys and accept cost responsibility.
+    ⚠️ COST WARNING: API costs vary by provider:
+    - Google Standard: $4/million chars (4M free/month)
+    - Google Neural2: $16/million chars (1M free/month)
+    - OpenAI TTS: $15/million chars 
+    - ElevenLabs: $165/million chars (premium quality)
+    - Unreal Speech: $2/million chars (English only)
     
-    🎭 DEVELOPMENT: Set MOCK_MODE=true environment variable for cost-free testing
+    💡 SMART SELECTION: Service automatically chooses optimal provider
     
     Args:
-        request: Lecture generation parameters including topic, duration, difficulty
-        current_user: Authenticated user (from JWT token)
+        request: Lecture generation parameters
+        current_user: Authenticated user
         
     Returns:
         LectureResponse with generated audio file and metadata
@@ -365,3 +391,243 @@ async def get_available_models(current_user: User = Depends(get_current_user)):
             status_code=500,
             detail=f"Failed to get models: {str(e)}"
         )
+
+
+# ===============================
+# ENHANCED TTS ENDPOINTS (Phase 2f)
+# ===============================
+
+@router.post("/generate-enhanced", response_model=LectureResponse)
+async def generate_lecture_enhanced(
+    request: EnhancedLectureRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    🚀 Enhanced lecture generation with smart TTS provider selection
+    
+    Features:
+    - Automatic provider selection based on cost/quality
+    - Audio caching to prevent duplicate TTS costs
+    - Text optimization to reduce character count
+    - Transparent cost reporting
+    
+    Quality Tiers:
+    - free: Google Standard (4M chars free/month)
+    - standard: OpenAI TTS or Unreal Speech (cost-effective)
+    - premium: ElevenLabs (highest quality)
+    """
+    try:
+        # Initialize AI service
+        init_success = await lecture_service.initialize_ai_service(
+            encrypted_api_key=current_user.openrouter_api_key,
+            user_id=str(current_user.id)
+        )
+        
+        if not init_success:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or missing OpenRouter API key"
+            )
+        
+        # Generate lecture content
+        content_result = await lecture_service.generate_lecture_from_text(
+            topic=request.topic,
+            duration=request.duration,
+            difficulty=request.difficulty,
+            voice_settings={"voice_id": request.voice_id},
+            user_context={}
+        )
+        
+        if not content_result["success"]:
+            raise HTTPException(status_code=500, detail="Content generation failed")
+        
+        # Extract script content for TTS
+        script_content = content_result.get("content_sections", {}).get("script", "")
+        if not script_content:
+            raise HTTPException(status_code=500, detail="No script content generated")
+        
+        # Generate audio using enhanced TTS
+        voice_settings = {"voice_id": request.voice_id}
+        tts_result = await enhanced_tts.generate_audio_smart(
+            content=script_content,
+            user_id=current_user.id,
+            user_tier=request.quality_tier,
+            voice_settings=voice_settings,
+            provider_override=request.provider_preference,
+            language=request.language
+        )
+        
+        if not tts_result["success"]:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"TTS generation failed: {tts_result.get('error', 'Unknown error')}"
+            )
+        
+        # Return enhanced response with cost information
+        return LectureResponse(
+            success=True,
+            lecture_id=content_result["lecture_id"],
+            title=content_result["title"],
+            duration=content_result["duration"],
+            difficulty=content_result["difficulty"],
+            source_type="text",
+            audio_file_url=f"/api/audio/{content_result['lecture_id']}",
+            file_size=tts_result.get("file_size", 0),
+            estimated_duration=content_result["estimated_duration"],
+            created_at=content_result["created_at"],
+            content_sections=content_result["content_sections"],
+            # Enhanced fields
+            provider_used=tts_result["provider"],
+            estimated_cost=tts_result.get("estimated_cost", 0.0),
+            character_count=tts_result.get("character_count", 0),
+            was_cached=tts_result.get("cached", False)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Enhanced generation failed: {str(e)}")
+
+
+@router.post("/estimate-cost", response_model=CostEstimateResponse)
+async def estimate_tts_cost(
+    request: CostEstimateRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Estimate TTS cost for given character count
+    
+    Helps users make informed decisions about provider selection
+    and understand potential costs before generation.
+    """
+    try:
+        # Get user's current monthly usage (placeholder)
+        monthly_usage = 0  # TODO: Implement actual usage tracking
+        
+        # Select optimal provider if not specified
+        provider = request.provider or enhanced_tts.select_optimal_provider(
+            user_tier="standard",  # Default tier
+            text_length=request.character_count,
+            monthly_usage=monthly_usage
+        )
+        
+        estimated_cost = enhanced_tts.estimate_cost(request.character_count, provider)
+        provider_config = enhanced_tts.providers[provider]
+        
+        return CostEstimateResponse(
+            provider=provider,
+            estimated_cost=estimated_cost,
+            free_tier_remaining=max(0, provider_config["free_tier"] - monthly_usage),
+            quality_score=provider_config["quality_score"]
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cost estimation failed: {str(e)}")
+
+
+@router.get("/cost-comparison/{character_count}")
+async def get_cost_comparison(
+    character_count: int,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Compare costs across all TTS providers for transparency
+    
+    Returns comprehensive cost analysis to help users choose
+    the best provider for their needs and budget.
+    """
+    try:
+        if character_count <= 0 or character_count > 10_000_000:
+            raise HTTPException(
+                status_code=400,
+                detail="Character count must be between 1 and 10,000,000"
+            )
+        
+        comparison = TTSCostAnalyzer.compare_monthly_costs(character_count)
+        best_value = TTSCostAnalyzer.get_best_value_provider(character_count)
+        
+        # Calculate potential savings
+        elevenlabs_cost = comparison["elevenlabs"]["total_cost"]
+        google_neural_cost = comparison["google_neural"]["total_cost"]
+        best_value_cost = comparison[best_value]["total_cost"]
+        
+        return {
+            "character_count": character_count,
+            "provider_comparison": comparison,
+            "recommended_provider": best_value,
+            "cost_analysis": {
+                "cheapest_option": min(comparison.items(), key=lambda x: x[1]["total_cost"]),
+                "highest_quality": max(comparison.items(), key=lambda x: x[1]["quality_score"]),
+                "best_value": best_value
+            },
+            "potential_savings": {
+                "vs_elevenlabs": round(elevenlabs_cost - best_value_cost, 4),
+                "vs_google_neural": round(google_neural_cost - best_value_cost, 4),
+                "savings_percentage": round(((elevenlabs_cost - best_value_cost) / elevenlabs_cost * 100), 1) if elevenlabs_cost > 0 else 0
+            },
+            "recommendations": {
+                "for_free_tier": "Use Google Standard (4M chars free)",
+                "for_cost_effective": "Use Unreal Speech for English content",
+                "for_premium_quality": "Use ElevenLabs for best results",
+                "for_multilingual": "Use Google Neural2 for non-English content"
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cost comparison failed: {str(e)}")
+
+
+@router.get("/tts-providers")
+async def get_tts_providers(current_user: User = Depends(get_current_user)):
+    """
+    Get available TTS providers with their capabilities and pricing
+    
+    Returns comprehensive information about all supported TTS providers
+    to help users make informed decisions.
+    """
+    try:
+        providers_info = {}
+        
+        for provider_id, config in enhanced_tts.providers.items():
+            providers_info[provider_id] = {
+                "name": provider_id.replace("_", " ").title(),
+                "cost_per_million_chars": config["cost_per_million"],
+                "free_tier_chars": config["free_tier"],
+                "quality_score": config["quality_score"],
+                "supported_languages": config["languages"],
+                "best_for": {
+                    "google_standard": "Free tier users, basic quality needs",
+                    "google_neural": "Multilingual content, good quality",
+                    "openai": "Balanced cost and quality",
+                    "elevenlabs": "Premium quality, realistic voices",
+                    "unreal_speech": "Cost-effective English content"
+                }.get(provider_id, "General use"),
+                "features": {
+                    "google_standard": ["Free 4M chars/month", "40+ languages", "Basic quality"],
+                    "google_neural": ["Free 1M chars/month", "Neural voices", "40+ languages"],
+                    "openai": ["High quality", "6 voices", "20+ languages"],
+                    "elevenlabs": ["Premium quality", "Voice cloning", "Emotion control"],
+                    "unreal_speech": ["Very low cost", "English only", "Good quality"]
+                }.get(provider_id, ["Standard features"])
+            }
+        
+        return {
+            "providers": providers_info,
+            "usage_recommendations": {
+                "free_users": "Start with Google Standard (4M free chars)",
+                "standard_users": "Use Unreal Speech for English, OpenAI for others",
+                "premium_users": "Use ElevenLabs for best quality",
+                "multilingual": "Use Google Neural2 for non-English content"
+            },
+            "cost_optimization_tips": [
+                "Use caching to avoid duplicate TTS costs",
+                "Optimize text length before TTS generation",
+                "Choose provider based on content language",
+                "Monitor monthly usage to stay within free tiers"
+            ]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get TTS providers: {str(e)}")

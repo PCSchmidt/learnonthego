@@ -15,6 +15,8 @@ from datetime import datetime
 from api.lectures import router as lectures_router
 from api.users import router as users_router
 from api.auth import router as auth_router
+from api.lecture_routes import router as authenticated_lectures_router
+from api.api_key_routes import router as api_key_router
 
 # Import database initialization
 from models import create_tables_async, check_database_health
@@ -32,21 +34,21 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://learnonthego-frontend.vercel.app",
         "http://localhost:3000",
-        "http://localhost:19006",  # Expo default
-        "https://learnonthego-bice.vercel.app",
-        "https://*.vercel.app",
-        "*"  # For development - restrict in production
+        "http://localhost:19006"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Include API routes
 app.include_router(lectures_router)
 app.include_router(users_router)
 app.include_router(auth_router)
+app.include_router(authenticated_lectures_router)
+app.include_router(api_key_router)
 
 
 # Database initialization on startup

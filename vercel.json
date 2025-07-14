@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "echo 'Using pre-built files'",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install"
+  "installCommand": "echo 'No install needed'"
 }

@@ -70,10 +70,11 @@ class User(Base):
     password_reset_token = Column(String(255), nullable=True)
     password_reset_expires = Column(DateTime(timezone=True), nullable=True)
 
-    # Relationships (to be defined when we create related models)
-    # lectures = relationship("Lecture", back_populates="user", cascade="all, delete-orphan")
-    # api_keys = relationship("UserAPIKey", back_populates="user", cascade="all, delete-orphan")
-    # usage_logs = relationship("UsageLog", back_populates="user", cascade="all, delete-orphan")
+    # Relationships
+    lectures = relationship("Lecture", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship("UserAPIKey", back_populates="user", cascade="all, delete-orphan")
+    usage_logs = relationship("UsageLog", back_populates="user", cascade="all, delete-orphan")
+    ai_preferences = relationship("UserAIPreferences", back_populates="user", cascade="all, delete-orphan", uselist=False)
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', tier='{self.subscription_tier.value}')>"

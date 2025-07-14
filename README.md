@@ -2,6 +2,29 @@
 
 > Transform any topic or PDF into personalized audio lectures using AI
 
+## ⚠️ CRITICAL: Deployment Directory Warning
+
+**ALWAYS run deployment commands from the ROOT directory only!**
+
+```bash
+# ✅ CORRECT - From root directory
+cd LearnOnTheGo
+./deploy.sh           # Linux/Mac
+deploy.bat            # Windows
+
+# ❌ WRONG - From subdirectories
+cd frontend && vercel deploy  # This will break everything!
+cd backend && railway up      # This will miss dependencies!
+```
+
+This is a **monorepo** with specific build paths configured. Running deployments from wrong directories will:
+- Deploy wrong files
+- Break build dependencies  
+- Cause authentication/permission issues
+- Create inconsistent environments
+
+**Use the provided deployment scripts ONLY from the root directory.**
+
 [![Railway Deploy](https://img.shields.io/badge/Deploy%20on-Railway-0B0D0E?logo=railway&logoColor=white)](https://railway.app)
 [![Vercel Deploy](https://img.shields.io/badge/Deploy%20on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://python.org)
