@@ -3,7 +3,7 @@ Pydantic models for user-related API requests and responses
 """
 
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Optional, Dict, Any
 from datetime import datetime
 
@@ -27,9 +27,9 @@ class UserRegistration(BaseModel):
     confirm_password: str = Field(..., description="Password confirmation")
     full_name: Optional[str] = Field(None, description="User's full name")
     
-    @validator('confirm_password')
-    def passwords_match(cls, v, values, **kwargs):
-        if 'password' in values and v != values['password']:
+    @field_validator('confirm_password')
+    def passwords_match(cls, v, values):
+        if 'password' in values.data and v != values.data['password']:
             raise ValueError('Passwords do not match')
         return v
 
@@ -67,7 +67,7 @@ class APIKeyUpdate(BaseModel):
     provider: str = Field(..., description="API provider (openrouter, elevenlabs)")
     api_key: str = Field(..., description="API key to encrypt and store")
     
-    @validator('provider')
+    @field_validator('provider')
     def validate_provider(cls, v):
         if v not in ['openrouter', 'elevenlabs']:
             raise ValueError('Provider must be openrouter or elevenlabs')
@@ -82,7 +82,7 @@ class UserPreferencesUpdate(BaseModel):
     auto_cleanup_days: Optional[int] = Field(None, ge=1, le=365, description="Auto cleanup period")
     notifications_enabled: Optional[bool] = Field(None, description="Enable notifications")
     
-    @validator('default_difficulty')
+    @field_validator('default_difficulty')
     def validate_difficulty(cls, v):
         if v is not None and v not in ['beginner', 'intermediate', 'advanced']:
             raise ValueError('Difficulty must be beginner, intermediate, or advanced')

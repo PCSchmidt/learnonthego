@@ -2,7 +2,7 @@
 Pydantic models for lecture-related API requests and responses
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, List, Any
 from datetime import datetime
 
@@ -29,7 +29,7 @@ class LectureRequest(BaseModel):
     voice_settings: VoiceSettings = Field(..., description="TTS voice configuration")
     user_context: Optional[str] = Field(None, max_length=2000, description="Additional context")
     
-    @validator('difficulty')
+    @field_validator('difficulty')
     def validate_difficulty(cls, v):
         if v not in ['beginner', 'intermediate', 'advanced']:
             raise ValueError('Difficulty must be beginner, intermediate, or advanced')
@@ -43,7 +43,7 @@ class PDFLectureRequest(BaseModel):
     voice_settings: Dict[str, Any] = Field(..., description="TTS voice configuration")
     custom_topic: Optional[str] = Field(None, max_length=200, description="Custom topic override")
     
-    @validator('difficulty')
+    @field_validator('difficulty')
     def validate_difficulty(cls, v):
         if v not in ['beginner', 'intermediate', 'advanced']:
             raise ValueError('Difficulty must be beginner, intermediate, or advanced')

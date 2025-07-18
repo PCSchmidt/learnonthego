@@ -1,3 +1,4 @@
+pytest-cov
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
@@ -28,4 +29,10 @@ beautifulsoup4==4.12.2 # For HTML cleaning
 markdown==3.5.2        # For markdown processing
 
 # Audio Processing (future TTS integration)
+
 requests==2.31.0       # For HTTP requests to TTS services
+
+# Testing and linting
+pytest==8.2.1
+pytest-cov==5.0.0
+pytest-asyncio==0.23.6

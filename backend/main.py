@@ -12,11 +12,11 @@ import os
 from datetime import datetime
 
 # Import API routes
-from api.lectures import router as lectures_router
+# from api.lectures import router as lectures_router
 from api.users import router as users_router
 from api.auth import router as auth_router
-from api.lecture_routes import router as authenticated_lectures_router
-from api.api_key_routes import router as api_key_router
+from api.api_key_routes import router as api_keys_router
+from api.lecture_routes import router as lectures_router
 
 # Import database initialization
 from models import create_tables_async, check_database_health
@@ -47,8 +47,7 @@ app.add_middleware(
 app.include_router(lectures_router)
 app.include_router(users_router)
 app.include_router(auth_router)
-app.include_router(authenticated_lectures_router)
-app.include_router(api_key_router)
+app.include_router(api_keys_router)
 
 
 # Database initialization on startup

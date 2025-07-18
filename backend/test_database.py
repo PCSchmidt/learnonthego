@@ -3,17 +3,18 @@
 Simple database connectivity test for Phase 2a validation.
 """
 
-import asyncio
+
+import pytest
 import sys
 from pathlib import Path
 
-# Add the backend directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from models.database import get_async_db, check_database_health, get_database_info, create_tables_async
 from models.user_orm import User
 
 
+@pytest.mark.asyncio
 async def test_database_setup():
     """Test database initialization and basic operations."""
     print("🔄 Testing database setup...")
@@ -96,22 +97,8 @@ async def test_database_setup():
         return False
 
 
-async def main():
-    """Main test runner."""
-    print("=" * 60)
-    print("Phase 2a Database Foundation Test")
-    print("=" * 60)
-    
-    success = await test_database_setup()
-    
-    if success:
-        print("\n✅ Phase 2a database foundation is ready!")
-        print("Next: Test user API endpoints")
-        sys.exit(0)
-    else:
-        print("\n❌ Phase 2a database foundation needs attention")
-        sys.exit(1)
 
-
+# For manual run, keep the following block:
 if __name__ == "__main__":
-    asyncio.run(main())
+    import asyncio
+    asyncio.run(test_database_setup())

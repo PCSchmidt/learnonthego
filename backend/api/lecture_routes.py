@@ -5,30 +5,31 @@ Protected endpoints for lecture generation and management
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+ # Removed Session and AsyncSession imports to avoid FastAPI type inference issues
+from sqlalchemy import select
 from typing import List, Optional, Dict, Any
 import json
 import logging
 
-from models.database import get_db
+from models.database import get_async_db
 from models.user_orm import User
 from models.lecture_orm import Lecture, LectureStatus, LectureSourceType, APIProvider
 from models.lecture_models import LectureRequest, VoiceSettings
 from auth.jwt_auth import get_current_user
 from services.api_key_service import get_api_key_service
-from services.lecture_service import get_lecture_service
+from services.lecture_service import create_lecture_service
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/lectures", tags=["lectures"])
 
 
-@router.post("/generate", response_model=Dict[str, Any])
+@router.post("/generate", response_model=None)
 async def generate_lecture_from_text(
     request: LectureRequest,
-    background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    background_tasks,
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     Generate audio lecture from text topic
@@ -84,11 +85,11 @@ async def generate_lecture_from_text(
         )
         
         db.add(lecture)
-        db.commit()
-        db.refresh(lecture)
+        await db.commit()
+        await db.refresh(lecture)
         
         # Start background lecture generation
-        lecture_service = get_lecture_service()
+        lecture_service = create_lecture_service()
         background_tasks.add_task(
             lecture_service.generate_lecture_background,
             lecture.id,
@@ -113,16 +114,16 @@ async def generate_lecture_from_text(
         raise HTTPException(status_code=500, detail="Failed to start lecture generation")
 
 
-@router.post("/generate-pdf", response_model=Dict[str, Any])
+@router.post("/generate-pdf", response_model=None)
 async def generate_lecture_from_pdf(
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    duration: int = Form(...),
-    difficulty: str = Form(...),
-    voice_settings: str = Form(...),
-    custom_topic: Optional[str] = Form(None),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    background_tasks,
+    file = File(...),
+    duration = Form(...),
+    difficulty = Form(...),
+    voice_settings = Form(...),
+    custom_topic = Form(None),
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     Generate audio lecture from PDF document
@@ -200,11 +201,11 @@ async def generate_lecture_from_pdf(
         )
         
         db.add(lecture)
-        db.commit()
-        db.refresh(lecture)
+        await db.commit()
+        await db.refresh(lecture)
         
         # Start background PDF processing and lecture generation
-        lecture_service = get_lecture_service()
+        lecture_service = create_lecture_service()
         background_tasks.add_task(
             lecture_service.generate_lecture_from_pdf_background,
             lecture.id,
@@ -230,30 +231,33 @@ async def generate_lecture_from_pdf(
         raise HTTPException(status_code=500, detail="Failed to start PDF lecture generation")
 
 
-@router.get("/", response_model=List[Dict[str, Any]])
+@router.get("/", response_model=None)
 async def list_user_lectures(
-    skip: int = 0,
-    limit: int = 20,
-    status: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    skip = 0,
+    limit = 20,
+    status = None,
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     List user's lectures with optional filtering
     """
     try:
-        query = db.query(Lecture).filter(Lecture.user_id == current_user.id)
-        
-        # Filter by status if provided
+        stmt = (
+            select(Lecture)
+            .where(Lecture.user_id == current_user.id)
+            .order_by(Lecture.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
         if status:
             try:
                 status_enum = LectureStatus(status)
-                query = query.filter(Lecture.status == status_enum)
+                stmt = stmt.where(Lecture.status == status_enum)
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid status filter")
-        
-        lectures = query.order_by(Lecture.created_at.desc()).offset(skip).limit(limit).all()
-        
+        result = await db.execute(stmt)
+        lectures = result.scalars().all()
         return [lecture.to_dict() for lecture in lectures]
         
     except HTTPException:
@@ -263,24 +267,24 @@ async def list_user_lectures(
         raise HTTPException(status_code=500, detail="Failed to retrieve lectures")
 
 
-@router.get("/{lecture_id}", response_model=Dict[str, Any])
+@router.get("/{lecture_id}", response_model=None)
 async def get_lecture(
-    lecture_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    lecture_id,
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     Get specific lecture details
     """
     try:
-        lecture = db.query(Lecture).filter(
+        stmt = select(Lecture).where(
             Lecture.id == lecture_id,
             Lecture.user_id == current_user.id
-        ).first()
-        
+        )
+        result = await db.execute(stmt)
+        lecture = result.scalars().first()
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
-        
         return lecture.to_dict()
         
     except HTTPException:
@@ -290,36 +294,33 @@ async def get_lecture(
         raise HTTPException(status_code=500, detail="Failed to retrieve lecture")
 
 
-@router.put("/{lecture_id}/favorite", response_model=Dict[str, Any])
+@router.put("/{lecture_id}/favorite", response_model=None)
 async def toggle_lecture_favorite(
-    lecture_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    lecture_id,
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     Toggle lecture favorite status
     """
     try:
-        lecture = db.query(Lecture).filter(
+        stmt = select(Lecture).where(
             Lecture.id == lecture_id,
             Lecture.user_id == current_user.id
-        ).first()
-        
+        )
+        result = await db.execute(stmt)
+        lecture = result.scalars().first()
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
-        
         lecture.is_favorited = not lecture.is_favorited
-        
         # If favorited, remove auto-delete
         if lecture.is_favorited:
             lecture.auto_delete_at = None
         else:
             # If unfavorited, set auto-delete to 30 days from now
             lecture.auto_delete_at = datetime.utcnow() + timedelta(days=30)
-        
-        db.commit()
-        db.refresh(lecture)
-        
+        await db.commit()
+        await db.refresh(lecture)
         return {
             "lecture_id": lecture.id,
             "is_favorited": lecture.is_favorited,
@@ -333,33 +334,30 @@ async def toggle_lecture_favorite(
         raise HTTPException(status_code=500, detail="Failed to toggle favorite")
 
 
-@router.delete("/{lecture_id}", response_model=Dict[str, Any])
+@router.delete("/{lecture_id}", response_model=None)
 async def delete_lecture(
-    lecture_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    lecture_id,
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     Delete a lecture
     """
     try:
-        lecture = db.query(Lecture).filter(
+        stmt = select(Lecture).where(
             Lecture.id == lecture_id,
             Lecture.user_id == current_user.id
-        ).first()
-        
+        )
+        result = await db.execute(stmt)
+        lecture = result.scalars().first()
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
-        
         # TODO: Delete audio file from Cloudinary
         # lecture_service = get_lecture_service()
         # await lecture_service.delete_audio_file(lecture.audio_file_url)
-        
-        db.delete(lecture)
-        db.commit()
-        
+        await db.delete(lecture)
+        await db.commit()
         logger.info(f"Deleted lecture {lecture_id} for user {current_user.id}")
-        
         return {"message": "Lecture deleted successfully"}
         
     except HTTPException:
@@ -369,29 +367,27 @@ async def delete_lecture(
         raise HTTPException(status_code=500, detail="Failed to delete lecture")
 
 
-@router.post("/{lecture_id}/play", response_model=Dict[str, Any])
+@router.post("/{lecture_id}/play", response_model=None)
 async def record_lecture_play(
-    lecture_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    lecture_id,
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db)
 ):
     """
     Record that user played a lecture
     """
     try:
-        lecture = db.query(Lecture).filter(
+        stmt = select(Lecture).where(
             Lecture.id == lecture_id,
             Lecture.user_id == current_user.id
-        ).first()
-        
+        )
+        result = await db.execute(stmt)
+        lecture = result.scalars().first()
         if not lecture:
             raise HTTPException(status_code=404, detail="Lecture not found")
-        
         lecture.play_count += 1
         lecture.last_played_at = datetime.utcnow()
-        
-        db.commit()
-        
+        await db.commit()
         return {
             "lecture_id": lecture.id,
             "play_count": lecture.play_count,
@@ -407,7 +403,7 @@ async def record_lecture_play(
 
 # Helper functions
 
-async def _check_rate_limits(db: Session, user: User, is_pdf: bool = False) -> bool:
+async def _check_rate_limits(db, user, is_pdf = False):
     """
     Check if user is within rate limits
     
@@ -422,34 +418,31 @@ async def _check_rate_limits(db: Session, user: User, is_pdf: bool = False) -> b
     try:
         # Check hourly limits
         one_hour_ago = datetime.utcnow() - timedelta(hours=1)
-        
-        recent_lectures = db.query(Lecture).filter(
+        stmt = select(Lecture).where(
             Lecture.user_id == user.id,
             Lecture.created_at >= one_hour_ago
-        ).count()
-        
+        )
+        result = await db.execute(stmt)
+        recent_lectures = len(result.scalars().all())
         # Rate limits
         hourly_limit = 10  # 10 lectures per hour
         pdf_hourly_limit = 5  # 5 PDF uploads per hour
-        
         if is_pdf and recent_lectures >= pdf_hourly_limit:
             return False
         elif not is_pdf and recent_lectures >= hourly_limit:
             return False
-        
         # Check monthly limits for free users
         if not user.is_premium:
             one_month_ago = datetime.utcnow() - timedelta(days=30)
-            monthly_lectures = db.query(Lecture).filter(
+            stmt_month = select(Lecture).where(
                 Lecture.user_id == user.id,
                 Lecture.created_at >= one_month_ago
-            ).count()
-            
+            )
+            result_month = await db.execute(stmt_month)
+            monthly_lectures = len(result_month.scalars().all())
             if monthly_lectures >= user.monthly_lecture_limit:
                 return False
-        
         return True
-        
     except Exception as e:
         logger.error(f"Error checking rate limits for user {user.id}: {str(e)}")
         return False
