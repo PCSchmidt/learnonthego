@@ -1,2 +1,5 @@
+[nixpacks]
+nixPkgs = ["nodejs_20", "python311", "gcc", "pkg-config"]
+
 [phases.setup]
 nixPkgs = ["nodejs_20", "python311", "gcc", "pkg-config"]
