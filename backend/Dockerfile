@@ -23,6 +23,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy application code
 COPY . .
 
+# Debug: List contents to verify all files are present in the image
+RUN ls -l /app && ls -l /app/auth && ls -l /app/api
+
 # Create directories for AI file processing
 RUN mkdir -p temp_uploads temp_audio
 

@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 """
 LearnOnTheGo Backend - Phase 1 AI Integration
 FastAPI application with OpenRouter LLM integration for lecture generation
