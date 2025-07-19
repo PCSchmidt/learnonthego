@@ -170,7 +170,13 @@ temp_files/
 *api_key*
 *secret*
 *token*
-*password*
+password.txt
+passwords.txt
+.password
+.passwd
+# Allow password_utils.py and similar utility files
+!*password_utils*
+!*password_util*
 credentials.json
 config.json
 
