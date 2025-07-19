@@ -27,6 +27,10 @@ COPY . .
 RUN ls -l /app && ls -l /app/auth && ls -l /app/api
 RUN echo "=== Checking for password_utils.py ===" && ls -la /app/auth/password_utils.py || echo "password_utils.py NOT FOUND"
 
+# Copy startup script
+COPY start.sh .
+RUN chmod +x start.sh
+
 # Create directories for AI file processing
 RUN mkdir -p temp_uploads temp_audio
 
@@ -42,5 +46,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Production command - Use PORT environment variable for Railway
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
+# Production command - Use startup script for Railway
+CMD ["./start.sh"]
