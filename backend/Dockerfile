@@ -25,6 +25,7 @@ COPY . .
 
 # Debug: List contents to verify all files are present in the image
 RUN ls -l /app && ls -l /app/auth && ls -l /app/api
+RUN echo "=== Checking for password_utils.py ===" && ls -la /app/auth/password_utils.py || echo "password_utils.py NOT FOUND"
 
 # Create directories for AI file processing
 RUN mkdir -p temp_uploads temp_audio
