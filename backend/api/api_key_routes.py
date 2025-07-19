@@ -13,7 +13,7 @@ import logging
 from models.database import get_async_db
 from models.user_orm import User
 from models.lecture_orm import APIProvider
-from auth.jwt_auth import get_current_user
+from auth import get_current_user
 from services.api_key_service import get_api_key_service
 
 logger = logging.getLogger(__name__)

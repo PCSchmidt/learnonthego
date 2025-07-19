@@ -15,7 +15,7 @@ from models.database import get_async_db
 from models.user_orm import User
 from models.lecture_orm import Lecture, LectureStatus, LectureSourceType, APIProvider
 from models.lecture_models import LectureRequest, VoiceSettings
-from auth.jwt_auth import get_current_user
+from auth import get_current_user
 from services.api_key_service import get_api_key_service
 from services.lecture_service import create_lecture_service
 from datetime import datetime, timedelta
