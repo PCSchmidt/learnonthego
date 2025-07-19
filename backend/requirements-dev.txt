@@ -1,0 +1,14 @@
+# Development and CI/CD requirements
+# Linting and formatting
+black==23.12.1
+flake8==7.0.0
+isort==5.13.2
+
+# Security scanning
+bandit==1.7.6
+
+# Testing coverage
+pytest-cov==4.1.0
+
+# Type checking
+mypy==1.8.0
