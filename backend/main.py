@@ -1,6 +1,9 @@
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add both the current directory and auth directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+sys.path.insert(0, os.path.join(current_dir, 'auth'))
 
 """
 LearnOnTheGo Backend - Phase 1 AI Integration
