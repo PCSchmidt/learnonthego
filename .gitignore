@@ -167,12 +167,18 @@ temp_files/
 *.crt
 
 # API keys and secrets (backup safety)
-*api_key*
+api_key.txt
+api_keys.txt
+.api_key
+.api_keys
 *secret*
 *token*
 password.txt
 passwords.txt
 .password
+# Allow code files with api_key in name
+!*api_key_routes*
+!*api_key_models*
 .passwd
 # Allow password_utils.py and similar utility files
 !*password_utils*
