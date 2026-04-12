@@ -259,6 +259,15 @@ cd backend
 pytest --cov=. --cov-report=html
 ```
 
+### V2 Endpoint Smoke Test (Dry Run)
+```bash
+# Uses dry_run=true to validate response contracts without paid generation
+LOTG_BASE_URL=http://localhost:8000 \
+LOTG_EMAIL=your-email@example.com \
+LOTG_PASSWORD=your-password \
+python scripts/v2_endpoint_smoke.py
+```
+
 ### Frontend Testing
 ```bash
 cd frontend

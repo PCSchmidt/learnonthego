@@ -28,6 +28,40 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/lectures", tags=["lectures"])
 
 
+def _build_v2_dry_run_response(
+    *,
+    source: str,
+    duration: int,
+    difficulty: str,
+    llm_provider: str,
+    tts_provider: str,
+    key_source: str,
+) -> Dict[str, Any]:
+    """Return a stable response contract without invoking paid generation."""
+    return {
+        "success": True,
+        "dry_run": True,
+        "source": source,
+        "duration": duration,
+        "difficulty": difficulty,
+        "key_source": key_source,
+        "title": "Dry Run Lecture Contract",
+        "script": "Dry run mode validates contract only. No LLM/TTS generation executed.",
+        "llm": {
+            "provider": llm_provider,
+            "model": "dry-run",
+            "usage": {},
+        },
+        "audio": {
+            "provider": tts_provider,
+            "model": "dry-run",
+            "file_path": "",
+            "bytes_written": 0,
+            "metadata": {"skipped": True},
+        },
+    }
+
+
 @router.post("/generate-document-v2", response_model=None)
 async def generate_document_audio_v2(
     background_tasks,
@@ -39,6 +73,7 @@ async def generate_document_audio_v2(
     tts_provider = Form("elevenlabs"),
     context = Form(None),
     voice_id = Form(None),
+    dry_run = Form(False),
     current_user = Depends(get_current_user),
 ):
     """Feature-flagged V2 path: document -> script -> audio via pluggable providers."""
@@ -79,6 +114,16 @@ async def generate_document_audio_v2(
                 os.remove(tmp_path)
             except OSError:
                 pass
+
+    if dry_run:
+        return _build_v2_dry_run_response(
+            source=source_name,
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            tts_provider=tts_provider,
+            key_source="environment",
+        )
 
     try:
         pipeline = create_document_pipeline_v2()
@@ -567,6 +612,7 @@ async def generate_document_audio_v2_byok(
     tts_provider = Form("elevenlabs"),
     context = Form(None),
     voice_id = Form(None),
+    dry_run = Form(False),
     current_user = Depends(get_current_user),
     db = Depends(get_async_db),
 ):
@@ -640,6 +686,16 @@ async def generate_document_audio_v2_byok(
                 os.remove(tmp_path)
             except OSError:
                 pass
+
+    if dry_run:
+        return _build_v2_dry_run_response(
+            source=source_name,
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            tts_provider=tts_provider,
+            key_source="user-encrypted-storage",
+        )
 
     try:
         pipeline = create_document_pipeline_v2()
