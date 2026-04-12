@@ -141,7 +141,7 @@ const AIProviderDashboard: React.FC<AIProviderDashboardProps> = ({
       <View style={styles.capabilitiesContainer}>
         <Text style={styles.capabilitiesLabel}>Capabilities:</Text>
         <View style={styles.capabilitiesGrid}>
-          {provider.capabilities.map((capability, index) => (
+          {provider.capabilities.map((capability: string, index: number) => (
             <View key={index} style={styles.capabilityTag}>
               <Text style={styles.capabilityText}>{capability}</Text>
             </View>

@@ -16,7 +16,11 @@ from sqlalchemy import select
 from models import get_async_db, UserORM
 
 # JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY or SECRET_KEY == "your-secret-key-change-in-production":
+    raise RuntimeError(
+        "JWT_SECRET_KEY must be set to a strong value before starting the backend"
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

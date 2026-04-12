@@ -37,6 +37,22 @@ interface EnhancedLectureRequest {
   language: string;
 }
 
+interface ProvidersResponse {
+  providers: Record<string, TTSProvider>;
+}
+
+interface CostComparisonResponse {
+  provider_comparison: Record<string, CostComparison>;
+}
+
+interface GenerateEnhancedResponse {
+  success: boolean;
+  provider_used?: string;
+  estimated_cost?: number;
+  character_count?: number;
+  was_cached?: boolean;
+}
+
 const EnhancedLectureScreen: React.FC = () => {
   const [providers, setProviders] = useState<Record<string, TTSProvider>>({});
   const [costComparison, setCostComparison] = useState<Record<string, CostComparison>>({});
@@ -60,8 +76,10 @@ const EnhancedLectureScreen: React.FC = () => {
 
   const loadProviders = async () => {
     try {
-      const response = await api.get('/api/lectures/tts-providers');
-      setProviders(response.data.providers);
+      const response = await api.get<ProvidersResponse>('/api/lectures/tts-providers');
+      if (response.success && response.data) {
+        setProviders(response.data.providers);
+      }
     } catch (error) {
       console.error('Failed to load TTS providers:', error);
     }
@@ -69,8 +87,10 @@ const EnhancedLectureScreen: React.FC = () => {
 
   const loadCostComparison = async () => {
     try {
-      const response = await api.get(`/api/lectures/cost-comparison/${estimatedCharCount}`);
-      setCostComparison(response.data.provider_comparison);
+      const response = await api.get<CostComparisonResponse>(`/api/lectures/cost-comparison/${estimatedCharCount}`);
+      if (response.success && response.data) {
+        setCostComparison(response.data.provider_comparison);
+      }
     } catch (error) {
       console.error('Failed to load cost comparison:', error);
     }
@@ -84,16 +104,18 @@ const EnhancedLectureScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await api.post('/api/lectures/generate-enhanced', lectureForm);
+      const response = await api.post<GenerateEnhancedResponse>('/api/lectures/generate-enhanced', lectureForm);
       
-      if (response.data.success) {
+      if (response.success && response.data?.success) {
         Alert.alert(
           'Lecture Generated! 🎉',
-          `Provider: ${response.data.provider_used}\n` +
+          `Provider: ${response.data.provider_used || 'N/A'}\n` +
           `Cost: $${response.data.estimated_cost?.toFixed(4) || '0.0000'}\n` +
-          `Characters: ${response.data.character_count?.toLocaleString()}\n` +
+          `Characters: ${response.data.character_count?.toLocaleString() || 'N/A'}\n` +
           `${response.data.was_cached ? '✅ Used cached audio (no cost!)' : '🆕 Newly generated'}`
         );
+      } else {
+        Alert.alert('Generation Failed', response.error || 'Unknown error');
       }
     } catch (error: any) {
       Alert.alert('Generation Failed', error.response?.data?.detail || 'Unknown error');

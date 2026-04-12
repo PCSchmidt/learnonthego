@@ -15,8 +15,11 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Simple backend API calls
-  const API_BASE_URL = 'https://learnonthego-production.up.railway.app';
+  // Prefer explicit environment configuration for local/staging/prod parity.
+  const API_BASE_URL =
+    process.env.EXPO_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    'http://localhost:8000';
 
   const handleAuth = async () => {
     if (!email || !password) {

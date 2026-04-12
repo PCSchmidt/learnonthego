@@ -10,18 +10,109 @@ from sqlalchemy import select
 from typing import List, Optional, Dict, Any
 import json
 import logging
+import os
+import tempfile
 
 from models.database import get_async_db
 from models.user_orm import User
-from models.lecture_orm import Lecture, LectureStatus, LectureSourceType, APIProvider
+from models.lecture_orm import Lecture, LectureStatus, LectureSourceType, APIProvider, UserAPIKey
 from models.lecture_models import LectureRequest, VoiceSettings
 from auth import get_current_user
 from services.api_key_service import get_api_key_service
 from services.lecture_service import create_lecture_service
+from services.pipeline_v2 import create_document_pipeline_v2, v2_pipeline_enabled
+from services.encryption_service import create_encryption_service
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/lectures", tags=["lectures"])
+
+
+@router.post("/generate-document-v2", response_model=None)
+async def generate_document_audio_v2(
+    background_tasks,
+    document_text = Form(None),
+    file = File(None),
+    duration = Form(10),
+    difficulty = Form("intermediate"),
+    llm_provider = Form("openrouter"),
+    tts_provider = Form("elevenlabs"),
+    context = Form(None),
+    voice_id = Form(None),
+    current_user = Depends(get_current_user),
+):
+    """Feature-flagged V2 path: document -> script -> audio via pluggable providers."""
+    if not v2_pipeline_enabled():
+        raise HTTPException(
+            status_code=404,
+            detail="V2 pipeline is disabled. Set ENABLE_V2_PIPELINE=true to enable.",
+        )
+
+    if not document_text and not file:
+        raise HTTPException(status_code=400, detail="Provide either document_text or a PDF file")
+
+    if difficulty not in ["beginner", "intermediate", "advanced"]:
+        raise HTTPException(status_code=400, detail="Invalid difficulty level")
+
+    if duration < 5 or duration > 60:
+        raise HTTPException(status_code=400, detail="Duration must be between 5 and 60 minutes")
+
+    source_text = document_text
+    source_name = "text"
+
+    if file:
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported for uploads")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        try:
+            pdf_result = await create_document_pipeline_v2().pdf_service.extract_and_process(tmp_path)
+            if not pdf_result.get("success"):
+                raise HTTPException(status_code=400, detail=pdf_result.get("error", "PDF parsing failed"))
+            source_text = pdf_result["processed_content"]
+            source_name = file.filename
+        finally:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+    try:
+        pipeline = create_document_pipeline_v2()
+        result = await pipeline.run(
+            document_text=source_text,
+            duration_minutes=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            tts_provider=tts_provider,
+            context=context,
+            voice_id=voice_id,
+        )
+
+        logger.info(
+            "V2 generation completed for user %s with llm=%s tts=%s source=%s",
+            current_user.id,
+            llm_provider,
+            tts_provider,
+            source_name,
+        )
+        return {
+            "success": True,
+            "source": source_name,
+            "duration": duration,
+            "difficulty": difficulty,
+            **result,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("V2 generation failed for user %s: %s", current_user.id, str(e))
+        raise HTTPException(status_code=500, detail="V2 generation failed")
 
 
 @router.post("/generate", response_model=None)
@@ -446,3 +537,143 @@ async def _check_rate_limits(db, user, is_pdf = False):
     except Exception as e:
         logger.error(f"Error checking rate limits for user {user.id}: {str(e)}")
         return False
+
+
+async def _get_user_api_key(db, user_id: int, provider: APIProvider) -> Optional[str]:
+    """Fetch and decrypt a user's provider key from encrypted storage."""
+    result = await db.execute(
+        select(UserAPIKey).where(
+            UserAPIKey.user_id == user_id,
+            UserAPIKey.provider == provider,
+            UserAPIKey.is_valid == True,
+        )
+    )
+    key_row = result.scalar_one_or_none()
+    if not key_row:
+        return None
+
+    decryptor = create_encryption_service()
+    return decryptor.decrypt_api_key(key_row.encrypted_key, str(user_id))
+
+
+@router.post("/generate-document-v2-byok", response_model=None)
+async def generate_document_audio_v2_byok(
+    background_tasks,
+    document_text = Form(None),
+    file = File(None),
+    duration = Form(10),
+    difficulty = Form("intermediate"),
+    llm_provider = Form("openrouter"),
+    tts_provider = Form("elevenlabs"),
+    context = Form(None),
+    voice_id = Form(None),
+    current_user = Depends(get_current_user),
+    db = Depends(get_async_db),
+):
+    """V2 BYOK path: uses the authenticated user's stored encrypted provider keys."""
+    if not v2_pipeline_enabled():
+        raise HTTPException(
+            status_code=404,
+            detail="V2 pipeline is disabled. Set ENABLE_V2_PIPELINE=true to enable.",
+        )
+
+    provider_map = {
+        "openrouter": APIProvider.OPENROUTER,
+        "elevenlabs": APIProvider.ELEVENLABS,
+    }
+    llm_enum = provider_map.get((llm_provider or "").lower())
+    tts_enum = provider_map.get((tts_provider or "").lower())
+
+    if not llm_enum:
+        raise HTTPException(
+            status_code=400,
+            detail="BYOK endpoint currently supports LLM provider: openrouter",
+        )
+    if not tts_enum:
+        raise HTTPException(
+            status_code=400,
+            detail="BYOK endpoint currently supports TTS provider: elevenlabs",
+        )
+
+    llm_key = await _get_user_api_key(db, current_user.id, llm_enum)
+    tts_key = await _get_user_api_key(db, current_user.id, tts_enum)
+
+    missing = []
+    if not llm_key:
+        missing.append(llm_provider)
+    if not tts_key:
+        missing.append(tts_provider)
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing valid API keys for: {', '.join(missing)}. Add keys in settings first.",
+        )
+
+    if not document_text and not file:
+        raise HTTPException(status_code=400, detail="Provide either document_text or a PDF file")
+
+    if difficulty not in ["beginner", "intermediate", "advanced"]:
+        raise HTTPException(status_code=400, detail="Invalid difficulty level")
+
+    if duration < 5 or duration > 60:
+        raise HTTPException(status_code=400, detail="Duration must be between 5 and 60 minutes")
+
+    source_text = document_text
+    source_name = "text"
+
+    if file:
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported for uploads")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        try:
+            pdf_result = await create_document_pipeline_v2().pdf_service.extract_and_process(tmp_path)
+            if not pdf_result.get("success"):
+                raise HTTPException(status_code=400, detail=pdf_result.get("error", "PDF parsing failed"))
+            source_text = pdf_result["processed_content"]
+            source_name = file.filename
+        finally:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+    try:
+        pipeline = create_document_pipeline_v2()
+        result = await pipeline.run(
+            document_text=source_text,
+            duration_minutes=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            tts_provider=tts_provider,
+            context=context,
+            voice_id=voice_id,
+            llm_api_key=llm_key,
+            tts_api_key=tts_key,
+        )
+
+        logger.info(
+            "V2 BYOK generation completed for user %s with llm=%s tts=%s source=%s",
+            current_user.id,
+            llm_provider,
+            tts_provider,
+            source_name,
+        )
+        return {
+            "success": True,
+            "source": source_name,
+            "duration": duration,
+            "difficulty": difficulty,
+            "key_source": "user-encrypted-storage",
+            **result,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("V2 BYOK generation failed for user %s: %s", current_user.id, str(e))
+        raise HTTPException(status_code=500, detail="V2 BYOK generation failed")

@@ -158,4 +158,5 @@ class ApiClient {
 
 // Export singleton instance
 export const apiClient = new ApiClient(API_BASE_URL);
+export const api = apiClient;
 export default apiClient;

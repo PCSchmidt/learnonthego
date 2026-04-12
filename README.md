@@ -9,118 +9,30 @@
 
 LearnOnTheGo converts text topics or PDF documents into personalized audio lectures tailored to your preferred duration, difficulty level, and voice. Perfect for learning during walks, commutes, or workouts.
 
-## 🎯 Current Status
+## 🎯 Current Status (Source of Truth)
 
-**Phase 0 (Proof of Concept): ✅ COMPLETED**
+LearnOnTheGo is currently in a hardened MVP state with core backend capabilities in place and frontend integration partially complete.
+
+### Completed
 - ✅ Backend API deployed on Railway: https://learnonthego-production.up.railway.app
-- ✅ Frontend deployed on Vercel: https://learnonthego-bica.vercel.app
-- ✅ Complete React Native app structure with navigation
-- ✅ Mock lecture generation endpoint working
-- ✅ Automatic CI/CD pipeline (dev branch → production)
-- ✅ Development environment fully configured
+- ✅ Frontend deployed on Vercel
+- ✅ AI pipeline foundations: topic/PDF processing, LLM generation, TTS integration
+- ✅ Database foundation (SQLAlchemy + PostgreSQL support)
+- ✅ JWT authentication backend and protected route dependencies
+- ✅ API key encryption and BYOK architecture
 
-**Phase 1 (AI Integration): ✅ COMPLETED**
-- ✅ OpenRouter LLM integration with direct HTTP API (Claude 3.5, GPT-4o, Llama 3.1)
-- ✅ ElevenLabs TTS integration with Google TTS fallback
-- ✅ PDF processing with pdfplumber for text extraction
-- ✅ AES-256 API key encryption for user security
-- ✅ Complete lecture generation pipeline (Text/PDF → LLM → TTS → Audio)
-- ✅ BYOK (Bring Your Own Key) architecture for cost control
-- ✅ Mock mode for zero-cost development and testing
-- ✅ Production deployment with health monitoring
+### In Progress
+- 🔄 End-to-end lecture generation UX from authenticated frontend flows
+- 🔄 Lecture library/dashboard polish for production-ready user journeys
+- 🔄 CI/CD hardening to ensure test and build signals stay reliable
 
-**Phase 2a (Database Foundation): ✅ COMPLETED**
-- ✅ PostgreSQL database integration with SQLAlchemy 2.0.23 async
-- ✅ Complete User ORM with subscription tiers and preferences
-- ✅ Full CRUD API endpoints with validation and error handling
-- ✅ Async database session management and health monitoring
-- ✅ Comprehensive database test suite with validation
-- ✅ Docker development environment (Backend, DB, Frontend, Redis)
+### Next Execution Priorities
+1. Stabilize and validate authenticated lecture generation flows (text + PDF)
+2. Finalize frontend UX and state handling for create/playback/library
+3. Expand automated tests beyond baseline syntax/import checks
+4. Publish one evidence-oriented release package for portfolio review
 
-**Phase 2b (Authentication): ✅ COMPLETED**
-- ✅ JWT token system with python-jose (create, verify, decode, refresh)
-- ✅ Password security with bcrypt hashing and 12 salt rounds
-- ✅ Complete authentication API endpoints (register, login, profile, refresh, logout)
-- ✅ Protected route middleware with dependency injection
-- ✅ Token refresh mechanism and password reset flow
-- ✅ Comprehensive authentication test suite (10/10 tests passing)
-- ✅ Production deployment with enterprise-grade security validation
-
-**Phase 2e (Authentication Integration): ✅ COMPLETED - Track B**
-- ✅ React Native authentication UI with login/register screens
-- ✅ FastAPI backend integration with JWT token management
-- ✅ Secure API communication with Bearer token headers
-- ✅ User session management with localStorage (web)
-- ✅ Professional UI with loading states and error handling
-- ✅ React Native Web compatibility fixes and build optimization
-- ✅ Root-level project structure with clean deployment pipeline
-- ✅ Production deployment and API compatibility verification
-- ✅ Complete end-to-end authentication flow working
-
-**Phase 2f (Lecture Generation Integration): 🚧 PLANNED - Track C**
-- 🔲 Connect authentication with AI lecture generation
-- 🔲 Personal lecture library and user dashboard
-- 🔲 Secure per-user API key management
-- 🔲 Mobile-optimized lecture creation and playback
-- 🔲 Complete user experience from signup to audio generation
-
-**Phase 2d (Frontend Integration): ✅ COMPLETED - Track A**
-- ✅ React Native Web deployment to Vercel via custom webpack build system
-- ✅ Professional landing page with early access signup functionality
-- ✅ Simplified Vercel configuration for reliable React Native Web deployment
-- ✅ Complete frontend build pipeline (React Native → Webpack → Static Bundle → Vercel)
-- ✅ Live deployment: https://learnonthego-bice.vercel.app
-
-**Phase 2e (Authentication Integration): 🚧 IN PROGRESS - Track B**
-- 🔄 Integrate React Native authentication with FastAPI backend
-- 📋 Connect signup/login forms to JWT authentication system
-- 📋 Implement secure token storage (AsyncStorage with encryption)
-- 📋 Add protected route navigation and user session management
-- ✅ Complete authentication services (API client, JWT management)
-- ✅ Authentication UI screens (Login, Register) with validation
-- ✅ Authentication context and state management
-- ✅ Protected routing and navigation system
-- 🔲 **CURRENT**: Professional landing page design
-- 🔲 **NEXT**: Restore full authentication flow
-- 🔲 **PRIORITY**: CreateLectureScreen implementation
-
-## 🎯 Next Phase Roadmap (A, B, C Options)
-
-### **Option A: Professional Landing Page (IMMEDIATE - 30 min)**
-**Goal**: Convert visitors with compelling value proposition
-- 🔲 Hero section with clear value prop and demo
-- 🔲 Feature highlights with icons and benefits
-- 🔲 Social proof and testimonials section
-- 🔲 Clear call-to-action for early access
-- 🔲 Responsive design for mobile/desktop
-
-### **Option B: Restore Authentication System (NEXT - 1 hour)**
-**Goal**: Enable user registration and secure access
-- 🔲 Restore full authentication App.tsx (code ready)
-- 🔲 Test end-to-end login/register flow
-- 🔲 Validate JWT token storage and management
-- 🔲 Verify protected route navigation
-- 🔲 Error handling and loading states
-
-### **Option C: Core Lecture Creation (PRIORITY - 2-3 hours)**
-**Goal**: MVP functionality - users can create lectures
-- 🔲 CreateLectureScreen with topic input
-- 🔲 API integration for lecture generation
-- 🔲 Progress tracking and loading states
-- 🔲 Audio playback and download
-- 🔲 Lecture library and history
-
-**Phase 2c (Social Authentication): 📋 PLANNED**
-- 🔲 Google OAuth integration for one-click registration
-- 🔲 Apple Sign-In (required for iOS App Store)
-- 🔲 GitHub OAuth integration for developer users
-- 🔲 Account linking and social profile merging
-
-**Phase 2d (Mobile Enhancement): 📋 PLANNED**
-- 🔲 iOS biometric authentication (Touch ID, Face ID)
-- 🔲 Android biometric authentication (Fingerprint, Face Unlock)
-- 🔲 Secure token storage (iOS Keychain, Android Keystore)
-- 🔲 Frontend AI service integration with authentication
+Historical progress notes remain in phase/session documents, but this section is the canonical project status.
 
 ## ✨ Features
 

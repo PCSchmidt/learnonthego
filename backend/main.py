@@ -140,56 +140,6 @@ async def api_health():
         version="1.0.0"
     )
 
-@app.post("/api/lectures/generate", response_model=LectureResponse)
-async def generate_lecture(request: LectureRequest):
-    """
-    Generate audio lecture from text topic (Phase 0 - Proof of Concept)
-    
-    - **topic**: The subject matter for the lecture
-    - **duration**: Length in minutes (5-60)
-    - **difficulty**: beginner, intermediate, or advanced
-    - **voice**: TTS voice selection
-    
-    Returns the generated lecture with download URL.
-    """
-    # Phase 0: Return mock response for proof of concept
-    if not request.topic or len(request.topic.strip()) < 3:
-        raise HTTPException(
-            status_code=400,
-            detail="Topic must be at least 3 characters long"
-        )
-    
-    if request.duration < 5 or request.duration > 60:
-        raise HTTPException(
-            status_code=400,
-            detail="Duration must be between 5 and 60 minutes"
-        )
-    
-    if request.difficulty not in ["beginner", "intermediate", "advanced"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Difficulty must be: beginner, intermediate, or advanced"
-        )
-    
-    # Mock response for Phase 0
-    return LectureResponse(
-        id="lecture_mock_001",
-        title=f"Introduction to {request.topic}",
-        duration=request.duration,
-        audio_url="https://example.com/mock-lecture.mp3",
-        status="completed"
-    )
-
-@app.get("/api/lectures")
-async def list_lectures():
-    """List user's lectures (requires authentication in Phase 1)"""
-    # Phase 0: Return mock data
-    return {
-        "lectures": [],
-        "total": 0,
-        "message": "Authentication required - coming in Phase 1"
-    }
-
 @app.get("/api/config")
 async def get_api_config():
     """

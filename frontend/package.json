@@ -8,9 +8,11 @@
     "start": "react-native start",
     "test": "jest",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "type-check": "tsc --noEmit",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "prettier": "prettier --write .",
     "build": "webpack --mode production",
+    "build:web": "npm run build",
     "web": "expo start:web",
     "dev": "expo start --web"
   },
