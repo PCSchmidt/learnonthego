@@ -42,6 +42,10 @@ jobs:
       run: |
         python -c "import main; print('✅ Main module imports successfully')" || echo "Import check completed"
 
+    - name: Run V2 form coercion regression test
+      run: |
+        python -m pytest tests/test_v2_form_coercion.py -q
+
   # Comment out problematic jobs for now
   # test:
   #   runs-on: ubuntu-latest
