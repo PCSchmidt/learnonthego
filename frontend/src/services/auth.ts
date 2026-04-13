@@ -24,7 +24,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
-  confirmPassword?: string;
+  confirmPassword: string;
   full_name?: string;
 }
 
@@ -42,6 +42,7 @@ class AuthService {
     const response = await apiClient.post<AuthResponse>('/api/auth/register', {
       email: data.email,
       password: data.password,
+      confirm_password: data.confirmPassword,
       full_name: data.full_name || 'User',
     });
 

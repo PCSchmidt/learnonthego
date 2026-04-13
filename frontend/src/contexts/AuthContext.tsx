@@ -14,7 +14,12 @@ interface AuthContextType {
 
   // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, fullName?: string) => Promise<{ success: boolean; error?: string }>;
+  register: (
+    email: string,
+    password: string,
+    confirmPassword: string,
+    fullName?: string
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -91,13 +96,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register function
-  const register = async (email: string, password: string, fullName?: string) => {
+  const register = async (
+    email: string,
+    password: string,
+    confirmPassword: string,
+    fullName?: string
+  ) => {
     try {
       setIsLoading(true);
 
       const response = await authService.register({
         email,
         password,
+        confirmPassword,
         full_name: fullName,
       });
       

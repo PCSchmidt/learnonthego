@@ -74,7 +74,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const result = await register(email.trim(), password, fullName.trim());
+      const result = await register(email.trim(), password, confirmPassword, fullName.trim());
 
       if (result.success) {
         Alert.alert('Success', 'Account created successfully! Welcome to LearnOnTheGo!');
