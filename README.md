@@ -13,6 +13,12 @@ LearnOnTheGo converts text topics or PDF documents into personalized audio lectu
 
 LearnOnTheGo is currently in a hardened MVP state with core backend capabilities in place and frontend integration partially complete.
 
+### Latest Verified Updates (April 2026)
+- ✅ V2 endpoints stabilized for typed form handling (`duration`, `dry_run`, provider params)
+- ✅ BYOK user-key path validated end-to-end in dry-run mode
+- ✅ API key storage path fixed for async DB usage and encryption compatibility
+- ✅ Backend CI now runs a regression test for V2 form coercion on every push/PR
+
 ### Completed
 - ✅ Backend API deployed on Railway: https://learnonthego-production.up.railway.app
 - ✅ Frontend deployed on Vercel
@@ -29,7 +35,7 @@ LearnOnTheGo is currently in a hardened MVP state with core backend capabilities
 ### Next Execution Priorities
 1. Stabilize and validate authenticated lecture generation flows (text + PDF)
 2. Finalize frontend UX and state handling for create/playback/library
-3. Expand automated tests beyond baseline syntax/import checks
+3. Expand backend and frontend automated coverage beyond current V2 regression baseline
 4. Publish one evidence-oriented release package for portfolio review
 
 Historical progress notes remain in phase/session documents, but this section is the canonical project status.
@@ -135,6 +141,8 @@ For detailed setup instructions, see [GETTING_STARTED.md](GETTING_STARTED.md).
 - **[Product Requirements Document](PRD.md)** - Complete feature specifications and technical requirements
 - **[Concept Document](CONCEPT.md)** - Development strategy and cost optimization
 - **[Getting Started Guide](GETTING_STARTED.md)** - Step-by-step setup instructions
+- **[Testing Guide](TESTING_GUIDE.md)** - Current local and CI validation flows
+- **[Archive Index](docs/archive/README.md)** - Historical session and dated status documents
 - **[API Documentation](http://localhost:8000/docs)** - Interactive API docs (when running locally)
 
 ## 🛠️ Development
@@ -155,7 +163,8 @@ For detailed setup instructions, see [GETTING_STARTED.md](GETTING_STARTED.md).
 │   │   ├── jwt_handler.py     # JWT token management
 │   │   └── password_utils.py  # bcrypt password handling
 │   └── tests/        # Backend tests
-│       └── test_database.py  # Database validation suite
+│       ├── test_database.py          # Database validation suite
+│       └── test_v2_form_coercion.py  # V2 typed form regression
 ├── frontend/         # React Native app
 │   ├── src/
 │   │   ├── components/  # Reusable UI components
@@ -164,9 +173,7 @@ For detailed setup instructions, see [GETTING_STARTED.md](GETTING_STARTED.md).
 │   │   └── auth/        # Frontend authentication logic
 │   └── tests/        # Frontend tests
 └── docs/             # Additional documentation
-    ├── PHASE2A_COMPLETE.md      # Database completion summary
-    ├── AUTHENTICATION_SYSTEM_OVERVIEW.md  # Auth system details
-    └── SESSION_SUMMARY_2025-07-13.md     # Development progress
+    └── archive/      # Historical session and dated status docs
 ```
 
 ### Tech Stack
@@ -266,6 +273,22 @@ LOTG_BASE_URL=http://localhost:8000 \
 LOTG_EMAIL=your-email@example.com \
 LOTG_PASSWORD=your-password \
 python scripts/v2_endpoint_smoke.py
+```
+
+### Strict BYOK Contract Validation
+```bash
+# Requires user-level OpenRouter + ElevenLabs keys stored via /api/api-keys
+LOTG_BASE_URL=http://localhost:8000 \
+LOTG_EMAIL=your-email@example.com \
+LOTG_PASSWORD=your-password \
+LOTG_STRICT_BYOK=true \
+python scripts/v2_endpoint_smoke.py
+```
+
+### Backend V2 Regression Test
+```bash
+cd backend
+python -m pytest tests/test_v2_form_coercion.py -q
 ```
 
 ### Frontend Testing

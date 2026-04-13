@@ -1,175 +1,86 @@
-# 🎭 COST-FREE TESTING GUIDE
+# LearnOnTheGo Testing Guide
 
-## Current Setup: ZERO API COSTS ✅
+Last updated: April 12, 2026
 
-Your environment is now configured for **completely cost-free testing** with full authentication:
-- ✅ MOCK_MODE=true enabled in Docker
-- ✅ No real API calls will be made
-- ✅ Mock responses simulate real functionality
-- ✅ $0.00 cost for all testing
-- ✅ Full authentication system operational
+This guide reflects the current validated testing path for the V2 lecture pipeline and BYOK architecture.
 
-## Testing the Phase 2b Authentication System
+## Test Strategy
 
-### 1. **Verify Authentication System**
+- Fast contract validation first (`dry_run=true`)
+- BYOK contract validation second (`LOTG_STRICT_BYOK=true`)
+- Focused regression guard in CI (`tests/test_v2_form_coercion.py`)
+
+## Prerequisites
+
+- Backend running locally (default: `http://localhost:8000`)
+- `JWT_SECRET_KEY` set before backend startup
+- Test user account available
+- For strict BYOK checks: user has valid provider keys stored via `POST /api/api-keys/`
+
+## 1) V2 Smoke Test (No Paid Generation)
+
+Validates endpoint contracts without calling paid model/voice generation.
+
 ```bash
-# Check backend logs for authentication setup
-docker-compose logs backend --tail=10
-# Look for: "JWT authentication configured" and "Database connected"
+LOTG_BASE_URL=http://localhost:8000 \
+LOTG_EMAIL=your-email@example.com \
+LOTG_PASSWORD=your-password \
+python scripts/v2_endpoint_smoke.py
 ```
 
-### 2. **Test Authentication Endpoints (All Cost-Free)**
+Expected result:
+- `PASS: /api/lectures/generate-document-v2 contract validated`
+- BYOK endpoint either passes or warns if keys are missing.
+
+## 2) Strict BYOK Contract Validation
+
+Requires stored user-level OpenRouter and ElevenLabs keys.
+
 ```bash
-# Health check
-curl http://localhost:8000/health
-
-# Register new user
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "securepassword123"
-  }'
-
-# Login user
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "securepassword123"
-  }'
-
-# Get user profile (replace YOUR_JWT_TOKEN with actual token from login)
-curl -X GET http://localhost:8000/api/auth/me \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+LOTG_BASE_URL=http://localhost:8000 \
+LOTG_EMAIL=your-email@example.com \
+LOTG_PASSWORD=your-password \
+LOTG_STRICT_BYOK=true \
+python scripts/v2_endpoint_smoke.py
 ```
 
-### 3. **Test Lecture Generation (With Authentication)**
+Expected result:
+- `PASS: /api/lectures/generate-document-v2 contract validated`
+- `PASS: /api/lectures/generate-document-v2-byok contract validated`
+- `V2 smoke test completed successfully.`
+
+## 3) Backend Regression Test
+
+Covers form coercion for typed V2 params so string form values do not regress into runtime type failures.
+
 ```bash
-# Test protected lecture generation endpoint (MOCK - no costs)
-curl -X POST http://localhost:8000/api/lectures/generate \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "topic": "Machine Learning",
-    "duration": 2,
-    "difficulty": "beginner",
-    "voice": "Rachel"
-  }'
+cd backend
+python -m pytest tests/test_v2_form_coercion.py -q
 ```
 
-### 4. **Run Comprehensive Test Suite**
-```bash
-# Run all authentication tests (should show 10/10 passing)
-docker exec -it learnonthego-backend-1 python test_authentication.py
+Expected result:
+- `2 passed`
 
-# Expected output:
-# All 10 authentication tests passing (100% success rate)
-# Tests cover: registration, login, protected routes, JWT validation, password security
-```
+## 4) CI Validation
 
-### 5. **API Documentation**
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- All endpoints clearly marked with authentication requirements and cost warnings
+Backend workflow now includes the V2 coercion regression test on push/PR for `dev` and `main`.
 
-### 6. **What Gets Mocked (Zero Cost)**
-- ✅ OpenRouter LLM calls → Mock lecture content
-- ✅ ElevenLabs TTS → Mock audio files
-- ✅ PDF text extraction → Mock extracted text
-- ✅ All processing delays simulated
-- ✅ Realistic response structures
-- ✅ Authentication fully functional (JWT, bcrypt, database)
+Workflow file:
+- `.github/workflows/backend-tests.yml`
 
-## When You're Ready for Real API Testing
+## Troubleshooting
 
-### 1. **Minimal Real API Testing** (Only when needed)
-```bash
-# Set real API keys in Docker environment
-docker-compose down
-# Edit docker-compose.yml and set:
-# - MOCK_MODE=false
-# - OPENROUTER_API_KEY=your-real-key
-# - ELEVENLABS_API_KEY=your-real-key
-docker-compose up -d
+- `401 Could not validate credentials`:
+  - Ensure `LOTG_TOKEN` is unset if you want email/password login in smoke script.
+  - Verify `JWT_SECRET_KEY` matches the running backend process.
 
-# Test with MINIMAL input to minimize costs
-curl -X POST http://localhost:8000/api/lectures/generate \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-jwt-token" \
-  -d '{
-    "topic": "Test",
-    "duration": 1,
-    "difficulty": "beginner",
-    "voice": "default"
-  }'
-```
+- BYOK endpoint says keys are missing:
+  - Store keys using `POST /api/api-keys/` as the same authenticated user.
+  - Re-run strict smoke after key storage.
 
-### 2. **Cost Estimation for Real Usage**
-```
-Single test lecture (1 minute):
-- LLM cost: ~$0.001-0.003
-- TTS cost: ~$0.18 (for ~1000 characters)
-- Total: ~$0.18-0.20 per minimal test
+- Smoke passes env endpoint but not BYOK in strict mode:
+  - Confirm both providers are present (`openrouter`, `elevenlabs`) and marked valid.
 
-5 test lectures = ~$1.00
-```
+## Historical Notes
 
-## Deployment Strategy (Railway)
-
-### 1. **Deploy with Mock Mode First**
-```bash
-# Commit all changes
-git add .
-git commit -m "Phase 1: AI Integration with Mock Mode for cost-free testing"
-git push origin dev
-
-# Railway will deploy with MOCK_MODE=true
-# No API keys needed, zero costs
-```
-
-### 2. **Configure for Production Later**
-- Add real API keys via Railway dashboard
-- Set MOCK_MODE=false only when ready
-- Users provide their own API keys (BYOK model)
-
-## Key Benefits of This Approach
-
-### ✅ **Development Benefits**
-- Unlimited testing without any costs
-- Full functionality verification
-- Performance testing with realistic delays
-- Error handling validation
-
-### ✅ **Production Ready**
-- Same codebase works for both mock and real APIs
-- Easy toggle between modes
-- Cost warnings built into API documentation
-- BYOK architecture ready for users
-
-### ✅ **Business Model Ready**
-- Users control their own costs
-- Transparent cost warnings
-- Usage tracking and analytics ready
-- Future open-source alternatives can be integrated
-
-## Next Steps
-
-1. **Test thoroughly with mock mode** (unlimited, $0 cost)
-2. **Deploy to Railway with mock mode** (verify production deployment)
-3. **Add real API keys only for final verification** (minimal costs)
-4. **Implement frontend UI** with cost warnings and BYOK setup
-5. **Consider open-source alternatives** for Phase 2 cost reduction
-
----
-
-## 🎯 **Current Status: Ready for Complete Testing**
-
-Your Phase 1 AI integration is complete and ready for:
-- ✅ Unlimited local testing (mock mode)
-- ✅ Railway deployment (mock mode)
-- ✅ API documentation review
-- ✅ Frontend integration planning
-- ✅ Real API testing when needed (your choice)
-
-**Total development cost so far: $0.00** 🎉
+Older cost-free/mock-mode-only guidance from 2025 was replaced by this current V2-focused guide. Historical session and dated status files are archived under `docs/archive/`.

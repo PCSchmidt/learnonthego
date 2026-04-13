@@ -1,9 +1,39 @@
 # LearnOnTheGo Development Progress
 
-**Last Updated**: July 14, 2025 - Phase 2f Started  
+**Last Updated**: April 12, 2026  
 **Current Branch**: dev  
-**Phase**: Phase 2f Lecture Generation Integration (Track C) - IN PROGRESS  
-**Previous**: Phase 2e Authentication Integration ✅ COMPLETED
+**Phase**: Hardened MVP with V2 provider abstraction and BYOK validation - IN PROGRESS  
+**Previous**: Legacy phase notes (2025) preserved below for historical reference
+
+---
+
+## April 2026 Snapshot (Current Source of Truth)
+
+### Recently Completed
+- [x] V2 document-to-audio endpoints added and stabilized
+- [x] BYOK route validated with encrypted user key retrieval
+- [x] Dry-run smoke script validates both env-key and BYOK contracts
+- [x] API key storage compatibility fixed for async DB sessions
+- [x] Backend CI now executes `tests/test_v2_form_coercion.py`
+
+### Current Risks / Follow-ups
+- [ ] Frontend authenticated flows still need full end-to-end polish
+- [ ] Broader backend test coverage is needed beyond the V2 coercion regression
+- [ ] Legacy docs from 2025 require archival to keep root documentation focused
+
+### Verification Commands
+```bash
+# Strict smoke validation (requires stored user provider keys)
+LOTG_BASE_URL=http://localhost:8000 \
+LOTG_EMAIL=your-email@example.com \
+LOTG_PASSWORD=your-password \
+LOTG_STRICT_BYOK=true \
+python scripts/v2_endpoint_smoke.py
+
+# V2 regression test enforced in CI
+cd backend
+python -m pytest tests/test_v2_form_coercion.py -q
+```
 
 ---
 
