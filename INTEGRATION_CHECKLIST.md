@@ -143,7 +143,7 @@ REACT_APP_API_URL=https://learnonthego-production.up.railway.app
 ```python
 # FastAPI CORS setup
 allow_origins=[
-    "https://learnonthego-frontend.vercel.app",  # Future Vercel URL
+   "https://learnonthego-bice.vercel.app",  # Active Vercel URL
     "http://localhost:3000",                     # Development
     "http://localhost:19006"                     # Expo development
 ]

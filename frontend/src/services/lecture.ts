@@ -16,13 +16,17 @@ export interface LectureRequest {
 }
 
 export interface LectureResponse {
-  id: string;
+  id?: string;
   title: string;
-  duration: number;
-  audio_url: string;
+  duration?: number;
+  audio_url?: string;
   transcript?: string;
-  created_at: string;
-  status: 'generating' | 'completed' | 'failed';
+  created_at?: string;
+  status?: 'generating' | 'completed' | 'failed';
+  dry_run?: boolean;
+  key_source?: 'environment' | 'user-encrypted-storage';
+  source?: string;
+  script?: string;
   metadata?: {
     topic: string;
     difficulty: string;
@@ -38,6 +42,12 @@ export interface LectureStatus {
   progress?: number; // 0-100
   estimated_completion?: string;
   error_message?: string;
+}
+
+export interface ApiKeyStatus {
+  can_generate_lectures: boolean;
+  missing_keys: string[];
+  setup_complete: boolean;
 }
 
 // Available Voices
@@ -58,23 +68,39 @@ export const DIFFICULTY_LEVELS = [
 
 // Lecture Service Class
 class LectureService {
-  // Generate new lecture from text topic
-  async generateLecture(request: LectureRequest): Promise<ApiResponse<LectureResponse>> {
-    console.log('🎓 Generating lecture:', request.topic);
-    
-    const response = await apiClient.post<LectureResponse>('/api/lectures/generate', request);
-    
-    if (response.success) {
-      console.log('✅ Lecture generation initiated:', response.data?.id);
-    } else {
-      console.error('❌ Lecture generation failed:', response.error);
-    }
-    
-    return response;
+  // Generate new lecture from text topic using V2 endpoints.
+  async generateLecture(
+    request: LectureRequest,
+    options?: { useByok?: boolean; dryRun?: boolean }
+  ): Promise<ApiResponse<LectureResponse>> {
+    const useByok = Boolean(options?.useByok);
+    const endpoint = useByok
+      ? '/api/lectures/generate-document-v2-byok'
+      : '/api/lectures/generate-document-v2';
+
+    // Cost-aware default strategy:
+    // - Environment path defaults to OpenAI TTS for lower-cost baseline.
+    // - BYOK path keeps ElevenLabs as premium user-provided option.
+    const ttsProvider = useByok ? 'elevenlabs' : 'openai';
+
+    const formData: Record<string, string> = {
+      document_text: request.topic,
+      duration: String(request.duration),
+      difficulty: request.difficulty,
+      llm_provider: 'openrouter',
+      tts_provider: ttsProvider,
+      voice_id: request.voice,
+      dry_run: String(options?.dryRun ?? false),
+    };
+
+    return apiClient.postForm<LectureResponse>(endpoint, formData);
   }
 
   // Create new lecture (alias for generateLecture)
-  async createLecture(request: LectureRequest): Promise<ApiResponse<LectureResponse>> {
+  async createLecture(
+    request: LectureRequest,
+    options?: { useByok?: boolean; dryRun?: boolean }
+  ): Promise<ApiResponse<LectureResponse>> {
     // Validate request first
     const validationErrors = this.validateLectureRequest(request);
     if (validationErrors.length > 0) {
@@ -84,7 +110,7 @@ class LectureService {
       };
     }
 
-    return this.generateLecture(request);
+    return this.generateLecture(request, options);
   }
 
   // Generate lecture from PDF file
@@ -114,6 +140,10 @@ class LectureService {
   // Get lecture generation status
   async getLectureStatus(lectureId: string): Promise<ApiResponse<LectureStatus>> {
     return apiClient.get<LectureStatus>(`/api/lectures/${lectureId}/status`);
+  }
+
+  async getApiKeyStatus(): Promise<ApiResponse<ApiKeyStatus>> {
+    return apiClient.get<ApiKeyStatus>('/api/api-keys/status');
   }
 
   // Get user's lecture library

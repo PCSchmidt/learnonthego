@@ -1,6 +1,6 @@
 # LearnOnTheGo Development Progress
 
-**Last Updated**: April 12, 2026  
+**Last Updated**: April 13, 2026  
 **Current Branch**: dev  
 **Phase**: Hardened MVP with V2 provider abstraction and BYOK validation - IN PROGRESS  
 **Previous**: Legacy phase notes (2025) preserved below for historical reference
@@ -15,11 +15,40 @@
 - [x] Dry-run smoke script validates both env-key and BYOK contracts
 - [x] API key storage compatibility fixed for async DB sessions
 - [x] Backend CI now executes `tests/test_v2_form_coercion.py`
+- [x] Local smoke reliability path verified on Windows:
+  - Backend in Git Bash with `JWT_SECRET_KEY` and `ENABLE_V2_PIPELINE=true`
+  - Smoke execution in PowerShell with `LOTG_TOKEN` and `LOTG_TIMEOUT_SECONDS=3`
+- [x] Local auth user created and validated for smoke flow
+- [x] Confirmed env-key V2 contract pass and expected BYOK warning when user keys are missing
+- [x] Added one-click local scripts:
+  - `scripts/start_backend_v2_local.sh`
+  - `scripts/start_backend_v2_local.ps1`
+  - `scripts/run_v2_smoke_token.sh`
+  - `scripts/run_v2_smoke_token.ps1`
+- [x] Completed strict BYOK smoke validation locally (`LOTG_STRICT_BYOK=true`) using stored user keys in dry-run mode
+- [x] Added backend regression test coverage for V2 feature flag behavior and auth smoke path
+- [x] Added backend regression checks for API key status and BYOK missing-key response contract
+- [x] Added backend API key lifecycle regression test for add/delete/replace contract behavior
+- [x] Updated backend CI workflow to run the new V2 feature-flag/auth regression suite
+- [x] Promoted deterministic local runbook to README quickstart
+- [x] Added frontend create-lecture mode-selection integration test (BYOK vs environment)
+- [x] Added cleanup guidance for placeholder BYOK keys in Testing Guide
+- [x] Implemented cost-aware default TTS strategy in frontend flow:
+  - Environment mode defaults to `openai`
+  - BYOK mode keeps `elevenlabs` as optional premium path
 
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
-- [ ] Broader backend test coverage is needed beyond the V2 coercion regression
+- [ ] Broader backend test coverage is needed beyond the current V2 regression set
 - [ ] Legacy docs from 2025 require archival to keep root documentation focused
+- [ ] Key governance: replace placeholder local BYOK keys with real user BYOK keys only when testing non-dry-run audio generation
+
+### Next Most Optimal Steps (Priority Order)
+1. [ ] Add one lightweight integration test for `scripts/run_v2_smoke_token.ps1` behavior in CI docs/runbook (expected pass/fail signatures).
+2. [x] Add backend coverage for BYOK key deletion/replacement lifecycle (`POST /api/api-keys/`, `DELETE /api/api-keys/{provider}`).
+3. [ ] Promote lifecycle suite in CI/docs as the canonical BYOK key-management contract gate.
+4. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
+5. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
 
 ### Verification Commands
 ```bash
@@ -30,9 +59,20 @@ LOTG_PASSWORD=your-password \
 LOTG_STRICT_BYOK=true \
 python scripts/v2_endpoint_smoke.py
 
+# Windows stable token path (recommended for local smoke)
+# Backend terminal:
+JWT_SECRET_KEY=local-dev-jwt-secret ENABLE_V2_PIPELINE=true \
+c:/Users/pchri/Documents/AIEngineeringProjects/.venv/Scripts/python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+# PowerShell smoke terminal:
+$env:LOTG_TOKEN="<jwt-token>"
+$env:LOTG_TIMEOUT_SECONDS="3"
+c:/Users/pchri/Documents/AIEngineeringProjects/.venv/Scripts/python.exe -u scripts/v2_endpoint_smoke.py
+
 # V2 regression test enforced in CI
 cd backend
 python -m pytest tests/test_v2_form_coercion.py -q
+python -m pytest tests/test_v2_feature_flag_and_auth_smoke.py -q
 ```
 
 ---
@@ -285,7 +325,7 @@ python -m pytest tests/test_v2_form_coercion.py -q
 
 ### Production Deployments ✅
 - **Backend**: https://learnonthego-production.up.railway.app
-- **Frontend**: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- **Frontend**: https://learnonthego-bice.vercel.app
 - **API Docs**: https://learnonthego-production.up.railway.app/docs
 
 ### Infrastructure ✅
@@ -560,7 +600,7 @@ Testing: Custom async test suite
   - Last Deploy: Auto-deploy from dev branch
   - Health Check: ✅ Passing
 
-- **Frontend**: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- **Frontend**: https://learnonthego-bice.vercel.app
   - Status: ✅ Active
   - Last Deploy: Auto-deploy from dev branch
   - Build Time: ~3 seconds

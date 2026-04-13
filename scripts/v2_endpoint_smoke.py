@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import os
-import sys
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -21,6 +21,7 @@ EMAIL = os.getenv("LOTG_EMAIL")
 PASSWORD = os.getenv("LOTG_PASSWORD")
 TOKEN = os.getenv("LOTG_TOKEN")
 STRICT_BYOK = os.getenv("LOTG_STRICT_BYOK", "false").lower() == "true"
+REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOTG_TIMEOUT_SECONDS", "8"))
 
 
 class SmokeError(Exception):
@@ -49,9 +50,14 @@ def post_form(path: str, payload: Dict[str, Any], token: Optional[str] = None) -
     return _read_response(req)
 
 
+def get_path(path: str) -> Dict[str, Any]:
+    req = urllib.request.Request(f"{BASE_URL}{path}", method="GET")
+    return _read_response(req)
+
+
 def _read_response(req: urllib.request.Request) -> Dict[str, Any]:
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             raw = response.read().decode("utf-8")
             return {"ok": True, "status": response.status, "data": json.loads(raw)}
     except urllib.error.HTTPError as err:
@@ -62,6 +68,18 @@ def _read_response(req: urllib.request.Request) -> Dict[str, Any]:
         except json.JSONDecodeError:
             data = {"detail": raw}
         return {"ok": False, "status": err.code, "data": data}
+    except (urllib.error.URLError, TimeoutError, socket.timeout) as err:
+        raise SmokeError(
+            f"Network error calling {req.full_url} (timeout={REQUEST_TIMEOUT_SECONDS}s): {err}"
+        )
+
+
+def verify_backend_reachable() -> None:
+    health = get_path("/health")
+    if not health["ok"]:
+        raise SmokeError(
+            f"Backend preflight failed at /health ({health['status']}): {health['data']}"
+        )
 
 
 def get_access_token() -> str:
@@ -115,7 +133,11 @@ def validate_success_contract(name: str, data: Dict[str, Any], expected_key_sour
 
 
 def main() -> int:
-    print(f"Using base URL: {BASE_URL}")
+    print(f"Using base URL: {BASE_URL} (timeout={REQUEST_TIMEOUT_SECONDS}s)")
+    print("Checking backend health...")
+    verify_backend_reachable()
+
+    print("Authenticating...")
     token = get_access_token()
 
     shared_form = {
@@ -127,6 +149,7 @@ def main() -> int:
         "dry_run": "true",
     }
 
+    print("Checking env-key V2 endpoint...")
     env_result = post_form("/api/lectures/generate-document-v2", shared_form, token=token)
     if not env_result["ok"]:
         raise SmokeError(
@@ -135,6 +158,7 @@ def main() -> int:
     validate_success_contract("env-key endpoint", env_result["data"], "environment")
     print("PASS: /api/lectures/generate-document-v2 contract validated")
 
+    print("Checking BYOK V2 endpoint...")
     byok_result = post_form("/api/lectures/generate-document-v2-byok", shared_form, token=token)
     if byok_result["ok"]:
         validate_success_contract("byok endpoint", byok_result["data"], "user-encrypted-storage")

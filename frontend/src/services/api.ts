@@ -6,9 +6,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Configuration
-const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'http://localhost:8000'  // Development
-  : 'https://learnonthego-production.up.railway.app'; // Production
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  (process.env.NODE_ENV === 'development'
+    ? 'http://localhost:8000'
+    : 'https://learnonthego-production.up.railway.app');
 
 // Storage Keys
 export const STORAGE_KEYS = {
@@ -136,6 +139,17 @@ class ApiClient {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async postForm<T>(endpoint: string, data: Record<string, string>): Promise<ApiResponse<T>> {
+    const params = new URLSearchParams(data);
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
     });
   }
 

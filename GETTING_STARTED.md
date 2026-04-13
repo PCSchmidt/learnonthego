@@ -5,7 +5,7 @@
 **Current Status: Phase 2b Authentication Complete - Production Ready System**
 
 ### Live Applications
-- **🌐 Frontend (React Native)**: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- **🌐 Frontend (React Native)**: https://learnonthego-bice.vercel.app
 - **⚡ Backend API**: https://learnonthego-production.up.railway.app
 - **📚 API Documentation**: https://learnonthego-production.up.railway.app/docs
 - **🔍 Health Check**: https://learnonthego-production.up.railway.app/health
@@ -287,7 +287,7 @@ docker exec -it learnonthego-backend-1 python test_authentication.py
 - **Features**: Full authentication system, lecture generation, PDF processing
 
 ### Frontend (Vercel) - ✅ Deployed
-- **URL**: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- **URL**: https://learnonthego-bice.vercel.app
 - **Status**: React Native web build deployed
 - **Ready for**: Mobile app deployment to stores
 

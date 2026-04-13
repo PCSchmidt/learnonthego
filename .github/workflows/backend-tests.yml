@@ -46,6 +46,16 @@ jobs:
       run: |
         python -m pytest tests/test_v2_form_coercion.py -q
 
+    - name: Run V2 feature flag/auth smoke regression test
+      run: |
+        python -m pytest tests/test_v2_feature_flag_and_auth_smoke.py -q
+
+    # REQUIRED BYOK KEY-MANAGEMENT GATE:
+    # proves add/replace/delete API key contract behavior.
+    - name: Run REQUIRED BYOK key lifecycle contract gate
+      run: |
+        python -m pytest tests/test_api_key_lifecycle_contract.py -q
+
   # Comment out problematic jobs for now
   # test:
   #   runs-on: ubuntu-latest

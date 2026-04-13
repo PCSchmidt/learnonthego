@@ -18,6 +18,7 @@ LearnOnTheGo is currently in a hardened MVP state with core backend capabilities
 - ✅ BYOK user-key path validated end-to-end in dry-run mode
 - ✅ API key storage path fixed for async DB usage and encryption compatibility
 - ✅ Backend CI now runs a regression test for V2 form coercion on every push/PR
+- ✅ Cost-aware TTS default strategy in create flow: environment mode defaults to OpenAI TTS, BYOK mode keeps ElevenLabs optional premium
 
 ### Completed
 - ✅ Backend API deployed on Railway: https://learnonthego-production.up.railway.app
@@ -47,6 +48,7 @@ Historical progress notes remain in phase/session documents, but this section is
 - **Customizable Parameters**: Duration (5-60 min), difficulty, voice selection
 - **Offline Playback**: Download lectures for offline listening
 - **Multi-Provider Support**: OpenRouter, OpenAI, Anthropic for LLM; ElevenLabs, Google TTS for audio
+- **Cost-Aware Routing**: Environment mode uses lower-cost default TTS, with BYOK premium provider path available
 - **Secure API Key Management**: AES-256 encrypted storage of your API keys
 - **Progressive Web App**: Works on mobile and desktop
 
@@ -132,6 +134,49 @@ JWT_SECRET_KEY=your-secret-key
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+```
+
+### 5. Deterministic Local V2 Runbook (Recommended)
+
+Use the one-click scripts to avoid local startup drift.
+
+Start backend with required V2 flags:
+
+```bash
+# Git Bash
+./scripts/start_backend_v2_local.sh
+```
+
+```powershell
+# PowerShell
+.\scripts\start_backend_v2_local.ps1
+```
+
+Run token-based smoke (fast-fail timeout defaults to 3s):
+
+```bash
+# Git Bash
+export LOTG_TOKEN="<jwt-token>"
+./scripts/run_v2_smoke_token.sh
+```
+
+```powershell
+# PowerShell
+$env:LOTG_TOKEN = "<jwt-token>"
+.\scripts\run_v2_smoke_token.ps1
+```
+
+Strict BYOK validation (requires user keys already stored in backend):
+
+```bash
+export LOTG_TOKEN="<jwt-token>"
+export LOTG_STRICT_BYOK=true
+./scripts/run_v2_smoke_token.sh
+```
+
+```powershell
+$env:LOTG_TOKEN = "<jwt-token>"
+.\scripts\run_v2_smoke_token.ps1 -StrictByok
 ```
 
 For detailed setup instructions, see [GETTING_STARTED.md](GETTING_STARTED.md).

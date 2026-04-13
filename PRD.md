@@ -132,7 +132,7 @@ To empower users to learn complex topics in an engaging, accessible audio format
 
 **Deployment URLs:**
 - **Backend**: https://learnonthego-production.up.railway.app
-- **Frontend**: https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app
+- **Frontend**: https://learnonthego-bice.vercel.app
 - **API Documentation**: https://learnonthego-production.up.railway.app/docs
 
 ---

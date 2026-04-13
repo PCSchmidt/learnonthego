@@ -179,6 +179,8 @@ passwords.txt
 # Allow code files with api_key in name
 !*api_key_routes*
 !*api_key_models*
+!scripts/run_v2_smoke_token.sh
+!scripts/run_v2_smoke_token.ps1
 .passwd
 # Allow password_utils.py and similar utility files
 !*password_utils*

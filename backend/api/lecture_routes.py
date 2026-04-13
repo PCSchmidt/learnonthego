@@ -70,7 +70,7 @@ async def generate_document_audio_v2(
     duration: int = Form(10),
     difficulty: str = Form("intermediate"),
     llm_provider: str = Form("openrouter"),
-    tts_provider: str = Form("elevenlabs"),
+    tts_provider: str = Form("openai"),
     context: Optional[str] = Form(None),
     voice_id: Optional[str] = Form(None),
     dry_run: bool = Form(False),

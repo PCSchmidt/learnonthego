@@ -14,7 +14,6 @@ module.exports = {
     extensions: ['.web.js', '.web.jsx', '.web.ts', '.web.tsx', '.js', '.jsx', '.ts', '.tsx'],
     alias: {
       'react-native$': 'react-native-web',
-      'react-native-safe-area-context': 'react-native-safe-area-context/lib/commonjs/SafeAreaContext.web.js',
     },
   },
   module: {

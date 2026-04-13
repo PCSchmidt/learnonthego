@@ -41,7 +41,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://learnonthego-frontend.vercel.app",
+        "https://learnonthego-bice.vercel.app",
         "http://localhost:3000",
         "http://localhost:19006"
     ],
@@ -272,7 +272,7 @@ async def get_development_status():
         ],
         deployment={
             "backend_url": "https://learnonthego-production.up.railway.app",
-            "frontend_url": "https://learnonthego-bzazsey5q-chris-schmidts-projects.vercel.app",
+            "frontend_url": "https://learnonthego-bice.vercel.app",
             "docs_url": "https://learnonthego-production.up.railway.app/docs",
             "last_updated": "2025-01-14",
             "build_status": "phase_1_ai_integration_complete",

@@ -16,7 +16,12 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import lectureService, { LectureRequest, AVAILABLE_VOICES, DIFFICULTY_LEVELS } from '../services/lecture';
+import lectureService, {
+  ApiKeyStatus,
+  AVAILABLE_VOICES,
+  DIFFICULTY_LEVELS,
+  LectureRequest,
+} from '../services/lecture';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 // Navigation types
@@ -33,12 +38,29 @@ const CreateLectureScreen: React.FC = () => {
   const navigation = useNavigation<CreateLectureNavigationProp>();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isStatusLoading, setIsStatusLoading] = useState(true);
+  const [useByok, setUseByok] = useState(true);
+  const [keyStatus, setKeyStatus] = useState<ApiKeyStatus | null>(null);
   const [formData, setFormData] = useState<LectureRequest>({
     topic: '',
     duration: 15,
     difficulty: 'beginner',
     voice: 'Rachel', // Default to first available voice
   });
+
+  React.useEffect(() => {
+    const loadKeyStatus = async () => {
+      setIsStatusLoading(true);
+      const response = await lectureService.getApiKeyStatus();
+      if (response.success && response.data) {
+        setKeyStatus(response.data);
+        setUseByok(response.data.setup_complete);
+      }
+      setIsStatusLoading(false);
+    };
+
+    loadKeyStatus();
+  }, []);
 
   const handleCreateLecture = async () => {
     if (!formData.topic.trim()) {
@@ -54,18 +76,25 @@ const CreateLectureScreen: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await lectureService.createLecture(formData);
+      const response = await lectureService.createLecture(formData, {
+        useByok,
+      });
       
       if (response.success && response.data) {
+        const generatedLectureId = response.data.id || `v2-${Date.now()}`;
+        const keySource = response.data.key_source === 'user-encrypted-storage'
+          ? 'BYOK secure storage'
+          : 'environment provider config';
+
         Alert.alert(
-          'Lecture Created Successfully! 🎉',
-          `"${response.data.title}" has been generated.\n\nDuration: ${formData.duration} minutes\nDifficulty: ${formData.difficulty}\n\nYour lecture is ready to play!`,
+          'Lecture Created',
+          `${response.data.title || 'V2 Lecture'} is ready.\n\nDuration: ${formData.duration} minutes\nDifficulty: ${formData.difficulty}\nMode: ${keySource}`,
           [
             {
               text: 'Play Now',
               onPress: () => {
                 // Navigate to lecture player
-                navigation.navigate('LecturePlayer', { lectureId: response.data?.id || '' });
+                navigation.navigate('LecturePlayer', { lectureId: generatedLectureId });
               },
             },
             {
@@ -75,7 +104,12 @@ const CreateLectureScreen: React.FC = () => {
           ]
         );
       } else {
-        throw new Error(response.error || 'Failed to create lecture');
+        throw new Error(
+          response.error ||
+            (useByok
+              ? 'Failed to create lecture using BYOK path. Verify your provider keys in settings.'
+              : 'Failed to create lecture')
+        );
       }
     } catch (error) {
       console.error('Error creating lecture:', error);
@@ -116,6 +150,40 @@ const CreateLectureScreen: React.FC = () => {
           maxLength={500}
         />
         <Text style={styles.charCount}>{formData.topic.length}/500</Text>
+
+        <View style={styles.modeCard}>
+          <Text style={styles.modeTitle}>Generation Mode</Text>
+          {isStatusLoading ? (
+            <Text style={styles.modeSubtle}>Checking key status...</Text>
+          ) : (
+            <>
+              <Text style={styles.modeSubtle}>
+                {keyStatus?.setup_complete
+                  ? 'BYOK keys detected for OpenRouter and ElevenLabs.'
+                  : `Missing keys: ${(keyStatus?.missing_keys || []).join(', ') || 'unknown'}`}
+              </Text>
+              <View style={styles.modeActions}>
+                <TouchableOpacity
+                  style={[styles.modeButton, useByok && styles.modeButtonActive]}
+                  onPress={() => setUseByok(true)}
+                  disabled={!keyStatus?.setup_complete}
+                >
+                  <Text style={[styles.modeButtonText, useByok && styles.modeButtonTextActive]}>
+                    BYOK
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modeButton, !useByok && styles.modeButtonActive]}
+                  onPress={() => setUseByok(false)}
+                >
+                  <Text style={[styles.modeButtonText, !useByok && styles.modeButtonTextActive]}>
+                    Environment
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
 
         <Text style={styles.label}>Duration (minutes)</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.durationScroll}>
@@ -181,13 +249,9 @@ const CreateLectureScreen: React.FC = () => {
         </ScrollView>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>🎓 AI-Powered Lecture Generation</Text>
+          <Text style={styles.infoTitle}>AI-Powered Lecture Generation</Text>
           <Text style={styles.infoText}>
-            Your lecture will be generated using:
-            {'\n'}• Advanced AI for structured content
-            {'\n'}• Professional text-to-speech conversion  
-            {'\n'}• Personalized to your chosen difficulty
-            {'\n'}• Ready in under 30 seconds
+            Your lecture uses the V2 pipeline with provider abstraction and robust validation.
           </Text>
         </View>
 
@@ -201,7 +265,7 @@ const CreateLectureScreen: React.FC = () => {
               <Text style={styles.loadingText}>Generating your lecture...</Text>
             </View>
           ) : (
-            <Text style={styles.createButtonText}>🚀 Create Lecture</Text>
+            <Text style={styles.createButtonText}>Create Lecture</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -302,7 +366,7 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1e40af',
     marginBottom: 8,
   },
@@ -329,7 +393,50 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
+  },
+  modeCard: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  modeTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 6,
+  },
+  modeSubtle: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginBottom: 10,
+  },
+  modeActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modeButton: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modeButtonActive: {
+    backgroundColor: '#0f172a',
+    borderColor: '#0f172a',
+  },
+  modeButtonText: {
+    color: '#0f172a',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  modeButtonTextActive: {
+    color: '#f8fafc',
   },
   // Voice Selection Styles
   voiceScroll: {
