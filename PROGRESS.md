@@ -106,6 +106,110 @@ python -m pytest tests/test_v2_form_coercion.py -q
 python -m pytest tests/test_v2_feature_flag_and_auth_smoke.py -q
 ```
 
+### Phase A.5 Sprint Checklist (Execution Board)
+
+Status legend:
+- `not-started`
+- `in-progress`
+- `blocked`
+- `completed`
+
+Owner placeholder format:
+- `@owner-backend`
+- `@owner-frontend`
+- `@owner-product`
+- `@owner-qa`
+
+#### A. Product + API Contract
+
+- [ ] `A5-001` Source intake contract
+  - Owner: `@owner-product`
+  - Status: `not-started`
+  - Deliverable: normalized schema for text/file/url input with source metadata
+
+- [ ] `A5-002` Summary/script response contract
+  - Owner: `@owner-backend`
+  - Status: `not-started`
+  - Deliverable: response shape includes script sections, duration estimate, citations array
+
+- [ ] `A5-003` Generation mode contract
+  - Owner: `@owner-backend`
+  - Status: `not-started`
+  - Deliverable: explicit `execution_mode` in responses (`byok` or `environment`)
+
+#### B. Frontend UX + Interaction
+
+- [ ] `A5-010` Create screen source switcher
+  - Owner: `@owner-frontend`
+  - Status: `not-started`
+  - Deliverable: unified source intake UI for Text/File/URL paths
+
+- [ ] `A5-011` Model selection UX
+  - Owner: `@owner-frontend`
+  - Status: `not-started`
+  - Deliverable: presets (`Cost Saver`, `Balanced`, `High Fidelity`) + advanced raw model toggle
+
+- [ ] `A5-012` BYOK status and fallback messaging
+  - Owner: `@owner-frontend`
+  - Status: `not-started`
+  - Deliverable: clear BYOK key status and explicit fallback indicator in UI
+
+- [ ] `A5-013` Script preview and confirm flow
+  - Owner: `@owner-frontend`
+  - Status: `not-started`
+  - Deliverable: pre-audio preview step with regenerate option
+
+#### C. Backend Services + Validation
+
+- [ ] `A5-020` File ingestion hardening
+  - Owner: `@owner-backend`
+  - Status: `not-started`
+  - Deliverable: robust parsing/validation for `.txt`, `.md`, `.pdf` with actionable errors
+
+- [ ] `A5-021` URL diagnostics scaffold
+  - Owner: `@owner-backend`
+  - Status: `not-started`
+  - Deliverable: structured URL diagnostics (`unreachable`, `unsupported`, `no transcript`)
+
+- [ ] `A5-022` Duration best-effort policy
+  - Owner: `@owner-backend`
+  - Status: `not-started`
+  - Deliverable: script sizing heuristics with tolerance tracking
+
+#### D. Testing + Reliability
+
+- [ ] `A5-030` Frontend integration tests
+  - Owner: `@owner-qa`
+  - Status: `not-started`
+  - Deliverable: tests for source switching, model presets, fallback UI, preview rendering
+
+- [ ] `A5-031` Backend contract tests
+  - Owner: `@owner-qa`
+  - Status: `not-started`
+  - Deliverable: schema + fallback contract tests in CI
+
+- [ ] `A5-032` Smoke scenario expansion
+  - Owner: `@owner-qa`
+  - Status: `not-started`
+  - Deliverable: smoke signatures for each supported source type
+
+#### Milestone Tracking
+
+- [ ] `M1` Contracts + source intake scaffold
+  - Scope: `A5-001`, `A5-010`, `A5-021`
+  - Owner: `@owner-product` + `@owner-frontend` + `@owner-backend`
+  - Status: `not-started`
+
+- [ ] `M2` Model/BYOK + preview
+  - Scope: `A5-003`, `A5-011`, `A5-012`, `A5-013`
+  - Owner: `@owner-frontend` + `@owner-backend`
+  - Status: `not-started`
+
+- [ ] `M3` Reliability gates
+  - Scope: `A5-030`, `A5-031`, `A5-032`
+  - Owner: `@owner-qa`
+  - Status: `not-started`
+
 ---
 
 ## ✅ Phase 2d: React Native Web Deployment COMPLETED (100%)
