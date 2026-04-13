@@ -110,6 +110,7 @@ python -m pytest tests/test_v2_feature_flag_and_auth_smoke.py -q
 
 Status legend:
 - `not-started`
+- `queued`
 - `in-progress`
 - `blocked`
 - `completed`
@@ -120,11 +121,17 @@ Owner placeholder format:
 - `@owner-product`
 - `@owner-qa`
 
+Initial sprint sequence (kickoff):
+1. `A5-001` -> `in-progress`
+2. `A5-010` -> `queued`
+3. `A5-021` -> `queued`
+
 #### A. Product + API Contract
 
 - [ ] `A5-001` Source intake contract
   - Owner: `@owner-product`
-  - Status: `not-started`
+  - Status: `in-progress`
+  - Sequence: `#1`
   - Deliverable: normalized schema for text/file/url input with source metadata
 
 - [ ] `A5-002` Summary/script response contract
@@ -141,7 +148,8 @@ Owner placeholder format:
 
 - [ ] `A5-010` Create screen source switcher
   - Owner: `@owner-frontend`
-  - Status: `not-started`
+  - Status: `queued`
+  - Sequence: `#2`
   - Deliverable: unified source intake UI for Text/File/URL paths
 
 - [ ] `A5-011` Model selection UX
@@ -168,7 +176,8 @@ Owner placeholder format:
 
 - [ ] `A5-021` URL diagnostics scaffold
   - Owner: `@owner-backend`
-  - Status: `not-started`
+  - Status: `queued`
+  - Sequence: `#3`
   - Deliverable: structured URL diagnostics (`unreachable`, `unsupported`, `no transcript`)
 
 - [ ] `A5-022` Duration best-effort policy
@@ -198,7 +207,7 @@ Owner placeholder format:
 - [ ] `M1` Contracts + source intake scaffold
   - Scope: `A5-001`, `A5-010`, `A5-021`
   - Owner: `@owner-product` + `@owner-frontend` + `@owner-backend`
-  - Status: `not-started`
+  - Status: `in-progress`
 
 - [ ] `M2` Model/BYOK + preview
   - Scope: `A5-003`, `A5-011`, `A5-012`, `A5-013`
