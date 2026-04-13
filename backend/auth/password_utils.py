@@ -1,12 +1,19 @@
 """
-Password hashing and verification utilities
-Phase 2b: Secure password handling with bcrypt
+Password hashing and verification utilities.
+
+Uses pbkdf2_sha256 for new hashes to avoid bcrypt backend incompatibilities
+on newer Python environments while preserving verification of legacy bcrypt
+hashes that may already exist in the database.
 """
 
 from passlib.context import CryptContext
 
-# Password context for bcrypt hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Prefer pbkdf2 for new hashes; keep bcrypt for backward verification.
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256", "bcrypt"],
+    default="pbkdf2_sha256",
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:
