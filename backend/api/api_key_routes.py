@@ -47,6 +47,7 @@ async def store_api_key(
     
     Securely stores user's API key with AES-256 encryption
     """
+    user_id = getattr(current_user, "id", None)
     try:
         # Validate provider
         try:
@@ -81,7 +82,7 @@ async def store_api_key(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to store API key for user {current_user.id}: {str(e)}")
+        logger.error(f"Failed to store API key for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to store API key")
 
 

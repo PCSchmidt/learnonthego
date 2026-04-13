@@ -3,7 +3,10 @@ API Key Management Service
 Handles CRUD operations for user API keys with encryption
 """
 
-from typing import List, Optional, Dict
+from typing import Any, Dict, List, Optional
+import inspect
+import hashlib
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from models.lecture_orm import UserAPIKey, APIProvider
 from models.user_orm import User
@@ -19,6 +22,27 @@ class APIKeyService:
     
     def __init__(self):
         self.encryption_service = create_encryption_service()
+
+    async def _execute(self, db: Any, stmt):
+        result = db.execute(stmt)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    async def _commit(self, db: Any) -> None:
+        result = db.commit()
+        if inspect.isawaitable(result):
+            await result
+
+    async def _rollback(self, db: Any) -> None:
+        result = db.rollback()
+        if inspect.isawaitable(result):
+            await result
+
+    async def _refresh(self, db: Any, obj: Any) -> None:
+        result = db.refresh(obj)
+        if inspect.isawaitable(result):
+            await result
     
     async def store_api_key(
         self,
@@ -43,13 +67,18 @@ class APIKeyService:
         """
         try:
             # Encrypt the API key
-            encrypted_key, key_hash = self.encryption_service.encrypt_api_key(api_key, user_id)
+            encrypted_key = self.encryption_service.encrypt_api_key(api_key, str(user_id))
+            key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
             
             # Check if user already has a key for this provider
-            existing_key = db.query(UserAPIKey).filter(
-                UserAPIKey.user_id == user_id,
-                UserAPIKey.provider == provider
-            ).first()
+            existing_key_result = await self._execute(
+                db,
+                select(UserAPIKey).where(
+                    UserAPIKey.user_id == user_id,
+                    UserAPIKey.provider == provider,
+                ),
+            )
+            existing_key = existing_key_result.scalar_one_or_none()
             
             if existing_key:
                 # Update existing key
@@ -59,8 +88,8 @@ class APIKeyService:
                 existing_key.is_valid = True
                 existing_key.validation_error = None
                 existing_key.updated_at = datetime.utcnow()
-                db.commit()
-                db.refresh(existing_key)
+                await self._commit(db)
+                await self._refresh(db, existing_key)
                 logger.info(f"Updated API key for user {user_id}, provider {provider.value}")
                 return existing_key
             else:
@@ -74,13 +103,13 @@ class APIKeyService:
                     is_valid=True
                 )
                 db.add(db_api_key)
-                db.commit()
-                db.refresh(db_api_key)
+                await self._commit(db)
+                await self._refresh(db, db_api_key)
                 logger.info(f"Stored new API key for user {user_id}, provider {provider.value}")
                 return db_api_key
                 
         except Exception as e:
-            db.rollback()
+            await self._rollback(db)
             logger.error(f"Failed to store API key for user {user_id}: {str(e)}")
             raise
     
@@ -102,11 +131,15 @@ class APIKeyService:
             Decrypted API key or None if not found
         """
         try:
-            db_api_key = db.query(UserAPIKey).filter(
-                UserAPIKey.user_id == user_id,
-                UserAPIKey.provider == provider,
-                UserAPIKey.is_valid == True
-            ).first()
+            db_api_key_result = await self._execute(
+                db,
+                select(UserAPIKey).where(
+                    UserAPIKey.user_id == user_id,
+                    UserAPIKey.provider == provider,
+                    UserAPIKey.is_valid == True,
+                ),
+            )
+            db_api_key = db_api_key_result.scalar_one_or_none()
             
             if not db_api_key:
                 return None
@@ -120,7 +153,7 @@ class APIKeyService:
             # Update last used timestamp
             db_api_key.last_used_at = datetime.utcnow()
             db_api_key.usage_count += 1
-            db.commit()
+            await self._commit(db)
             
             return decrypted_key
             
@@ -143,9 +176,13 @@ class APIKeyService:
         Returns:
             List of UserAPIKey instances
         """
-        return db.query(UserAPIKey).filter(
-            UserAPIKey.user_id == user_id
-        ).order_by(UserAPIKey.created_at.desc()).all()
+        result = await self._execute(
+            db,
+            select(UserAPIKey)
+            .where(UserAPIKey.user_id == user_id)
+            .order_by(UserAPIKey.created_at.desc()),
+        )
+        return list(result.scalars().all())
     
     async def delete_api_key(
         self,
@@ -165,21 +202,25 @@ class APIKeyService:
             True if deleted, False if not found
         """
         try:
-            db_api_key = db.query(UserAPIKey).filter(
-                UserAPIKey.user_id == user_id,
-                UserAPIKey.provider == provider
-            ).first()
+            db_api_key_result = await self._execute(
+                db,
+                select(UserAPIKey).where(
+                    UserAPIKey.user_id == user_id,
+                    UserAPIKey.provider == provider,
+                ),
+            )
+            db_api_key = db_api_key_result.scalar_one_or_none()
             
             if db_api_key:
                 db.delete(db_api_key)
-                db.commit()
+                await self._commit(db)
                 logger.info(f"Deleted API key for user {user_id}, provider {provider.value}")
                 return True
             
             return False
             
         except Exception as e:
-            db.rollback()
+            await self._rollback(db)
             logger.error(f"Failed to delete API key for user {user_id}: {str(e)}")
             raise
     
@@ -215,10 +256,14 @@ class APIKeyService:
             is_valid = await test_function(api_key)
             
             # Update validation status in database
-            db_api_key = db.query(UserAPIKey).filter(
-                UserAPIKey.user_id == user_id,
-                UserAPIKey.provider == provider
-            ).first()
+            db_api_key_result = await self._execute(
+                db,
+                select(UserAPIKey).where(
+                    UserAPIKey.user_id == user_id,
+                    UserAPIKey.provider == provider,
+                ),
+            )
+            db_api_key = db_api_key_result.scalar_one_or_none()
             
             if db_api_key:
                 db_api_key.is_valid = is_valid
@@ -227,7 +272,7 @@ class APIKeyService:
                     db_api_key.validation_error = "API key validation failed"
                 else:
                     db_api_key.validation_error = None
-                db.commit()
+                await self._commit(db)
             
             return is_valid
             

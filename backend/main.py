@@ -12,7 +12,7 @@ FastAPI application with OpenRouter LLM integration for lecture generation
 
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 import uvicorn
 import os
@@ -283,11 +283,11 @@ async def get_development_status():
 # Error handlers
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    return {"detail": "Endpoint not found"}
+    return JSONResponse(status_code=404, content={"detail": "Endpoint not found"})
 
 @app.exception_handler(500)
 async def internal_error_handler(request, exc):
-    return {"detail": "Internal server error"}
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
