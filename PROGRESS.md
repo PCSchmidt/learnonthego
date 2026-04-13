@@ -36,12 +36,43 @@
 - [x] Implemented cost-aware default TTS strategy in frontend flow:
   - Environment mode defaults to `openai`
   - BYOK mode keeps `elevenlabs` as optional premium path
+- [x] Restored Railway backend service health and startup (JWT secret configured)
+- [x] Validated production authentication end-to-end:
+  - Login path confirmed working
+  - Registration path confirmed working
+- [x] Fixed frontend register payload contract to include `confirm_password`
 
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
 - [ ] Broader backend test coverage is needed beyond the current V2 regression set
 - [ ] Legacy docs from 2025 require archival to keep root documentation focused
 - [ ] Key governance: replace placeholder local BYOK keys with real user BYOK keys only when testing non-dry-run audio generation
+- [ ] BYOK UX is not yet productized for users (status, failure reasons, guided setup)
+- [ ] Multi-source ingestion (URL/video/podcast) not yet implemented in product flow
+
+### Newly Confirmed Product Direction (April 2026)
+
+- Build target: content-to-podcast workflow with source options:
+  - pasted text
+  - file upload
+  - YouTube URL
+  - podcast URL
+- User controls:
+  - AI model selection
+  - voice selection
+  - duration target
+- Output objective:
+  - summarized/scripted content suitable for generated podcast audio
+
+### Product Questions to Resolve Before Implementation Lock
+
+1. Which source types are in first production release?
+2. What legal boundaries apply for third-party media ingestion?
+3. Spotify/podcast ingestion scope: RSS/transcript-first only?
+4. Model selection UX: raw model list vs curated presets?
+5. Duration target strictness: hard target vs best effort?
+6. BYOK fallback behavior when user keys are missing/invalid?
+7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add one lightweight integration test for `scripts/run_v2_smoke_token.ps1` behavior in CI docs/runbook (expected pass/fail signatures).

@@ -173,6 +173,7 @@ api_keys.txt
 .api_keys
 *secret*
 *token*
+!frontend/src/theme/tokens.ts
 password.txt
 passwords.txt
 .password

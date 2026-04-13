@@ -139,6 +139,92 @@ To empower users to learn complex topics in an engaging, accessible audio format
 
 ## 2. Features and Requirements
 
+### 2.0 Feasibility Statement (April 2026)
+
+The requested workflow is feasible and aligns with the current architecture:
+
+- Input sources: pasted text, file upload, and external URLs
+- Analysis: user-selectable AI model/provider
+- Output shaping: summarized script with configurable duration and style
+- Audio generation: user-selectable voice and provider path (environment or BYOK)
+
+Current system status:
+
+- Authentication and deployment are operational
+- BYOK storage and validation contracts exist
+- Generation pipeline exists but must be productized for the full multi-source journey
+
+### 2.0.1 New Product Capability: Multi-Source Podcast Generation
+
+Users can create a generated audio lecture/podcast from one of four inputs:
+
+- Pasted text
+- Uploaded file (PDF first, additional formats phased)
+- YouTube URL
+- Podcast URL (Spotify support subject to legal/technical constraints)
+
+The user then selects:
+
+- AI model/provider for analysis and script generation
+- Voice/provider for TTS
+- Target duration and difficulty/tone
+
+The system produces:
+
+- Structured summary/script
+- Audio output generated from that summary/script
+
+### 2.0.2 Delivery Phases for This Capability
+
+Phase 1 (MVP+):
+
+- Pasted text + PDF upload
+- Model selection from supported providers
+- Voice and duration controls
+- Script preview + audio generation
+
+Phase 2:
+
+- YouTube URL ingestion (transcript-first path)
+- URL validation and source diagnostics
+
+Phase 3:
+
+- Podcast URL ingestion (RSS/public transcript-first)
+- Provider-specific handling and fallback UX when transcript/content is unavailable
+
+### 2.0.3 Required Product Decisions (Blocking Questions)
+
+1. Source support policy:
+- Which source types are in first release: text + PDF only, or include YouTube immediately?
+
+2. Legal/compliance boundaries:
+- Are we allowed to process full third-party audio/video content, or only transcripts/metadata supplied by user or publicly available?
+
+3. Spotify ingestion policy:
+- Do we support only RSS/public transcript flows first, with explicit "no transcript found" behavior?
+
+4. Model selection UX:
+- Show provider/model names directly, or provide curated presets (Cost Saver, Balanced, Best Quality)?
+
+5. Duration control semantics:
+- Hard duration target (strict +/- small tolerance) or best-effort duration?
+
+6. Summary depth:
+- Should output prefer concise briefings, full lesson narratives, or user-selectable depth presets?
+
+7. BYOK behavior:
+- If BYOK is missing/invalid, do we auto-fallback to environment keys or require user action?
+
+8. Cost governance:
+- Need per-run estimate and/or usage budget caps before generation?
+
+9. File constraints:
+- What file types and size limits are acceptable for initial release beyond PDF?
+
+10. Trust and citation requirements:
+- Must summaries include citations/source excerpts when available?
+
 ### 2.1 Core Features
 
 #### 1. Lecture Generation

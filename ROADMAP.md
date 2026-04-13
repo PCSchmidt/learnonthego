@@ -62,6 +62,49 @@ Target window: 1-2 weeks
 - [ ] Core user-facing screens meet the professional UI mandate (auth/create/player/library)
 - [ ] No manual backend hotfixes are needed to demo the core flow
 
+## Phase A.5 (Immediate): BYOK Productization + Multi-Source Ingestion Foundation
+
+Goal: convert current backend/auth foundations into a user-complete content-to-podcast workflow.
+
+Target window: 1 week
+
+### Checklist
+
+- [ ] Add explicit BYOK setup status panel in create flow (connected/missing/invalid)
+- [ ] Add model selection UX with provider + model mapping
+- [ ] Add source type switcher (Text, PDF, URL)
+- [ ] Implement URL intake validator and source diagnostics surface
+- [ ] Add script preview before audio generation
+- [ ] Add generation mode explanation (Environment vs BYOK) with fallback policy
+- [ ] Add production telemetry for source type, model choice, duration target, and generation outcome
+
+### Exit Criteria
+
+- [ ] User can produce audio from pasted text and PDF in production UI
+- [ ] User can choose model, voice, and duration with clear defaults
+- [ ] BYOK status and failure reasons are understandable without log inspection
+- [ ] URL ingestion foundation is in place with explicit unsupported-source messaging
+
+## Phase A.6 (Next): External Source Ingestion (YouTube + Podcast URL)
+
+Goal: support URL-driven generation workflows with legal/compliance-safe implementation.
+
+Target window: 1-2 weeks after Phase A.5
+
+### Checklist
+
+- [ ] Implement YouTube transcript-first ingestion path
+- [ ] Implement podcast URL ingestion using RSS/public transcript-first approach
+- [ ] Add source-availability fallbacks when transcript/content cannot be retrieved
+- [ ] Add citation/source metadata in generated script when available
+- [ ] Add dedicated tests for URL parsing, retrieval failures, and timeout handling
+
+### Exit Criteria
+
+- [ ] YouTube URL generation works reliably for supported transcript scenarios
+- [ ] Podcast URL generation works for supported RSS/transcript scenarios
+- [ ] Unsupported or inaccessible sources fail with actionable user messaging
+
 ## Phase B (Next): Reliability and Test Coverage Expansion
 
 Goal: convert current backend stability into repeatable, CI-enforced reliability across core flows.

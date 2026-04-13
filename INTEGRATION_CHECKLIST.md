@@ -1,6 +1,78 @@
 # Integration Checklist - LearnOnTheGo
 **Last Updated**: July 19, 2025
 
+## 2026 Scope Lock Checklist (Current)
+
+Status key:
+- Decided: confirmed by product owner
+- Recommendation: suggested default to unblock implementation
+- Pending: requires final explicit decision
+
+### 1) V1 source types
+- Input from product owner: include copy/pasted text, `.txt`, `.pdf`, `.md`, YouTube videos, URLs to papers, links to podcasts.
+- Recommended implementation split:
+   - v1a (ship first): pasted text + `.txt` + `.md` + `.pdf`
+   - v1b: YouTube transcript-first URL ingestion
+   - v1c: podcast URL ingestion (RSS/public transcript-first)
+- Status: Decided (broad scope), phased delivery recommended.
+
+### 2) Legal/compliance boundary
+- Input from product owner: full media processing sounds desirable.
+- Recommendation:
+   - v1 policy: transcript/text-first processing only for third-party sources.
+   - v2 policy: full media ingestion after legal review and explicit terms update.
+- Reason: transcript-first materially reduces copyright/platform-risk and speeds delivery.
+- Status: Pending final legal stance; recommendation provided.
+
+### 3) Spotify/podcast scope
+- Input from product owner: audio or text via URL most likely.
+- Recommendation:
+   - Start with URL -> RSS/public transcript/text extraction path.
+   - Show clear failure state when transcript/content is not available.
+   - Defer direct platform-audio processing until policy and licensing are approved.
+- Status: Pending exact ingestion boundary; recommendation provided.
+
+### 4) Model-selection UX
+- Input from product owner: requested recommendation.
+- Recommendation (best of both worlds):
+   - Default UX: curated presets (`Cost Saver`, `Balanced`, `High Fidelity`).
+   - Advanced toggle: raw provider/model dropdown for power users.
+- Status: Recommendation.
+
+### 5) Duration policy
+- Input from product owner: best effort is fine.
+- Decision:
+   - Best-effort duration target with tolerance window.
+   - Suggested tolerance: +/- 20% for v1.
+- Status: Decided.
+
+### 6) BYOK fallback behavior
+- Input from product owner: fallback is a good idea.
+- Decision:
+   - If BYOK keys are missing/invalid, fallback to environment provider path.
+   - UI must show explicit mode used (`BYOK` vs `Environment`).
+- Status: Decided.
+
+### 7) Citation requirement
+- Input from product owner: requested recommendation.
+- Recommendation:
+   - Enable citations by default for URL/document-derived summaries.
+   - Optional toggle off for pure topic-generation mode.
+   - For unsupported sources, display `no citations available` explicitly.
+- Status: Recommendation.
+
+### Build Scope Lock Output (Operational)
+
+- Phase A.5 build includes:
+   - Source intake for text, `.txt`, `.md`, `.pdf`
+   - URL ingestion framework + diagnostics
+   - Model preset UX with advanced model override
+   - BYOK fallback and explicit runtime mode indicator
+   - Best-effort duration targeting
+   - Citation-ready response shape
+
+---
+
 ## 🎯 **DEPLOYMENT STATUS OVERVIEW**
 
 ### ✅ **COMPLETED - Backend (Railway)**
