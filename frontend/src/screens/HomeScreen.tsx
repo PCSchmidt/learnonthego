@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -112,87 +113,104 @@ const HomeScreen: React.FC = () => {
   return (
     <ScrollView 
       style={styles.container}
+      contentContainerStyle={styles.contentContainer}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#d7bf89"
+          colors={['#d7bf89']}
+          progressBackgroundColor="#0f131b"
+        />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome back, {user?.full_name || 'User'}!</Text>
-        <Text style={styles.subtitle}>
-          Ready to create your next audio lecture?
-        </Text>
-        <View style={styles.userInfo}>
-          <Text style={styles.userEmail}>{user?.email}</Text>
-          <Text style={styles.userTier}>
-            {user?.subscription_tier?.toUpperCase() || 'FREE'} PLAN
-          </Text>
-        </View>
-      </View>
+      <View style={styles.backgroundGlowA} />
+      <View style={styles.backgroundGlowB} />
+      <View style={styles.shell}>
+        <View style={styles.heroSection}>
+          <Text style={styles.eyebrow}>LearnOnTheGo Dashboard</Text>
+          <Text style={styles.title}>Welcome back, {user?.full_name || 'Member'}</Text>
+          <Text style={styles.subtitle}>Your private command center for AI lecture creation.</Text>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleCreateLecture}>
-          <Text style={styles.primaryButtonText}>Create New Lecture</Text>
-        </TouchableOpacity>
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleTestAPI}>
-            <Text style={styles.secondaryButtonText}>Test Backend</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleSettings}>
-            <Text style={styles.secondaryButtonText}>Settings</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.recentSection}>
-        <Text style={styles.sectionTitle}>Your Lectures</Text>
-        
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#6366f1" />
-            <Text style={styles.loadingText}>Loading your lectures...</Text>
+          <View style={styles.userInfoRow}>
+            <View style={styles.userInfoBlock}>
+              <Text style={styles.userInfoLabel}>Account Email</Text>
+              <Text style={styles.userEmail}>{user?.email || 'Not available'}</Text>
+            </View>
+            <View style={styles.userInfoBlock}>
+              <Text style={styles.userInfoLabel}>Tier</Text>
+              <Text style={styles.userTier}>{user?.subscription_tier?.toUpperCase() || 'FREE'} PLAN</Text>
+            </View>
           </View>
-        ) : lectures.length > 0 ? (
-          lectures.map((lecture) => (
-            <TouchableOpacity
-              key={lecture.id}
-              style={styles.lectureCard}
-              onPress={() => handleLecturePress(lecture.id)}
-            >
-              <Text style={styles.lectureTitle}>{lecture.title}</Text>
-              <Text style={styles.lectureDuration}>{lecture.duration} minutes</Text>
-              <Text style={styles.lectureDate}>
-                {new Date(lecture.created_at).toLocaleDateString()}
-              </Text>
+        </View>
+
+        <View style={styles.actionPanel}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleCreateLecture}>
+            <Text style={styles.primaryButtonText}>Create New Lecture</Text>
+          </TouchableOpacity>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleTestAPI}>
+              <Text style={styles.secondaryButtonText}>System Check</Text>
             </TouchableOpacity>
-          ))
-        ) : (
-          <View style={styles.placeholderCard}>
-            <Text style={styles.placeholderText}>
-              No lectures yet. Create your first lecture to get started!
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleSettings}>
+              <Text style={styles.secondaryButtonText}>Settings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.recentSection}>
+          <Text style={styles.sectionTitle}>Lecture Library</Text>
+        
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#d7bf89" />
+              <Text style={styles.loadingText}>Loading your lectures...</Text>
+            </View>
+          ) : lectures.length > 0 ? (
+            lectures.map((lecture) => (
+              <TouchableOpacity
+                key={lecture.id}
+                style={styles.lectureCard}
+                onPress={() => handleLecturePress(lecture.id)}
+              >
+                <Text style={styles.lectureTitle}>{lecture.title}</Text>
+                <Text style={styles.lectureDuration}>{lecture.duration} minutes</Text>
+                <Text style={styles.lectureDate}>
+                  {new Date(lecture.created_at).toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.placeholderCard}>
+              <Text style={styles.placeholderText}>
+                No lectures yet. Create your first premium lecture session to get started.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.featuresSection}>
+          <Text style={styles.sectionTitle}>Platform Status</Text>
+          <View style={styles.featureItem}>
+            <Text style={styles.featureTag}>Live</Text>
+            <Text style={styles.featureTitle}>Core Lecture Workflow</Text>
+            <Text style={styles.featureDescription}>
+              Topic intake, prompt enrichment, and AI-powered generation are active.
             </Text>
           </View>
-        )}
-      </View>
-
-      <View style={styles.featuresSection}>
-        <Text style={styles.sectionTitle}>Phase 0 Features</Text>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureTitle}>✅ Basic Text-to-Lecture</Text>
-          <Text style={styles.featureDescription}>
-            Enter any topic and generate a mock lecture
-          </Text>
-        </View>
-        <View style={styles.featureItem}>
-          <Text style={styles.featureTitle}>🔄 Coming in Phase 1</Text>
-          <Text style={styles.featureDescription}>
-            PDF processing, real TTS, user authentication
-          </Text>
+          <View style={styles.featureItem}>
+            <Text style={styles.featureTag}>Roadmap</Text>
+            <Text style={styles.featureTitle}>Expanded Playback Suite</Text>
+            <Text style={styles.featureDescription}>
+              Advanced controls, download experience, and richer session analytics.
+            </Text>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -202,197 +220,244 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#06070b',
   },
-  header: {
-    padding: 24,
-    backgroundColor: '#6366f1',
-    alignItems: 'center',
+  contentContainer: {
+    padding: 18,
+    paddingBottom: 24,
+  },
+  backgroundGlowA: {
+    position: 'absolute',
+    top: -80,
+    left: -60,
+    width: 240,
+    height: 240,
+    backgroundColor: 'rgba(198, 168, 106, 0.08)',
+  },
+  backgroundGlowB: {
+    position: 'absolute',
+    bottom: 80,
+    right: -100,
+    width: 280,
+    height: 280,
+    backgroundColor: 'rgba(155, 166, 197, 0.08)',
+  },
+  shell: {
+    width: '100%',
+    maxWidth: 1180,
+    alignSelf: 'center',
+  },
+  heroSection: {
+    borderWidth: 1,
+    borderColor: '#242a37',
+    backgroundColor: '#0f131b',
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    marginBottom: 14,
+  },
+  eyebrow: {
+    color: '#d7bf89',
+    fontSize: 12,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    marginBottom: 10,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#f4efe4',
+    fontSize: 46,
+    lineHeight: 50,
+    fontWeight: '600',
+    fontFamily: 'Cormorant Garamond',
     marginBottom: 8,
-    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#e0e7ff',
-    textAlign: 'center',
+    color: '#aeb6c7',
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: 18,
   },
-  userInfo: {
-    alignItems: 'center',
-    gap: 4,
+  userInfoRow: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    gap: 10,
+  },
+  userInfoBlock: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#2b3240',
+    backgroundColor: '#121824',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  userInfoLabel: {
+    color: '#7e8798',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    marginBottom: 6,
   },
   userEmail: {
     fontSize: 14,
-    color: '#e0e7ff',
+    color: '#d6dbe6',
     fontWeight: '500',
   },
   userTier: {
     fontSize: 12,
-    color: '#10b981',
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    color: '#d7bf89',
+    fontWeight: '700',
+    letterSpacing: 0.7,
   },
-  version: {
-    fontSize: 14,
-    color: '#e0e7ff',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  phaseStatus: {
-    fontSize: 12,
-    color: '#10b981',
-    textAlign: 'center',
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  actionButtons: {
-    padding: 20,
-    gap: 12,
+  actionPanel: {
+    borderWidth: 1,
+    borderColor: '#242a37',
+    backgroundColor: '#0b0f16',
+    padding: 16,
+    marginBottom: 14,
+    gap: 10,
   },
   primaryButton: {
-    backgroundColor: '#6366f1',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    backgroundColor: '#d7bf89',
+    borderWidth: 1,
+    borderColor: '#a9905d',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     alignItems: 'center',
-    shadowColor: '#6366f1',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#11151e',
+    fontSize: 14,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   secondaryButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    backgroundColor: '#121824',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderColor: '#2b3240',
+    flex: 1,
   },
   secondaryButtonText: {
-    color: '#6366f1',
-    fontSize: 16,
+    color: '#e0e4ed',
+    fontSize: 12,
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   recentSection: {
-    padding: 20,
+    borderWidth: 1,
+    borderColor: '#242a37',
+    backgroundColor: '#0f131b',
+    padding: 16,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#f2ecdf',
+    fontFamily: 'Cormorant Garamond',
     marginBottom: 12,
   },
   placeholderCard: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
+    backgroundColor: '#111722',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#2b3240',
     borderStyle: 'dashed',
-    alignItems: 'center',
   },
   placeholderText: {
-    color: '#6b7280',
-    fontSize: 16,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    color: '#aeb6c7',
+    fontSize: 14,
+    lineHeight: 20,
   },
   featuresSection: {
-    padding: 20,
-    paddingTop: 0,
+    borderWidth: 1,
+    borderColor: '#242a37',
+    backgroundColor: '#0f131b',
+    padding: 16,
   },
   featureItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111722',
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#6366f1',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#2b3240',
+  },
+  featureTag: {
+    color: '#d7bf89',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
   featureTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f0eadb',
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#a8b0c0',
     lineHeight: 20,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
   },
   logoutButton: {
-    backgroundColor: '#ef4444',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    backgroundColor: '#2a1115',
+    borderWidth: 1,
+    borderColor: '#5f252f',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
     alignItems: 'center',
     flex: 1,
   },
   logoutButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: '#f2c6cf',
+    fontSize: 12,
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    justifyContent: 'flex-start',
+    paddingVertical: 20,
     gap: 8,
   },
   loadingText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#aeb6c7',
   },
   lectureCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111722',
     padding: 16,
-    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    borderColor: '#2b3240',
   },
   lectureTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: '700',
+    color: '#f1ebdf',
     marginBottom: 4,
   },
   lectureDuration: {
     fontSize: 14,
-    color: '#6366f1',
+    color: '#d7bf89',
     fontWeight: '600',
     marginBottom: 2,
   },
   lectureDate: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#8f99ad',
   },
 });
 

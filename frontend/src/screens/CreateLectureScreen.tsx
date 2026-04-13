@@ -13,6 +13,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -137,14 +138,31 @@ const CreateLectureScreen: React.FC = () => {
   const durations = [5, 10, 15, 20, 30, 45, 60];
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.form}>
-        <Text style={styles.label}>Lecture Topic *</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.backgroundGlowA} />
+      <View style={styles.backgroundGlowB} />
+      <View style={styles.shell}>
+        <View style={styles.headerRail}>
+          <Text style={styles.eyebrow}>Lecture Composer</Text>
+          <Text style={styles.pageTitle}>Create Premium Lecture</Text>
+          <Text style={styles.pageSubtitle}>
+            Configure topic, depth, voice profile, and provider mode for a high-fidelity lecture output.
+          </Text>
+
+          <View style={styles.metaBlock}>
+            <Text style={styles.metaLabel}>Signed In As</Text>
+            <Text style={styles.metaValue}>{user?.email || 'Unknown account'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.formPanel}>
+          <Text style={styles.label}>Lecture Topic *</Text>
         <TextInput
           style={styles.textInput}
           value={formData.topic}
           onChangeText={(text) => setFormData({...formData, topic: text})}
           placeholder="e.g., Machine Learning Basics, Quantum Physics, History of Rome"
+          placeholderTextColor="#7f8492"
           multiline
           numberOfLines={3}
           maxLength={500}
@@ -268,6 +286,7 @@ const CreateLectureScreen: React.FC = () => {
             <Text style={styles.createButtonText}>Create Lecture</Text>
           )}
         </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -276,31 +295,113 @@ const CreateLectureScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#06070b',
   },
-  form: {
+  contentContainer: {
+    padding: 18,
+    paddingBottom: 24,
+  },
+  backgroundGlowA: {
+    position: 'absolute',
+    top: -100,
+    left: -70,
+    width: 260,
+    height: 260,
+    backgroundColor: 'rgba(198, 168, 106, 0.08)',
+  },
+  backgroundGlowB: {
+    position: 'absolute',
+    bottom: 90,
+    right: -100,
+    width: 290,
+    height: 290,
+    backgroundColor: 'rgba(155, 166, 197, 0.08)',
+  },
+  shell: {
+    width: '100%',
+    maxWidth: 1180,
+    alignSelf: 'center',
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    borderWidth: 1,
+    borderColor: '#242a37',
+    backgroundColor: '#0b0d12',
+  },
+  headerRail: {
+    flex: 0.9,
+    borderRightWidth: Platform.OS === 'web' ? 1 : 0,
+    borderBottomWidth: Platform.OS === 'web' ? 0 : 1,
+    borderRightColor: '#242a37',
+    borderBottomColor: '#242a37',
+    backgroundColor: '#0f131b',
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  eyebrow: {
+    color: '#d7bf89',
+    fontSize: 12,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  pageTitle: {
+    color: '#f4efe4',
+    fontSize: 46,
+    lineHeight: 50,
+    fontWeight: '600',
+    fontFamily: 'Cormorant Garamond',
+    marginBottom: 10,
+  },
+  pageSubtitle: {
+    color: '#aeb6c7',
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 22,
+  },
+  metaBlock: {
+    borderTopWidth: 1,
+    borderTopColor: '#2a3140',
+    paddingTop: 12,
+  },
+  metaLabel: {
+    color: '#7e8798',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
+  metaValue: {
+    color: '#d6dbe6',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  formPanel: {
+    flex: 1.1,
+    backgroundColor: '#f2f0ea',
     padding: 20,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2b3240',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     marginBottom: 8,
     marginTop: 16,
   },
   textInput: {
-    backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
+    backgroundColor: '#f8f7f3',
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
     padding: 16,
     fontSize: 16,
+    color: '#0d1119',
     textAlignVertical: 'top',
     minHeight: 80,
   },
   charCount: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#616979',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -308,10 +409,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   durationButton: {
-    backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
+    backgroundColor: '#f8f7f3',
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginRight: 8,
@@ -319,16 +419,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   durationButtonActive: {
-    backgroundColor: '#6366f1',
-    borderColor: '#6366f1',
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   durationButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#2f3644',
   },
   durationButtonTextActive: {
-    color: '#ffffff',
+    color: '#f2efe8',
   },
   difficultyContainer: {
     flexDirection: 'row',
@@ -337,81 +437,80 @@ const styles = StyleSheet.create({
   },
   difficultyButton: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
+    backgroundColor: '#f8f7f3',
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
     paddingVertical: 12,
     alignItems: 'center',
   },
   difficultyButtonActive: {
-    backgroundColor: '#6366f1',
-    borderColor: '#6366f1',
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   difficultyButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#2f3644',
   },
   difficultyButtonTextActive: {
-    color: '#ffffff',
+    color: '#f2efe8',
   },
   infoCard: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#ece9df',
     padding: 16,
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#c3b188',
     marginTop: 20,
   },
   infoTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#1e40af',
+    color: '#3e3525',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   infoText: {
     fontSize: 14,
-    color: '#1e40af',
+    color: '#4f4635',
     lineHeight: 20,
   },
   createButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#d7bf89',
+    borderWidth: 1,
+    borderColor: '#a9905d',
     paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
     marginTop: 24,
-    shadowColor: '#6366f1',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   createButtonDisabled: {
     opacity: 0.6,
   },
   createButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '700',
+    color: '#11151e',
+    fontSize: 14,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   modeCard: {
     marginTop: 16,
     padding: 14,
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#b7bcc8',
   },
   modeTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#111827',
+    color: '#2b3240',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     marginBottom: 6,
   },
   modeSubtle: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#616979',
     marginBottom: 10,
   },
   modeActions: {
@@ -420,33 +519,33 @@ const styles = StyleSheet.create({
   },
   modeButton: {
     flex: 1,
-    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#939aa8',
     paddingVertical: 10,
     alignItems: 'center',
   },
   modeButtonActive: {
-    backgroundColor: '#0f172a',
-    borderColor: '#0f172a',
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   modeButtonText: {
-    color: '#0f172a',
+    color: '#2f3644',
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   modeButtonTextActive: {
-    color: '#f8fafc',
+    color: '#f2efe8',
   },
   // Voice Selection Styles
   voiceScroll: {
     marginTop: 8,
   },
   voiceButton: {
-    backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
+    backgroundColor: '#f8f7f3',
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginRight: 8,
@@ -454,17 +553,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   voiceButtonActive: {
-    backgroundColor: '#6366f1',
-    borderColor: '#6366f1',
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   voiceButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#2f3644',
     textAlign: 'center',
   },
   voiceButtonTextActive: {
-    color: '#ffffff',
+    color: '#f2efe8',
   },
   // Loading Styles
   loadingContainer: {
@@ -473,9 +572,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loadingText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#11151e',
+    fontSize: 14,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
 });
 

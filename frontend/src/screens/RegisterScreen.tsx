@@ -97,90 +97,118 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.backgroundOrbTop} />
-      <View style={styles.backgroundOrbBottom} />
+      <View style={styles.backgroundGlowA} />
+      <View style={styles.backgroundGlowB} />
+      <View style={styles.gridLineVertical} />
+      <View style={styles.gridLineHorizontal} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.eyebrow}>LearnOnTheGo</Text>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Build your personalized AI lecture workspace in minutes.</Text>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Enter your full name"
-                autoCapitalize="words"
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter your email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Create a password (min. 8 characters)"
-                secureTextEntry
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Confirm your password"
-                secureTextEntry
-                editable={!isLoading}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.registerButton, isLoading && styles.buttonDisabled]}
-              onPress={handleRegister}
-              disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.registerButtonText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
-              <Text style={styles.footerLink}>Sign In</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.termsContainer}>
-            <Text style={styles.termsText}>
-              By creating an account, you agree to our Terms of Service and Privacy Policy.
+        <View style={styles.shell}>
+          <View style={styles.brandRail}>
+            <Text style={styles.brand}>LearnOnTheGo</Text>
+            <Text style={styles.brandSubhead}>Private Learning Intelligence</Text>
+            <Text style={styles.heroTitle}>Admission Request</Text>
+            <Text style={styles.heroCopy}>
+              Create your account to access an elite workspace for AI-guided learning, research depth,
+              and premium audio education delivery.
             </Text>
+
+            <View style={styles.metricBlock}>
+              <Text style={styles.metricLabel}>Onboarding Profile</Text>
+              <Text style={styles.metricValue}>Professional + Graduate-Level Learning</Text>
+            </View>
+
+            <View style={styles.metricBlock}>
+              <Text style={styles.metricLabel}>Activation</Text>
+              <Text style={styles.metricValue}>Instant account provisioning and secure access</Text>
+            </View>
+          </View>
+
+          <View style={styles.formPanel}>
+            <View style={styles.header}>
+              <Text style={styles.eyebrow}>Create Secure Profile</Text>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Set up your membership credentials in under a minute.</Text>
+            </View>
+
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Your full name"
+                  placeholderTextColor="#7f8492"
+                  autoCapitalize="words"
+                  editable={!isLoading}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="name@company.com"
+                  placeholderTextColor="#7f8492"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Minimum 8 characters"
+                  placeholderTextColor="#7f8492"
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter password"
+                  placeholderTextColor="#7f8492"
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.registerButton, isLoading && styles.buttonDisabled]}
+                onPress={handleRegister}
+                disabled={isLoading}>
+                {isLoading ? (
+                  <ActivityIndicator color="#0a0a0a" />
+                ) : (
+                  <Text style={styles.registerButtonText}>Create Membership</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have access?</Text>
+              <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
+                <Text style={styles.footerLink}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                By creating an account, you agree to Terms of Service and Privacy Policy.
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -191,134 +219,218 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1020',
+    backgroundColor: '#06070b',
   },
-  backgroundOrbTop: {
+  backgroundGlowA: {
     position: 'absolute',
-    top: -140,
-    left: -90,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(45, 212, 191, 0.14)',
+    top: -100,
+    left: -60,
+    width: 280,
+    height: 280,
+    backgroundColor: 'rgba(198, 168, 106, 0.09)',
   },
-  backgroundOrbBottom: {
+  backgroundGlowB: {
     position: 'absolute',
-    bottom: -200,
-    right: -120,
-    width: 390,
-    height: 390,
-    borderRadius: 195,
-    backgroundColor: 'rgba(99, 102, 241, 0.16)',
+    bottom: -120,
+    right: -90,
+    width: 300,
+    height: 300,
+    backgroundColor: 'rgba(157, 171, 203, 0.08)',
+  },
+  gridLineVertical: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '62%',
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  gridLineHorizontal: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '18%',
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 32,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
   },
-  card: {
+  shell: {
     width: '100%',
-    maxWidth: 540,
+    maxWidth: 1160,
     alignSelf: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 24,
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    backgroundColor: '#0b0d12',
     borderWidth: 1,
-    borderColor: '#dbe7ff',
-    paddingHorizontal: 28,
-    paddingVertical: 30,
-    shadowColor: '#020617',
-    shadowOpacity: 0.24,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    borderColor: '#242a37',
+    minHeight: Platform.OS === 'web' ? 660 : undefined,
   },
-  header: {
-    marginBottom: 26,
+  brandRail: {
+    flex: 1,
+    paddingHorizontal: 34,
+    paddingVertical: 34,
+    borderRightWidth: Platform.OS === 'web' ? 1 : 0,
+    borderBottomWidth: Platform.OS === 'web' ? 0 : 1,
+    borderRightColor: '#242a37',
+    borderBottomColor: '#242a37',
+    backgroundColor: '#0f131b',
   },
-  eyebrow: {
-    fontSize: 12,
-    letterSpacing: 1.2,
+  brand: {
+    color: '#d7bf89',
+    fontSize: 13,
+    letterSpacing: 2.1,
     textTransform: 'uppercase',
-    color: '#475569',
     fontWeight: '700',
     marginBottom: 10,
   },
+  brandSubhead: {
+    color: '#8d96a8',
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 38,
+  },
+  heroTitle: {
+    color: '#f5efe3',
+    fontSize: 52,
+    lineHeight: 56,
+    fontWeight: '600',
+    fontFamily: 'Cormorant Garamond',
+    marginBottom: 14,
+  },
+  heroCopy: {
+    color: '#b1b7c5',
+    fontSize: 16,
+    lineHeight: 24,
+    maxWidth: 460,
+    marginBottom: 34,
+  },
+  metricBlock: {
+    borderTopWidth: 1,
+    borderTopColor: '#2a3140',
+    paddingTop: 14,
+    marginBottom: 14,
+  },
+  metricLabel: {
+    color: '#7e8798',
+    fontSize: 11,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    marginBottom: 7,
+  },
+  metricValue: {
+    color: '#d8dde8',
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  formPanel: {
+    flex: 1,
+    backgroundColor: '#f2f0ea',
+    paddingHorizontal: 34,
+    paddingVertical: 34,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  eyebrow: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: '#6f6450',
+    fontWeight: '700',
+    marginBottom: 8,
+  },
   title: {
+    color: '#12151c',
     fontSize: 44,
-    fontWeight: '800',
-    color: '#1e293b',
     lineHeight: 48,
-    marginBottom: 12,
+    fontWeight: '600',
+    fontFamily: 'Cormorant Garamond',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#64748b',
-    lineHeight: 26,
+    color: '#4e5563',
+    fontSize: 16,
+    lineHeight: 22,
   },
   form: {
-    marginBottom: 22,
+    marginBottom: 20,
   },
   inputContainer: {
     marginBottom: 16,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 6,
-    letterSpacing: 0.2,
+    color: '#2b3240',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 14,
+    borderColor: '#b7bcc8',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
     fontSize: 16,
-    color: '#0f172a',
+    color: '#0d1119',
   },
   registerButton: {
-    backgroundColor: '#4f46e5',
-    borderRadius: 14,
-    paddingVertical: 15,
+    backgroundColor: '#d7bf89',
+    borderWidth: 1,
+    borderColor: '#a9905d',
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 50,
     marginTop: 10,
   },
   buttonDisabled: {
-    backgroundColor: '#94a3b8',
+    opacity: 0.5,
   },
   registerButtonText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 0.2,
+    color: '#11151e',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#c5c9d2',
+    marginTop: 8,
   },
   footerText: {
+    color: '#4c5464',
     fontSize: 14,
-    color: '#64748b',
+    paddingTop: 10,
   },
   footerLink: {
+    color: '#171e2a',
     fontSize: 14,
-    color: '#4f46e5',
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingTop: 10,
   },
   termsContainer: {
-    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#d2d5dd',
+    paddingTop: 10,
   },
   termsText: {
-    fontSize: 12,
-    color: '#94a3b8',
-    textAlign: 'center',
+    color: '#636a78',
+    fontSize: 11,
     lineHeight: 16,
   },
 });
