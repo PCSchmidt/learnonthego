@@ -4,6 +4,19 @@ Document Version: 2.0
 Last Updated: April 12, 2026  
 Status: Active
 
+## Design Quality Mandate (Non-Negotiable)
+
+The product UI must be sophisticated and portfolio-grade, reflecting strong engineering judgment and professional standards.
+
+Required bar for all user-facing screens:
+
+- Intentional visual system (typography, spacing, color, component hierarchy)
+- High-end, professional tone (not playful or "clownish")
+- Consistent interaction patterns and polished loading/error/empty states
+- Mobile and desktop layouts that feel designed, not default
+
+This mandate is enforced in Phase A deliverables and exit criteria.
+
 ## Current Baseline
 
 Backend and validation baseline already achieved:
@@ -21,6 +34,15 @@ Goal: deliver one complete authenticated user flow from sign-in to generated aud
 
 Target window: 1-2 weeks
 
+### UI Excellence Workstream (Runs In Parallel With Integration)
+
+- [ ] Define a professional visual direction and token set (type scale, spacing scale, color roles)
+- [ ] Standardize core components for app-wide consistency (buttons, inputs, cards, status banners)
+- [ ] Upgrade key screens to premium layout quality (auth, create, player, library)
+- [ ] Improve perceived quality with purposeful motion and transition consistency
+- [ ] Add accessibility and readability checks for contrast, spacing, and touch targets
+- [ ] Perform a final UI critique pass against portfolio quality bar before Phase A sign-off
+
 ### Checklist
 
 - [ ] Wire frontend generate flow to `/api/lectures/generate-document-v2` as default
@@ -37,6 +59,7 @@ Target window: 1-2 weeks
 - [ ] A user can sign in, submit text, and play generated output end-to-end
 - [ ] A user with configured BYOK keys can pass strict BYOK smoke validation
 - [ ] Frontend error states are explicit for auth failure, key-missing, and validation errors
+- [ ] Core user-facing screens meet the professional UI mandate (auth/create/player/library)
 - [ ] No manual backend hotfixes are needed to demo the core flow
 
 ## Phase B (Next): Reliability and Test Coverage Expansion
