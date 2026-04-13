@@ -69,63 +69,68 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.backgroundOrbTop} />
+      <View style={styles.backgroundOrbBottom} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue learning</Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.eyebrow}>LearnOnTheGo</Text>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to continue building your AI learning library.</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-              editable={!isLoading}
-            />
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={handleForgotPassword}
+              disabled={isLoading}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.loginButton, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.loginButtonText}>Sign In</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={handleForgotPassword}
-            disabled={isLoading}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}>
-            {isLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
-            <Text style={styles.footerLink}>Sign Up</Text>
-          </TouchableOpacity>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+            <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+              <Text style={styles.footerLink}>Create one</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -135,87 +140,133 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#0a1020',
+  },
+  backgroundOrbTop: {
+    position: 'absolute',
+    top: -140,
+    left: -80,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.16)',
+  },
+  backgroundOrbBottom: {
+    position: 'absolute',
+    bottom: -180,
+    right: -120,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    backgroundColor: 'rgba(139, 92, 246, 0.16)',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#dbe7ff',
+    paddingHorizontal: 28,
+    paddingVertical: 30,
+    shadowColor: '#020617',
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 26,
+  },
+  eyebrow: {
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#475569',
+    fontWeight: '700',
+    marginBottom: 10,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
+    fontSize: 46,
+    fontWeight: '800',
+    color: '#1e293b',
+    lineHeight: 50,
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
+    fontSize: 18,
+    color: '#64748b',
+    lineHeight: 26,
   },
   form: {
-    marginBottom: 40,
+    marginBottom: 28,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    color: '#334155',
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   input: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
+    borderColor: '#cbd5e1',
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 16,
-    color: '#1f2937',
+    color: '#0f172a',
   },
   forgotPassword: {
     alignItems: 'flex-end',
-    marginBottom: 30,
+    marginBottom: 24,
   },
   forgotPasswordText: {
-    fontSize: 14,
-    color: '#6366f1',
+    fontSize: 13,
+    color: '#4f46e5',
     fontWeight: '500',
   },
   loginButton: {
-    backgroundColor: '#6366f1',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#4f46e5',
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 50,
   },
   buttonDisabled: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#94a3b8',
   },
   loginButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#ffffff',
+    letterSpacing: 0.2,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 2,
   },
   footerText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#64748b',
   },
   footerLink: {
     fontSize: 14,
-    color: '#6366f1',
+    color: '#4f46e5',
     fontWeight: '600',
   },
 });
