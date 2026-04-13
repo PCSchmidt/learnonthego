@@ -1,7 +1,12 @@
-import { AppRegistry } from 'react-native';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
 import App from './App';
 
-AppRegistry.registerComponent('LearnOnTheGo', () => App);
-AppRegistry.runApplication('LearnOnTheGo', {
-  rootTag: document.getElementById('root'),
-});
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+const root = createRoot(rootElement);
+root.render(<App />);
