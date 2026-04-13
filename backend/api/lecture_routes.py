@@ -64,7 +64,7 @@ def _build_v2_dry_run_response(
 
 @router.post("/generate-document-v2", response_model=None)
 async def generate_document_audio_v2(
-    background_tasks,
+    background_tasks: BackgroundTasks,
     document_text = Form(None),
     file = File(None),
     duration = Form(10),
@@ -603,7 +603,7 @@ async def _get_user_api_key(db, user_id: int, provider: APIProvider) -> Optional
 
 @router.post("/generate-document-v2-byok", response_model=None)
 async def generate_document_audio_v2_byok(
-    background_tasks,
+    background_tasks: BackgroundTasks,
     document_text = Form(None),
     file = File(None),
     duration = Form(10),
