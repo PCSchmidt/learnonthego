@@ -508,6 +508,15 @@ const CreateLectureScreen: React.FC = () => {
                   ? 'Cost profile: premium quality path. BYOK uses your own OpenRouter and ElevenLabs billing.'
                   : 'Cost profile: default budget path. Environment mode uses OpenRouter with OpenAI TTS to reduce baseline cost.'}
               </Text>
+              <TouchableOpacity
+                testID="provider-cost-guidance-link"
+                style={styles.modeTooltipLink}
+                onPress={() => navigation.navigate('Settings')}
+              >
+                <Text style={styles.modeTooltipLinkText}>
+                  Tip: Compare provider pricing in Settings -> Provider Cost Guidance.
+                </Text>
+              </TouchableOpacity>
               <View style={styles.modeActions}>
                 <TouchableOpacity
                   testID="generation-mode-byok"
@@ -1089,6 +1098,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#616979',
     marginBottom: 10,
+  },
+  modeTooltipLink: {
+    marginTop: -2,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f1efe7',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  modeTooltipLinkText: {
+    color: '#2f3644',
+    fontSize: 12,
+    fontWeight: '600',
   },
   modeActions: {
     flexDirection: 'row',

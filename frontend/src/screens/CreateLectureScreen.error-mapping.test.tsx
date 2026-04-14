@@ -5,9 +5,11 @@ import { Platform } from 'react-native';
 import CreateLectureScreen from './CreateLectureScreen';
 import lectureService from '../services/lecture';
 
+const mockNavigate = jest.fn();
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
-    navigate: jest.fn(),
+    navigate: mockNavigate,
   }),
 }));
 
@@ -61,6 +63,7 @@ describe('CreateLectureScreen deterministic error mapping', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNavigate.mockClear();
     process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 = 'false';
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
@@ -301,6 +304,15 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     const { findByTestId } = render(<CreateLectureScreen />);
     const providerCostCopy = await findByTestId('provider-cost-copy');
     expect(providerCostCopy.props.children).toContain('premium quality path');
+  });
+
+  it('links generation mode tip to provider cost guidance in settings', async () => {
+    const { findByTestId } = render(<CreateLectureScreen />);
+    const guidanceLink = await findByTestId('provider-cost-guidance-link');
+
+    fireEvent.press(guidanceLink);
+
+    expect(mockNavigate).toHaveBeenCalledWith('Settings');
   });
 
   it('renders script preview first, then confirms final generation', async () => {

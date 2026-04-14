@@ -102,7 +102,7 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [x] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
 2. [x] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
-3. [ ] Add a quick in-app tooltip linking Generation Mode to Provider Cost Guidance in Settings.
+3. [x] Add a quick in-app tooltip linking Generation Mode to Provider Cost Guidance in Settings.
 
 ### Verification Commands
 ```bash
