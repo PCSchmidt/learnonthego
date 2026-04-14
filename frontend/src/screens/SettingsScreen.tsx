@@ -133,6 +133,18 @@ const SettingsScreen: React.FC = () => {
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Provider Cost Guidance</Text>
+            <View style={styles.statusCard}>
+              <Text testID="settings-cost-default" style={styles.statusText}>
+                Default budget path: Environment mode uses OpenRouter + OpenAI TTS to keep baseline costs lower.
+              </Text>
+              <Text testID="settings-cost-premium" style={styles.statusSubtle}>
+                Premium path: BYOK mode uses your own OpenRouter + ElevenLabs keys for higher-quality voice at provider-defined pricing.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Available Now</Text>
             {settingsItems.map((item, index) => (
               <TouchableOpacity

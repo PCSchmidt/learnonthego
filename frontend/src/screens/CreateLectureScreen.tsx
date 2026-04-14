@@ -503,6 +503,11 @@ const CreateLectureScreen: React.FC = () => {
                   ? 'Primary path: BYOK secure storage (OpenRouter + ElevenLabs).'
                   : 'Fallback path active: Environment-managed providers (OpenRouter + OpenAI TTS).'}
               </Text>
+              <Text testID="provider-cost-copy" style={styles.modeSubtle}>
+                {useByok
+                  ? 'Cost profile: premium quality path. BYOK uses your own OpenRouter and ElevenLabs billing.'
+                  : 'Cost profile: default budget path. Environment mode uses OpenRouter with OpenAI TTS to reduce baseline cost.'}
+              </Text>
               <View style={styles.modeActions}>
                 <TouchableOpacity
                   testID="generation-mode-byok"

@@ -93,9 +93,9 @@
 7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
-1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
-2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
+1. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
+2. [ ] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
+3. [ ] Add a quick in-app tooltip linking Generation Mode to Provider Cost Guidance in Settings.
 
 ### Verification Commands
 ```bash

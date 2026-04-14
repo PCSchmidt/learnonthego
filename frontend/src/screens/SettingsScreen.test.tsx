@@ -32,6 +32,8 @@ describe('SettingsScreen BYOK status messaging', () => {
       expect(getByTestId('settings-byok-status').props.children).toContain('BYOK not ready');
     });
     expect(getByTestId('settings-fallback-status').props.children).toContain('environment-managed providers');
+    expect(getByTestId('settings-cost-default').props.children).toContain('Default budget path');
+    expect(getByTestId('settings-cost-premium').props.children).toContain('Premium path');
   });
 
   it('shows BYOK-ready guidance when required keys are complete', async () => {
@@ -50,5 +52,7 @@ describe('SettingsScreen BYOK status messaging', () => {
       expect(getByTestId('settings-byok-status').props.children).toContain('BYOK ready');
     });
     expect(getByTestId('settings-fallback-status').props.children).toContain('manual fallback');
+    expect(getByTestId('settings-cost-default').props.children).toContain('Default budget path');
+    expect(getByTestId('settings-cost-premium').props.children).toContain('Premium path');
   });
 });

@@ -292,6 +292,15 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     fireEvent.press(getByTestId('generation-mode-environment'));
     const fallbackStatus = await findByTestId('fallback-status-message');
     expect(fallbackStatus.props.children).toContain('Fallback path active: Environment-managed providers');
+
+    const providerCostCopy = await findByTestId('provider-cost-copy');
+    expect(providerCostCopy.props.children).toContain('default budget path');
+  });
+
+  it('shows premium provider-cost copy when BYOK mode is active', async () => {
+    const { findByTestId } = render(<CreateLectureScreen />);
+    const providerCostCopy = await findByTestId('provider-cost-copy');
+    expect(providerCostCopy.props.children).toContain('premium quality path');
   });
 
   it('renders script preview first, then confirms final generation', async () => {
