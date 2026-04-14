@@ -109,6 +109,14 @@ def test_v2_preview_dry_run_response_shape_contract(auth_client, monkeypatch):
     assert {"provider", "model", "file_path", "bytes_written", "metadata"}.issubset(body["audio"].keys())
     assert isinstance(body.get("script_sections"), list)
     assert isinstance(body.get("citations"), list)
+    assert isinstance(body.get("metadata"), dict)
+    policy = body["metadata"].get("duration_policy")
+    assert isinstance(policy, dict)
+    assert policy.get("schema") == "duration-best-effort-v1"
+    assert policy.get("target_duration_minutes") == 8
+    assert isinstance(policy.get("estimated_duration_minutes"), (int, float))
+    assert isinstance(policy.get("within_tolerance"), bool)
+    assert policy.get("status") in {"within_tolerance", "under_target", "over_target"}
 
 
 def test_v2_byok_endpoint_enabled_returns_contract(auth_client, monkeypatch):
@@ -227,6 +235,13 @@ def test_v2_final_generation_contract_includes_execution_mode(
     assert len(body["script_sections"]) >= 1
     assert {"id", "heading", "content"}.issubset(body["script_sections"][0].keys())
     assert isinstance(body.get("citations"), list)
+    assert isinstance(body.get("metadata"), dict)
+    policy = body["metadata"].get("duration_policy")
+    assert isinstance(policy, dict)
+    assert policy.get("schema") == "duration-best-effort-v1"
+    assert policy.get("target_duration_minutes") == 8
+    assert isinstance(policy.get("estimated_duration_minutes"), (int, float))
+    assert isinstance(policy.get("within_tolerance"), bool)
 
 
 def test_v2_requires_auth_header(auth_client, monkeypatch):

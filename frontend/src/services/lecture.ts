@@ -108,11 +108,22 @@ export interface LectureResponse {
     note?: string;
   }>;
   metadata?: {
-    topic: string;
-    difficulty: string;
-    voice: string;
+    topic?: string;
+    difficulty?: string;
+    voice?: string;
     word_count?: number;
     processing_time?: number;
+    duration_policy?: {
+      schema: 'duration-best-effort-v1';
+      target_duration_minutes: number;
+      estimated_duration_minutes: number;
+      delta_minutes: number;
+      tolerance_minutes: number;
+      within_tolerance: boolean;
+      status: 'within_tolerance' | 'under_target' | 'over_target';
+      estimated_speech_rate_wpm: number;
+      script_word_count: number;
+    };
   };
 }
 

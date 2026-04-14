@@ -42,6 +42,14 @@ MAX_PDF_FILE_BYTES = 50 * 1024 * 1024
 MAX_URL_TEXT_CHARS = 60_000
 SOURCE_INTAKE_ERROR_SCHEMA = "source-intake-error-v1"
 URL_DIAGNOSTICS_SCHEMA = "url-diagnostics-v1"
+DURATION_POLICY_SCHEMA = "duration-best-effort-v1"
+DURATION_TOLERANCE_RATIO = 0.15
+DURATION_MIN_TOLERANCE_MINUTES = 1.0
+DURATION_WPM_BY_DIFFICULTY = {
+    "beginner": 130.0,
+    "intermediate": 145.0,
+    "advanced": 160.0,
+}
 
 
 def _url_ingestion_v1_enabled() -> bool:
@@ -420,6 +428,11 @@ def _build_v2_dry_run_response(
         "duration_minutes": duration,
         "difficulty": difficulty,
     }
+    metadata = _build_response_metadata(
+        script=preview_script["content"],
+        target_duration_minutes=duration,
+        difficulty=difficulty,
+    )
     return {
         "success": True,
         "dry_run": True,
@@ -447,6 +460,7 @@ def _build_v2_dry_run_response(
             }
         ],
         "citations": [],
+        "metadata": metadata,
         "audio": {
             "provider": tts_provider,
             "model": "dry-run",
@@ -478,6 +492,50 @@ def _build_script_summary(script: str) -> str:
     if len(summary) > 220:
         summary = summary[:217].rstrip() + "..."
     return summary
+
+
+def _count_words(text: str) -> int:
+    return len(re.findall(r"\b\w+\b", text or ""))
+
+
+def _build_duration_policy(script: str, target_duration_minutes: int, difficulty: str) -> Dict[str, Any]:
+    word_count = _count_words(script)
+    speech_rate = DURATION_WPM_BY_DIFFICULTY.get((difficulty or "").lower(), 145.0)
+    estimated_duration = round((word_count / speech_rate) if speech_rate > 0 else 0.0, 2)
+    tolerance = round(max(DURATION_MIN_TOLERANCE_MINUTES, target_duration_minutes * DURATION_TOLERANCE_RATIO), 2)
+    delta = round(estimated_duration - float(target_duration_minutes), 2)
+    within_tolerance = abs(delta) <= tolerance
+    status = "within_tolerance"
+    if not within_tolerance:
+        status = "over_target" if delta > 0 else "under_target"
+
+    return {
+        "schema": DURATION_POLICY_SCHEMA,
+        "target_duration_minutes": int(target_duration_minutes),
+        "estimated_duration_minutes": estimated_duration,
+        "delta_minutes": delta,
+        "tolerance_minutes": tolerance,
+        "within_tolerance": within_tolerance,
+        "status": status,
+        "estimated_speech_rate_wpm": speech_rate,
+        "script_word_count": word_count,
+    }
+
+
+def _build_response_metadata(
+    *,
+    script: str,
+    target_duration_minutes: int,
+    difficulty: str,
+    existing: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    metadata: Dict[str, Any] = dict(existing) if isinstance(existing, dict) else {}
+    metadata["duration_policy"] = _build_duration_policy(
+        script=script,
+        target_duration_minutes=target_duration_minutes,
+        difficulty=difficulty,
+    )
+    return metadata
 
 
 def _classify_url_source(source_uri: str) -> str:
@@ -603,6 +661,12 @@ async def generate_document_audio_v2(
             "script_sections": _build_script_sections(result.get("script", "")),
             "citations": [],
             **result,
+            "metadata": _build_response_metadata(
+                script=result.get("script", ""),
+                target_duration_minutes=duration,
+                difficulty=difficulty,
+                existing=result.get("metadata"),
+            ),
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1176,6 +1240,12 @@ async def generate_document_audio_v2_byok(
             "script_sections": _build_script_sections(result.get("script", "")),
             "citations": [],
             **result,
+            "metadata": _build_response_metadata(
+                script=result.get("script", ""),
+                target_duration_minutes=duration,
+                difficulty=difficulty,
+                existing=result.get("metadata"),
+            ),
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -95,7 +95,7 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-022 Duration best-effort policy.
+3. [ ] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
 
 ### Verification Commands
 ```bash
@@ -147,6 +147,7 @@ Initial sprint sequence (kickoff):
 7. `A5-013` -> `completed`
 8. `A5-003` -> `completed`
 9. `A5-002` -> `completed`
+10. `A5-022` -> `completed`
 
 #### A. Product + API Contract
 
@@ -208,10 +209,11 @@ Initial sprint sequence (kickoff):
   - Sequence: `#4`
   - Deliverable: structured URL diagnostics endpoint + feature-flagged ready-only URL generation path implemented; non-ready outcomes fail-fast with deterministic error contract and shared frontend diagnostics banner reuse
 
-- [ ] `A5-022` Duration best-effort policy
+- [x] `A5-022` Duration best-effort policy
   - Owner: `@owner-backend`
-  - Status: `not-started`
-  - Deliverable: script sizing heuristics with tolerance tracking
+  - Status: `completed`
+  - Sequence: `#10`
+  - Deliverable: script sizing heuristics + tolerance reporting embedded in V2 response metadata (`duration_policy`) for preview and final contracts
 
 #### D. Testing + Reliability
 
