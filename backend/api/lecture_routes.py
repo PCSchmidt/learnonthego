@@ -28,6 +28,7 @@ from auth import get_current_user
 from services.api_key_service import get_api_key_service
 from services.lecture_service import create_lecture_service
 from services.pipeline_v2 import create_document_pipeline_v2, v2_pipeline_enabled
+from services.pipeline_errors import PipelineExecutionError
 from services.encryption_service import create_encryption_service
 from datetime import datetime, timedelta
 
@@ -43,6 +44,7 @@ MAX_URL_TEXT_CHARS = 60_000
 SOURCE_INTAKE_ERROR_SCHEMA = "source-intake-error-v1"
 URL_DIAGNOSTICS_SCHEMA = "url-diagnostics-v1"
 DURATION_POLICY_SCHEMA = "duration-best-effort-v1"
+V2_GENERATION_ERROR_SCHEMA = "v2-generation-error-v1"
 DURATION_TOLERANCE_RATIO = 0.15
 DURATION_MIN_TOLERANCE_MINUTES = 1.0
 DURATION_WPM_BY_DIFFICULTY = {
@@ -538,6 +540,23 @@ def _build_response_metadata(
     return metadata
 
 
+def _v2_provider_error_detail(exc: PipelineExecutionError, *, execution_mode: str) -> Dict[str, Any]:
+    detail: Dict[str, Any] = {
+        "schema": V2_GENERATION_ERROR_SCHEMA,
+        "code": "provider_execution_failed",
+        "message": exc.message,
+        "stage": exc.stage,
+        "provider": exc.provider,
+        "execution_mode": execution_mode,
+        "retryable": bool(exc.retryable),
+    }
+    if exc.status_code is not None:
+        detail["provider_http_status"] = exc.status_code
+    if exc.cause_type:
+        detail["cause_type"] = exc.cause_type
+    return detail
+
+
 def _classify_url_source(source_uri: str) -> str:
     parsed = urlparse(source_uri)
     host = (parsed.netloc or "").lower()
@@ -668,6 +687,16 @@ async def generate_document_audio_v2(
                 existing=result.get("metadata"),
             ),
         }
+    except PipelineExecutionError as e:
+        logger.error(
+            "V2 generation provider failure for user %s stage=%s provider=%s status=%s cause=%s",
+            current_user.id,
+            e.stage,
+            e.provider,
+            e.status_code,
+            e.cause_type,
+        )
+        raise HTTPException(status_code=502, detail=_v2_provider_error_detail(e, execution_mode="environment"))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
@@ -1247,6 +1276,16 @@ async def generate_document_audio_v2_byok(
                 existing=result.get("metadata"),
             ),
         }
+    except PipelineExecutionError as e:
+        logger.error(
+            "V2 BYOK generation provider failure for user %s stage=%s provider=%s status=%s cause=%s",
+            current_user.id,
+            e.stage,
+            e.provider,
+            e.status_code,
+            e.cause_type,
+        )
+        raise HTTPException(status_code=502, detail=_v2_provider_error_detail(e, execution_mode="byok"))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:

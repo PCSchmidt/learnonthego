@@ -13,6 +13,7 @@ from main import app
 from models.database import get_async_db
 import api.lecture_routes as lecture_routes
 import api.api_key_routes as api_key_routes
+from services.pipeline_errors import PipelineExecutionError
 
 
 @pytest.fixture
@@ -251,6 +252,39 @@ def test_v2_requires_auth_header(auth_client, monkeypatch):
 
     assert response.status_code == 401
     assert response.json().get("detail") == "Could not validate credentials"
+
+
+def test_v2_final_generation_surfaces_provider_stage_error(auth_client, monkeypatch):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+
+    class FakePipeline:
+        async def run(self, **kwargs):
+            raise PipelineExecutionError(
+                stage="llm_generate",
+                provider="openrouter",
+                message="LLM provider request failed with HTTP 429",
+                status_code=429,
+                retryable=True,
+                cause_type="HTTPStatusError",
+            )
+
+    monkeypatch.setattr(lecture_routes, "create_document_pipeline_v2", lambda: FakePipeline())
+
+    response = auth_client.post(
+        "/api/lectures/generate-document-v2",
+        data=_v2_payload(dry_run="false"),
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 502
+    detail = response.json().get("detail", {})
+    assert detail.get("schema") == "v2-generation-error-v1"
+    assert detail.get("code") == "provider_execution_failed"
+    assert detail.get("stage") == "llm_generate"
+    assert detail.get("provider") == "openrouter"
+    assert detail.get("execution_mode") == "environment"
+    assert detail.get("provider_http_status") == 429
+    assert detail.get("retryable") is True
 
 
 def test_api_key_status_reports_missing_required_keys(auth_client, monkeypatch):
