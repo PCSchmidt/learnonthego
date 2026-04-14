@@ -7,11 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, B
 from fastapi.responses import JSONResponse
  # Removed Session and AsyncSession imports to avoid FastAPI type inference issues
 from sqlalchemy import select
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, NoReturn
 import json
 import logging
 import os
 import tempfile
+import asyncio
+import socket
+import re
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+from pathlib import Path
 
 from models.database import get_async_db
 from models.user_orm import User
@@ -27,10 +34,377 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/lectures", tags=["lectures"])
 
+SOURCE_INTAKE_CONTRACT_VERSION = "v1a"
+SUPPORTED_SOURCE_TYPES_V1A = {"text", "txt", "md", "pdf"}
+SUPPORTED_UPLOAD_EXTENSIONS_V1A = {".txt", ".md", ".pdf"}
+MAX_TEXT_FILE_BYTES = 2 * 1024 * 1024
+MAX_PDF_FILE_BYTES = 50 * 1024 * 1024
+MAX_URL_TEXT_CHARS = 60_000
+SOURCE_INTAKE_ERROR_SCHEMA = "source-intake-error-v1"
+URL_DIAGNOSTICS_SCHEMA = "url-diagnostics-v1"
+
+
+def _url_ingestion_v1_enabled() -> bool:
+    return os.getenv("ENABLE_URL_INGESTION_V1", "false").lower() == "true"
+
+
+def _supported_source_types_v1a() -> List[str]:
+    supported = set(SUPPORTED_SOURCE_TYPES_V1A)
+    if _url_ingestion_v1_enabled():
+        supported.add("url")
+    return sorted(supported)
+
+
+def _validation_hint_v1a() -> str:
+    if _url_ingestion_v1_enabled():
+        return (
+            "Supported source_type values for v1a are: text, txt, md, pdf, url. "
+            "URL source intake currently supports web pages that pass URL diagnostics as ready."
+        )
+    return (
+        "Supported source_type values for v1a are: text, txt, md, pdf. "
+        "YouTube/podcast/url ingestion is intentionally deferred to the next slice."
+    )
+
+
+def _raise_source_intake_error(
+    *,
+    code: str,
+    message: str,
+    status_code: int = 400,
+    field: Optional[str] = None,
+    hint: Optional[str] = None,
+    max_bytes: Optional[int] = None,
+) -> NoReturn:
+    detail: Dict[str, Any] = {
+        "schema": SOURCE_INTAKE_ERROR_SCHEMA,
+        "code": code,
+        "message": message,
+        "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+        "supported_source_types": _supported_source_types_v1a(),
+    }
+    if field:
+        detail["field"] = field
+    if hint:
+        detail["hint"] = hint
+    if max_bytes is not None:
+        detail["max_bytes"] = max_bytes
+
+    raise HTTPException(status_code=status_code, detail=detail)
+
+
+def _normalize_source_type_v1a(source_type: Optional[str]) -> Optional[str]:
+    if source_type is None:
+        return None
+    normalized = source_type.strip().lower()
+    if not normalized:
+        return None
+    if normalized not in _supported_source_types_v1a():
+        _raise_source_intake_error(
+            code="unsupported_source_type",
+            field="source_type",
+            message=f"source_type '{normalized}' is not supported in v1a.",
+            hint=_validation_hint_v1a(),
+        )
+    return normalized
+
+
+def _extract_text_from_html(content: str) -> str:
+    without_scripts = re.sub(r"<script[^>]*>.*?</script>", " ", content, flags=re.IGNORECASE | re.DOTALL)
+    without_styles = re.sub(r"<style[^>]*>.*?</style>", " ", without_scripts, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", without_styles)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _fetch_url_source_text(source_uri: str, max_chars: int = MAX_URL_TEXT_CHARS) -> str:
+    request = Request(source_uri, method="GET", headers={"User-Agent": "LearnOnTheGo/url-intake"})
+    with urlopen(request, timeout=8) as response:
+        raw_bytes = response.read()
+        content_type = (response.headers.get("Content-Type") or "").lower()
+
+    if "text" not in content_type and "html" not in content_type and "json" not in content_type:
+        raise ValueError("URL content type is not text-based and cannot be ingested.")
+
+    decoded = raw_bytes.decode("utf-8", errors="ignore")
+    extracted = _extract_text_from_html(decoded)
+    if not extracted:
+        raise ValueError("URL content extraction returned empty text.")
+
+    return extracted[:max_chars]
+
+
+async def _diagnose_url_readiness_v1(source_uri: str) -> Dict[str, Any]:
+    parsed = urlparse(source_uri)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return {
+            "success": False,
+            "schema": URL_DIAGNOSTICS_SCHEMA,
+            "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+            "source_uri": source_uri,
+            "source_class": "unknown",
+            "outcome": "unsupported",
+            "diagnostics": {
+                "code": "unsupported",
+                "message": "Invalid URL format. Use a full http(s) URL.",
+                "retryable": False,
+            },
+        }
+
+    availability = await asyncio.to_thread(_probe_url_availability, source_uri)
+    if not availability.get("reachable"):
+        return {
+            "success": False,
+            "schema": URL_DIAGNOSTICS_SCHEMA,
+            "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+            "source_uri": source_uri,
+            "source_class": _classify_url_source(source_uri),
+            "outcome": "unreachable",
+            "diagnostics": {
+                "code": "unreachable",
+                "message": "URL could not be reached from the service. Check URL and try again.",
+                "retryable": True,
+                "status_code": availability.get("status_code"),
+            },
+        }
+
+    source_class = _classify_url_source(source_uri)
+    if source_class == "video":
+        return {
+            "success": False,
+            "schema": URL_DIAGNOSTICS_SCHEMA,
+            "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+            "source_uri": source_uri,
+            "source_class": source_class,
+            "outcome": "no_transcript",
+            "diagnostics": {
+                "code": "no_transcript",
+                "message": "Video transcript ingestion is not enabled in this slice yet.",
+                "retryable": False,
+                "status_code": availability.get("status_code"),
+            },
+        }
+
+    if source_class in {"podcast", "audio"}:
+        return {
+            "success": False,
+            "schema": URL_DIAGNOSTICS_SCHEMA,
+            "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+            "source_uri": source_uri,
+            "source_class": source_class,
+            "outcome": "unsupported",
+            "diagnostics": {
+                "code": "unsupported",
+                "message": "Podcast/audio URL ingestion is deferred to the next slice.",
+                "retryable": False,
+                "status_code": availability.get("status_code"),
+            },
+        }
+
+    return {
+        "success": True,
+        "schema": URL_DIAGNOSTICS_SCHEMA,
+        "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+        "source_uri": source_uri,
+        "source_class": source_class,
+        "outcome": "ready",
+        "diagnostics": {
+            "code": "ready",
+            "message": "URL is reachable and ready for upcoming web-source ingestion flow.",
+            "retryable": False,
+            "status_code": availability.get("status_code"),
+        },
+    }
+
+
+async def _resolve_source_text_v1a(
+    *,
+    document_text: Optional[str],
+    file: Optional[UploadFile],
+    source_uri: Optional[str],
+    source_type: Optional[str],
+) -> Dict[str, str]:
+    normalized_source_type = _normalize_source_type_v1a(source_type)
+
+    has_text = bool(document_text and document_text.strip())
+    has_file = file is not None
+    has_url = bool(source_uri and source_uri.strip())
+    if int(has_text) + int(has_file) + int(has_url) != 1:
+        _raise_source_intake_error(
+            code="invalid_source_input_combination",
+            field="document_text|file|source_uri",
+            message="Provide exactly one input source: document_text, file, or source_uri.",
+        )
+
+    if has_text:
+        text_value = (document_text or "").strip()
+        if normalized_source_type and normalized_source_type != "text":
+            _raise_source_intake_error(
+                code="source_type_input_mismatch",
+                field="source_type",
+                message=f"source_type '{normalized_source_type}' does not match document_text input.",
+            )
+
+        return {
+            "source_text": text_value,
+            "source_name": "pasted_text",
+            "source_type": "text",
+        }
+
+    upload_file = file
+    if has_url:
+        cleaned_uri = (source_uri or "").strip()
+        if normalized_source_type and normalized_source_type != "url":
+            _raise_source_intake_error(
+                code="source_type_input_mismatch",
+                field="source_type",
+                message=f"source_type '{normalized_source_type}' does not match source_uri input.",
+            )
+        if not _url_ingestion_v1_enabled():
+            _raise_source_intake_error(
+                code="url_ingestion_disabled",
+                field="source_uri",
+                message="URL ingestion is disabled. Set ENABLE_URL_INGESTION_V1=true to enable ready URL generation.",
+                hint="Run URL diagnostics and enable the URL ingestion feature flag for ready URLs.",
+            )
+
+        diagnostics = await _diagnose_url_readiness_v1(cleaned_uri)
+        if diagnostics.get("outcome") != "ready":
+            _raise_source_intake_error(
+                code="url_not_ready",
+                field="source_uri",
+                message=diagnostics.get("diagnostics", {}).get("message", "URL is not ready for ingestion."),
+                hint="Run URL diagnostics and only submit URLs with outcome 'ready'.",
+            )
+
+        try:
+            fetched_text = await asyncio.to_thread(_fetch_url_source_text, cleaned_uri)
+        except Exception as exc:
+            _raise_source_intake_error(
+                code="url_fetch_failed",
+                field="source_uri",
+                message=f"Failed to fetch URL content: {str(exc)}",
+                hint="Ensure the URL is publicly reachable and returns text-based content.",
+            )
+
+        if not fetched_text.strip():
+            _raise_source_intake_error(
+                code="empty_url_content",
+                field="source_uri",
+                message="URL content extraction returned empty text.",
+                hint="Use a content-rich article URL and re-run diagnostics.",
+            )
+
+        return {
+            "source_text": fetched_text,
+            "source_name": cleaned_uri,
+            "source_type": "url",
+        }
+
+    if upload_file is None:
+        _raise_source_intake_error(
+            code="invalid_source_input_combination",
+            field="document_text|file|source_uri",
+            message="Provide exactly one input source: document_text, file, or source_uri.",
+        )
+
+    file_name = (upload_file.filename or "upload").strip()
+    extension = Path(file_name).suffix.lower()
+    if extension not in SUPPORTED_UPLOAD_EXTENSIONS_V1A:
+        _raise_source_intake_error(
+            code="unsupported_file_extension",
+            field="file",
+            message=(
+                "Unsupported file type. v1a supports uploads: .txt, .md, .pdf. "
+                "YouTube/podcast/url ingestion is deferred to the next slice."
+            ),
+        )
+
+    inferred_type = extension.lstrip(".")
+    if normalized_source_type and normalized_source_type != inferred_type:
+        _raise_source_intake_error(
+            code="source_type_input_mismatch",
+            field="source_type",
+            message=f"source_type '{normalized_source_type}' does not match uploaded file type '{inferred_type}'.",
+        )
+
+    raw_bytes = await upload_file.read()
+    if extension in {".txt", ".md"}:
+        if len(raw_bytes) > MAX_TEXT_FILE_BYTES:
+            _raise_source_intake_error(
+                code="file_too_large",
+                field="file",
+                message=f"Text file size must be under {MAX_TEXT_FILE_BYTES // (1024 * 1024)}MB.",
+                max_bytes=MAX_TEXT_FILE_BYTES,
+            )
+
+        try:
+            decoded = raw_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            _raise_source_intake_error(
+                code="invalid_text_encoding",
+                field="file",
+                message="Text and markdown uploads must be UTF-8 encoded.",
+            )
+
+        if not decoded.strip():
+            _raise_source_intake_error(
+                code="empty_text_content",
+                field="file",
+                message="Uploaded text content is empty.",
+            )
+
+        return {
+            "source_text": decoded.strip(),
+            "source_name": file_name,
+            "source_type": inferred_type,
+        }
+
+    if len(raw_bytes) > MAX_PDF_FILE_BYTES:
+        _raise_source_intake_error(
+            code="file_too_large",
+            field="file",
+            message=f"PDF file size must be under {MAX_PDF_FILE_BYTES // (1024 * 1024)}MB.",
+            max_bytes=MAX_PDF_FILE_BYTES,
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(raw_bytes)
+        tmp_path = tmp.name
+
+    try:
+        pdf_result = await create_document_pipeline_v2().pdf_service.extract_and_process(tmp_path)
+        if not pdf_result.get("success"):
+            _raise_source_intake_error(
+                code="pdf_parse_failed",
+                field="file",
+                message=str(pdf_result.get("error", "PDF parsing failed")),
+            )
+
+        processed_content = str(pdf_result.get("processed_content", "")).strip()
+        if not processed_content:
+            _raise_source_intake_error(
+                code="pdf_parse_failed",
+                field="file",
+                message="PDF parsing produced empty content.",
+            )
+
+        return {
+            "source_text": processed_content,
+            "source_name": file_name,
+            "source_type": inferred_type,
+        }
+    finally:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+
 
 def _build_v2_dry_run_response(
     *,
     source: str,
+    source_type: str,
     duration: int,
     difficulty: str,
     llm_provider: str,
@@ -41,7 +415,9 @@ def _build_v2_dry_run_response(
     return {
         "success": True,
         "dry_run": True,
+        "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
         "source": source,
+        "source_type": source_type,
         "duration": duration,
         "difficulty": difficulty,
         "key_source": key_source,
@@ -62,11 +438,50 @@ def _build_v2_dry_run_response(
     }
 
 
+def _classify_url_source(source_uri: str) -> str:
+    parsed = urlparse(source_uri)
+    host = (parsed.netloc or "").lower()
+    path = (parsed.path or "").lower()
+
+    if any(domain in host for domain in ["youtube.com", "youtu.be", "vimeo.com"]):
+        return "video"
+    if any(domain in host for domain in ["spotify.com", "soundcloud.com", "podcasts.apple.com"]):
+        return "podcast"
+    if any(path.endswith(ext) for ext in [".mp3", ".wav", ".m4a", ".aac"]):
+        return "audio"
+    return "web"
+
+
+def _probe_url_availability(source_uri: str) -> Dict[str, Any]:
+    request = Request(source_uri, method="GET", headers={"User-Agent": "LearnOnTheGo/diagnostics"})
+    try:
+        with urlopen(request, timeout=5) as response:
+            return {"reachable": True, "status_code": getattr(response, "status", 200)}
+    except HTTPError as err:
+        # Auth-gated and method-restricted URLs are still reachable from a diagnostics perspective.
+        if err.code in {401, 403, 405}:
+            return {"reachable": True, "status_code": err.code}
+        return {"reachable": False, "status_code": err.code, "error": str(err)}
+    except (URLError, TimeoutError, socket.timeout) as err:
+        return {"reachable": False, "status_code": None, "error": str(err)}
+
+
+@router.post("/url-diagnostics-v1", response_model=None)
+async def diagnose_source_url_v1(
+    source_uri: str = Form(...),
+    current_user = Depends(get_current_user),
+):
+    """Diagnose URL ingestion readiness with stable, actionable outcomes for frontend UX."""
+    return await _diagnose_url_readiness_v1((source_uri or "").strip())
+
+
 @router.post("/generate-document-v2", response_model=None)
 async def generate_document_audio_v2(
     background_tasks: BackgroundTasks,
+    source_type: Optional[str] = Form(None),
     document_text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    source_uri: Optional[str] = Form(None),
     duration: int = Form(10),
     difficulty: str = Form("intermediate"),
     llm_provider: str = Form("openrouter"),
@@ -83,41 +498,27 @@ async def generate_document_audio_v2(
             detail="V2 pipeline is disabled. Set ENABLE_V2_PIPELINE=true to enable.",
         )
 
-    if not document_text and not file:
-        raise HTTPException(status_code=400, detail="Provide either document_text or a PDF file")
-
     if difficulty not in ["beginner", "intermediate", "advanced"]:
         raise HTTPException(status_code=400, detail="Invalid difficulty level")
 
     if duration < 5 or duration > 60:
         raise HTTPException(status_code=400, detail="Duration must be between 5 and 60 minutes")
 
-    source_text = document_text
-    source_name = "text"
+    source_input = await _resolve_source_text_v1a(
+        document_text=document_text,
+        file=file,
+        source_uri=source_uri,
+        source_type=source_type,
+    )
 
-    if file:
-        if not file.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files are supported for uploads")
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
-
-        try:
-            pdf_result = await create_document_pipeline_v2().pdf_service.extract_and_process(tmp_path)
-            if not pdf_result.get("success"):
-                raise HTTPException(status_code=400, detail=pdf_result.get("error", "PDF parsing failed"))
-            source_text = pdf_result["processed_content"]
-            source_name = file.filename
-        finally:
-            try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
+    source_text = source_input["source_text"]
+    source_name = source_input["source_name"]
+    normalized_source_type = source_input["source_type"]
 
     if dry_run:
         return _build_v2_dry_run_response(
             source=source_name,
+            source_type=normalized_source_type,
             duration=duration,
             difficulty=difficulty,
             llm_provider=llm_provider,
@@ -146,7 +547,9 @@ async def generate_document_audio_v2(
         )
         return {
             "success": True,
+            "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
             "source": source_name,
+            "source_type": normalized_source_type,
             "duration": duration,
             "difficulty": difficulty,
             **result,
@@ -604,8 +1007,10 @@ async def _get_user_api_key(db, user_id: int, provider: APIProvider) -> Optional
 @router.post("/generate-document-v2-byok", response_model=None)
 async def generate_document_audio_v2_byok(
     background_tasks: BackgroundTasks,
+    source_type: Optional[str] = Form(None),
     document_text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    source_uri: Optional[str] = Form(None),
     duration: int = Form(10),
     difficulty: str = Form("intermediate"),
     llm_provider: str = Form("openrouter"),
@@ -655,41 +1060,27 @@ async def generate_document_audio_v2_byok(
             detail=f"Missing valid API keys for: {', '.join(missing)}. Add keys in settings first.",
         )
 
-    if not document_text and not file:
-        raise HTTPException(status_code=400, detail="Provide either document_text or a PDF file")
-
     if difficulty not in ["beginner", "intermediate", "advanced"]:
         raise HTTPException(status_code=400, detail="Invalid difficulty level")
 
     if duration < 5 or duration > 60:
         raise HTTPException(status_code=400, detail="Duration must be between 5 and 60 minutes")
 
-    source_text = document_text
-    source_name = "text"
+    source_input = await _resolve_source_text_v1a(
+        document_text=document_text,
+        file=file,
+        source_uri=source_uri,
+        source_type=source_type,
+    )
 
-    if file:
-        if not file.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files are supported for uploads")
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
-
-        try:
-            pdf_result = await create_document_pipeline_v2().pdf_service.extract_and_process(tmp_path)
-            if not pdf_result.get("success"):
-                raise HTTPException(status_code=400, detail=pdf_result.get("error", "PDF parsing failed"))
-            source_text = pdf_result["processed_content"]
-            source_name = file.filename
-        finally:
-            try:
-                os.remove(tmp_path)
-            except OSError:
-                pass
+    source_text = source_input["source_text"]
+    source_name = source_input["source_name"]
+    normalized_source_type = source_input["source_type"]
 
     if dry_run:
         return _build_v2_dry_run_response(
             source=source_name,
+            source_type=normalized_source_type,
             duration=duration,
             difficulty=difficulty,
             llm_provider=llm_provider,
@@ -720,7 +1111,9 @@ async def generate_document_audio_v2_byok(
         )
         return {
             "success": True,
+            "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
             "source": source_name,
+            "source_type": normalized_source_type,
             "duration": duration,
             "difficulty": difficulty,
             "key_source": "user-encrypted-storage",

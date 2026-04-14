@@ -50,6 +50,17 @@ jobs:
       run: |
         python -m pytest tests/test_v2_feature_flag_and_auth_smoke.py -q
 
+    # REQUIRED SOURCE-INTAKE + URL-READY CONTRACT GATES (A5-031):
+    # ensures deterministic request/response behavior for v1a source intake,
+    # including feature-flagged ready-only URL ingestion.
+    - name: Run REQUIRED V2 source intake contract gate
+      run: |
+        python -m pytest tests/test_v2_source_intake_v1a.py -q
+
+    - name: Run REQUIRED URL diagnostics contract gate
+      run: |
+        python -m pytest tests/test_url_diagnostics_scaffold.py -q
+
     # REQUIRED BYOK KEY-MANAGEMENT GATE:
     # proves add/replace/delete API key contract behavior.
     - name: Run REQUIRED BYOK key lifecycle contract gate
