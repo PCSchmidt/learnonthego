@@ -408,6 +408,7 @@ def _build_v2_dry_run_response(
     duration: int,
     difficulty: str,
     llm_provider: str,
+    llm_model: Optional[str],
     tts_provider: str,
     key_source: str,
 ) -> Dict[str, Any]:
@@ -425,7 +426,7 @@ def _build_v2_dry_run_response(
         "script": "Dry run mode validates contract only. No LLM/TTS generation executed.",
         "llm": {
             "provider": llm_provider,
-            "model": "dry-run",
+            "model": llm_model or "dry-run",
             "usage": {},
         },
         "audio": {
@@ -485,6 +486,7 @@ async def generate_document_audio_v2(
     duration: int = Form(10),
     difficulty: str = Form("intermediate"),
     llm_provider: str = Form("openrouter"),
+    llm_model: Optional[str] = Form(None),
     tts_provider: str = Form("openai"),
     context: Optional[str] = Form(None),
     voice_id: Optional[str] = Form(None),
@@ -522,6 +524,7 @@ async def generate_document_audio_v2(
             duration=duration,
             difficulty=difficulty,
             llm_provider=llm_provider,
+            llm_model=llm_model,
             tts_provider=tts_provider,
             key_source="environment",
         )
@@ -533,6 +536,7 @@ async def generate_document_audio_v2(
             duration_minutes=duration,
             difficulty=difficulty,
             llm_provider=llm_provider,
+            llm_model=llm_model,
             tts_provider=tts_provider,
             context=context,
             voice_id=voice_id,
@@ -1014,6 +1018,7 @@ async def generate_document_audio_v2_byok(
     duration: int = Form(10),
     difficulty: str = Form("intermediate"),
     llm_provider: str = Form("openrouter"),
+    llm_model: Optional[str] = Form(None),
     tts_provider: str = Form("elevenlabs"),
     context: Optional[str] = Form(None),
     voice_id: Optional[str] = Form(None),
@@ -1084,6 +1089,7 @@ async def generate_document_audio_v2_byok(
             duration=duration,
             difficulty=difficulty,
             llm_provider=llm_provider,
+            llm_model=llm_model,
             tts_provider=tts_provider,
             key_source="user-encrypted-storage",
         )
@@ -1095,6 +1101,7 @@ async def generate_document_audio_v2_byok(
             duration_minutes=duration,
             difficulty=difficulty,
             llm_provider=llm_provider,
+            llm_model=llm_model,
             tts_provider=tts_provider,
             context=context,
             voice_id=voice_id,

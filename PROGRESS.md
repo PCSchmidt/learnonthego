@@ -95,9 +95,8 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-011 Model selection UX (presets + advanced toggle).
-4. [ ] A5-012 BYOK status/fallback messaging in Create/Settings flows.
-5. [ ] A5-013 Script preview and confirm flow.
+3. [ ] A5-012 BYOK status/fallback messaging in Create/Settings flows.
+4. [ ] A5-013 Script preview and confirm flow.
 
 ### Verification Commands
 ```bash
@@ -143,7 +142,8 @@ Initial sprint sequence (kickoff):
 1. `A5-001` -> `completed`
 2. `A5-020` -> `completed`
 3. `A5-010` -> `completed`
-4. `A5-021` -> `in-progress`
+4. `A5-021` -> `completed`
+5. `A5-011` -> `completed`
 
 #### A. Product + API Contract
 
@@ -171,10 +171,11 @@ Initial sprint sequence (kickoff):
   - Sequence: `#3`
   - Deliverable: unified source intake UI for Text/File/URL paths with deterministic per-field error rendering and file reset recovery
 
-- [ ] `A5-011` Model selection UX
+- [x] `A5-011` Model selection UX
   - Owner: `@owner-frontend`
-  - Status: `not-started`
-  - Deliverable: presets (`Cost Saver`, `Balanced`, `High Fidelity`) + advanced raw model toggle
+  - Status: `completed`
+  - Sequence: `#5`
+  - Deliverable: presets (`Cost Saver`, `Balanced`, `High Fidelity`) + advanced raw model toggle implemented and validated via targeted frontend tests (`lecture.mode-selection`, `CreateLectureScreen.error-mapping`)
 
 - [ ] `A5-012` BYOK status and fallback messaging
   - Owner: `@owner-frontend`
@@ -233,7 +234,7 @@ Initial sprint sequence (kickoff):
 - [ ] `M2` Model/BYOK + preview
   - Scope: `A5-003`, `A5-011`, `A5-012`, `A5-013`
   - Owner: `@owner-frontend` + `@owner-backend`
-  - Status: `not-started`
+  - Status: `in-progress`
 
 - [ ] `M3` Reliability gates
   - Scope: `A5-030`, `A5-031`, `A5-032`

@@ -17,10 +17,11 @@ class LLMRouter:
         provider: str,
         request: ScriptGenerationInput,
         api_key: str | None = None,
+        model: str | None = None,
     ) -> ScriptGenerationResult:
         key = (provider or "openrouter").lower().strip()
         adapter_cls = self._providers.get(key)
         if not adapter_cls:
             raise ValueError(f"Unsupported LLM provider: {provider}")
-        adapter = adapter_cls(api_key=api_key)
+        adapter = adapter_cls(api_key=api_key, model=model)
         return await adapter.generate_script(request)

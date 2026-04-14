@@ -23,6 +23,7 @@ class DocumentToAudioPipelineV2:
         duration_minutes: int,
         difficulty: str,
         llm_provider: str,
+        llm_model: Optional[str] = None,
         tts_provider: str,
         context: Optional[str] = None,
         voice_id: Optional[str] = None,
@@ -39,6 +40,7 @@ class DocumentToAudioPipelineV2:
             llm_provider,
             script_request,
             api_key=llm_api_key,
+            model=llm_model,
         )
 
         tts_request = SynthesisInput(text=script_result.script, voice_id=voice_id)

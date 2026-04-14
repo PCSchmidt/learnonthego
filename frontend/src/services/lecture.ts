@@ -11,8 +11,19 @@ export interface LectureRequest {
   duration: number; // minutes
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   voice: string;
+  llmModelPreset?: ModelPresetId;
+  llmModelId?: string;
   content_type?: 'text' | 'pdf';
   file_data?: string; // Base64 encoded PDF data
+}
+
+export type ModelPresetId = 'cost_saver' | 'balanced' | 'high_fidelity';
+
+export interface ModelPreset {
+  id: ModelPresetId;
+  label: string;
+  model: string;
+  description: string;
 }
 
 export type SourceInputType = 'text' | 'txt' | 'md' | 'pdf' | 'url';
@@ -117,6 +128,27 @@ export const DIFFICULTY_LEVELS = [
   { id: 'advanced', name: 'Advanced', description: 'In-depth analysis and technical details' },
 ];
 
+export const MODEL_PRESETS: ModelPreset[] = [
+  {
+    id: 'cost_saver',
+    label: 'Cost Saver',
+    model: 'openai/gpt-4.1-mini',
+    description: 'Lowest cost with solid quality for general topics.',
+  },
+  {
+    id: 'balanced',
+    label: 'Balanced',
+    model: 'anthropic/claude-3.5-sonnet',
+    description: 'Recommended default for quality and consistency.',
+  },
+  {
+    id: 'high_fidelity',
+    label: 'High Fidelity',
+    model: 'openai/gpt-4.1',
+    description: 'Higher quality reasoning with increased cost.',
+  },
+];
+
 // Lecture Service Class
 class LectureService {
   private mapSourceIntakeError(
@@ -172,6 +204,9 @@ class LectureService {
       : '/api/lectures/generate-document-v2';
     const sourceType = options?.sourceType || 'text';
     const sourceUrl = (options?.sourceUrl || '').trim();
+    const selectedPreset = request.llmModelPreset || 'balanced';
+    const presetModel = MODEL_PRESETS.find((preset) => preset.id === selectedPreset)?.model;
+    const llmModel = request.llmModelId?.trim() || presetModel || 'anthropic/claude-3.5-sonnet';
 
     // Cost-aware default strategy:
     // - Environment path defaults to OpenAI TTS for lower-cost baseline.
@@ -185,6 +220,7 @@ class LectureService {
       multipart.append('duration', String(request.duration));
       multipart.append('difficulty', request.difficulty);
       multipart.append('llm_provider', 'openrouter');
+      multipart.append('llm_model', llmModel);
       multipart.append('tts_provider', ttsProvider);
       multipart.append('voice_id', request.voice);
       multipart.append('dry_run', String(options?.dryRun ?? false));
@@ -196,6 +232,7 @@ class LectureService {
         duration: String(request.duration),
         difficulty: request.difficulty,
         llm_provider: 'openrouter',
+        llm_model: llmModel,
         tts_provider: ttsProvider,
         voice_id: request.voice,
         dry_run: String(options?.dryRun ?? false),

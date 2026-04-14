@@ -33,6 +33,26 @@ jest.mock('../services/lecture', () => ({
     { id: 'intermediate', name: 'Intermediate', description: 'Moderate complexity with examples' },
     { id: 'advanced', name: 'Advanced', description: 'In-depth analysis and technical details' },
   ],
+  MODEL_PRESETS: [
+    {
+      id: 'cost_saver',
+      label: 'Cost Saver',
+      model: 'openai/gpt-4.1-mini',
+      description: 'Lowest cost with solid quality for general topics.',
+    },
+    {
+      id: 'balanced',
+      label: 'Balanced',
+      model: 'anthropic/claude-3.5-sonnet',
+      description: 'Recommended default for quality and consistency.',
+    },
+    {
+      id: 'high_fidelity',
+      label: 'High Fidelity',
+      model: 'openai/gpt-4.1',
+      description: 'Higher quality reasoning with increased cost.',
+    },
+  ],
 }));
 
 describe('CreateLectureScreen deterministic error mapping', () => {
@@ -205,8 +225,43 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     });
 
     const [, options] = (lectureService.createLecture as jest.Mock).mock.calls[0];
+    const [request] = (lectureService.createLecture as jest.Mock).mock.calls[0];
     expect(options.sourceType).toBe('text');
     expect(options.uploadFile).toBeUndefined();
+    expect(request.llmModelPreset).toBe('balanced');
+  });
+
+  it('forwards selected model preset in create request', async () => {
+    const { getByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.press(getByTestId('model-preset-cost_saver'));
+    fireEvent.changeText(getByTestId('topic-input'), 'Preset forwarding coverage');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalled();
+    });
+
+    const [request] = (lectureService.createLecture as jest.Mock).mock.calls[0];
+    expect(request.llmModelPreset).toBe('cost_saver');
+    expect(request.llmModelId).toBeUndefined();
+  });
+
+  it('forwards advanced raw model in create request', async () => {
+    const { getByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.press(getByTestId('model-advanced-toggle'));
+    fireEvent.changeText(getByTestId('model-id-input'), 'openai/gpt-4.1');
+    fireEvent.changeText(getByTestId('topic-input'), 'Advanced model forwarding coverage');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalled();
+    });
+
+    const [request] = (lectureService.createLecture as jest.Mock).mock.calls[0];
+    expect(request.llmModelPreset).toBe('balanced');
+    expect(request.llmModelId).toBe('openai/gpt-4.1');
   });
 
   it('submits file mode with inferred sourceType and upload file', async () => {

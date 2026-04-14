@@ -23,6 +23,8 @@ import lectureService, {
   AVAILABLE_VOICES,
   DIFFICULTY_LEVELS,
   LectureRequest,
+  MODEL_PRESETS,
+  ModelPresetId,
   SourceIntakeErrorDetail,
   SourceInputType,
   UrlDiagnosticsResponse,
@@ -51,11 +53,15 @@ const CreateLectureScreen: React.FC = () => {
   const [urlInput, setUrlInput] = useState('');
   const [isUrlDiagnosticsLoading, setIsUrlDiagnosticsLoading] = useState(false);
   const [urlDiagnostics, setUrlDiagnostics] = useState<UrlDiagnosticsResponse | null>(null);
+  const [modelPreset, setModelPreset] = useState<ModelPresetId>('balanced');
+  const [isAdvancedModelMode, setIsAdvancedModelMode] = useState(false);
+  const [customModelId, setCustomModelId] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{
     source?: string;
     topic?: string;
     file?: string;
     url?: string;
+    model?: string;
     general?: string;
   }>({});
   const [formData, setFormData] = useState<LectureRequest>({
@@ -80,7 +86,7 @@ const CreateLectureScreen: React.FC = () => {
     loadKeyStatus();
   }, []);
 
-  const clearFieldError = (field: 'source' | 'topic' | 'file' | 'url' | 'general') => {
+  const clearFieldError = (field: 'source' | 'topic' | 'file' | 'url' | 'model' | 'general') => {
     setFieldErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
@@ -203,6 +209,11 @@ const CreateLectureScreen: React.FC = () => {
   const handleCreateLecture = async () => {
     setFieldErrors({});
 
+    if (isAdvancedModelMode && !customModelId.trim()) {
+      setFieldErrors({ model: 'Enter a model ID or turn off advanced mode to use a preset.' });
+      return;
+    }
+
     if (sourceMode === 'url') {
       if (!isUrlGenerationEnabled) {
         setFieldErrors({
@@ -247,10 +258,16 @@ const CreateLectureScreen: React.FC = () => {
       return;
     }
 
+    const lectureRequest: LectureRequest = {
+      ...formData,
+      llmModelPreset: modelPreset,
+      llmModelId: isAdvancedModelMode ? customModelId.trim() : undefined,
+    };
+
     setIsLoading(true);
 
     try {
-      const response = await lectureService.createLecture(formData, {
+      const response = await lectureService.createLecture(lectureRequest, {
         useByok,
         sourceType: (sourceMode === 'file' ? inferredSourceType : sourceMode === 'url' ? 'url' : 'text') as SourceInputType,
         uploadFile: sourceMode === 'file' ? selectedFile || undefined : undefined,
@@ -345,6 +362,7 @@ const CreateLectureScreen: React.FC = () => {
                   clearFieldError('topic');
                   clearFieldError('file');
                   clearFieldError('url');
+                  clearFieldError('model');
                   clearFieldError('general');
                   if (option.id !== 'url') {
                     setUrlDiagnostics(null);
@@ -473,6 +491,61 @@ const CreateLectureScreen: React.FC = () => {
               </View>
             </>
           )}
+        </View>
+
+        <View style={styles.modeCard}>
+          <Text style={styles.modeTitle}>Model Selection</Text>
+          <Text style={styles.modeSubtle}>Pick a preset or provide a raw model ID in advanced mode.</Text>
+          <View style={styles.modeActions}>
+            {MODEL_PRESETS.map((preset) => (
+              <TouchableOpacity
+                key={preset.id}
+                testID={`model-preset-${preset.id}`}
+                style={[styles.modeButton, modelPreset === preset.id && styles.modeButtonActive]}
+                onPress={() => {
+                  setModelPreset(preset.id);
+                  clearFieldError('model');
+                }}
+              >
+                <Text style={[styles.modeButtonText, modelPreset === preset.id && styles.modeButtonTextActive]}>
+                  {preset.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.modeSubtle}>
+            {MODEL_PRESETS.find((preset) => preset.id === modelPreset)?.description}
+          </Text>
+
+          <TouchableOpacity
+            testID="model-advanced-toggle"
+            style={[styles.modeButton, isAdvancedModelMode && styles.modeButtonActive, { marginTop: 10 }]}
+            onPress={() => {
+              setIsAdvancedModelMode((prev) => !prev);
+              clearFieldError('model');
+            }}
+          >
+            <Text style={[styles.modeButtonText, isAdvancedModelMode && styles.modeButtonTextActive]}>
+              {isAdvancedModelMode ? 'Advanced Model: ON' : 'Advanced Model: OFF'}
+            </Text>
+          </TouchableOpacity>
+
+          {isAdvancedModelMode ? (
+            <TextInput
+              testID="model-id-input"
+              style={[styles.textInput, { minHeight: 48, marginTop: 10 }]}
+              value={customModelId}
+              onChangeText={(value) => {
+                setCustomModelId(value);
+                clearFieldError('model');
+              }}
+              placeholder="e.g., anthropic/claude-3.5-sonnet"
+              placeholderTextColor="#7f8492"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          ) : null}
+          {fieldErrors.model ? <Text testID="model-error" style={styles.fieldError}>{fieldErrors.model}</Text> : null}
         </View>
 
         <Text style={styles.label}>Duration (minutes)</Text>
