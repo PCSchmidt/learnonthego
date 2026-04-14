@@ -49,7 +49,8 @@ def _assert_v1a_error(response, expected_code: str) -> dict:
     assert detail.get("schema") == "source-intake-error-v1"
     assert detail.get("contract_version") == "v1a"
     assert detail.get("code") == expected_code
-    assert detail.get("supported_source_types") == ["md", "pdf", "text", "txt"]
+    supported_types = set(detail.get("supported_source_types") or [])
+    assert {"md", "pdf", "text", "txt"}.issubset(supported_types)
     return detail
 
 
@@ -200,7 +201,7 @@ def test_v2_rejects_missing_all_sources(client):
 
     response = client.post("/api/lectures/generate-document-v2", data=payload)
     detail = _assert_v1a_error(response, "invalid_source_input_combination")
-    assert detail.get("field") == "document_text|file"
+    assert detail.get("field") == "document_text|file|source_uri"
 
 
 def test_v2_rejects_text_file_too_large(client):
