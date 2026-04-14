@@ -41,6 +41,18 @@
   - Login path confirmed working
   - Registration path confirmed working
 - [x] Fixed frontend register payload contract to include `confirm_password`
+- [x] Enabled URL generation behind feature flags with ready-only gating:
+  - Backend flag: `ENABLE_URL_INGESTION_V1=true`
+  - Frontend flag: `EXPO_PUBLIC_ENABLE_URL_INGESTION_V1=true`
+- [x] Added backend URL intake fail-fast contract behavior for non-ready outcomes (`unreachable`, `unsupported`, `no_transcript`)
+- [x] Added/updated regression coverage for URL flow:
+  - Backend: ready URL accepted when flag enabled; non-ready URL rejected with deterministic error code
+  - Frontend: URL create path submits only when diagnostics outcome is `ready` and flag is enabled
+  - Frontend component test confirms URL preview step forwards diagnostics outcome/message/guidance into shared banner
+- [x] Wired A5-031 backend CI contract gates in `.github/workflows/backend-tests.yml`:
+  - `tests/test_v2_source_intake_v1a.py`
+  - `tests/test_url_diagnostics_scaffold.py`
+- [x] Confirmed backend CI green on `dev` with required A5-031 contract gates passing
 
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
@@ -48,7 +60,7 @@
 - [ ] Legacy docs from 2025 require archival to keep root documentation focused
 - [ ] Key governance: replace placeholder local BYOK keys with real user BYOK keys only when testing non-dry-run audio generation
 - [ ] BYOK UX is not yet productized for users (status, failure reasons, guided setup)
-- [ ] Multi-source ingestion (URL/video/podcast) not yet implemented in product flow
+- [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
 
 ### Newly Confirmed Product Direction (April 2026)
 
@@ -75,9 +87,9 @@
 7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
-1. [ ] Add one lightweight integration test for `scripts/run_v2_smoke_token.ps1` behavior in CI docs/runbook (expected pass/fail signatures).
-2. [x] Add backend coverage for BYOK key deletion/replacement lifecycle (`POST /api/api-keys/`, `DELETE /api/api-keys/{provider}`).
-3. [ ] Promote lifecycle suite in CI/docs as the canonical BYOK key-management contract gate.
+1. [ ] `A5-031` Promote backend contract tests as a CI gate for source-intake + URL-ready behavior (env and BYOK V2 endpoints).
+2. [ ] `A5-032` Expand smoke scenarios to include feature-flagged URL-ready pass and deterministic non-ready fail signatures.
+3. [ ] `A5-030` Add one frontend integration test: non-ready URL keeps create disabled even when URL flag is enabled.
 4. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 5. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
 
@@ -122,17 +134,18 @@ Owner placeholder format:
 - `@owner-qa`
 
 Initial sprint sequence (kickoff):
-1. `A5-001` -> `in-progress`
-2. `A5-010` -> `queued`
-3. `A5-021` -> `queued`
+1. `A5-001` -> `completed`
+2. `A5-020` -> `completed`
+3. `A5-010` -> `completed`
+4. `A5-021` -> `in-progress`
 
 #### A. Product + API Contract
 
-- [ ] `A5-001` Source intake contract
+- [x] `A5-001` Source intake contract
   - Owner: `@owner-product`
-  - Status: `in-progress`
+  - Status: `completed`
   - Sequence: `#1`
-  - Deliverable: normalized schema for text/file/url input with source metadata
+  - Deliverable: v1a request/response contract locked for `text`, `.txt`, `.md`, `.pdf` with explicit deferred handling for YouTube/podcast/url ingestion
 
 - [ ] `A5-002` Summary/script response contract
   - Owner: `@owner-backend`
@@ -148,9 +161,9 @@ Initial sprint sequence (kickoff):
 
 - [ ] `A5-010` Create screen source switcher
   - Owner: `@owner-frontend`
-  - Status: `queued`
-  - Sequence: `#2`
-  - Deliverable: unified source intake UI for Text/File/URL paths
+  - Status: `completed`
+  - Sequence: `#3`
+  - Deliverable: unified source intake UI for Text/File/URL paths with deterministic per-field error rendering and file reset recovery
 
 - [ ] `A5-011` Model selection UX
   - Owner: `@owner-frontend`
@@ -169,16 +182,18 @@ Initial sprint sequence (kickoff):
 
 #### C. Backend Services + Validation
 
-- [ ] `A5-020` File ingestion hardening
+- [x] `A5-020` File ingestion hardening
   - Owner: `@owner-backend`
-  - Status: `not-started`
-  - Deliverable: robust parsing/validation for `.txt`, `.md`, `.pdf` with actionable errors
+  - Status: `completed`
+  - Sequence: `#2`
+  - Deliverable: robust parsing/validation for `.txt`, `.md`, `.pdf` with consistent error schema + stable error codes for UI handling
 
 - [ ] `A5-021` URL diagnostics scaffold
+- [x] `A5-021` URL diagnostics scaffold
   - Owner: `@owner-backend`
-  - Status: `queued`
-  - Sequence: `#3`
-  - Deliverable: structured URL diagnostics (`unreachable`, `unsupported`, `no transcript`)
+  - Status: `completed`
+  - Sequence: `#4`
+  - Deliverable: structured URL diagnostics endpoint + feature-flagged ready-only URL generation path implemented; non-ready outcomes fail-fast with deterministic error contract and shared frontend diagnostics banner reuse
 
 - [ ] `A5-022` Duration best-effort policy
   - Owner: `@owner-backend`
@@ -189,13 +204,13 @@ Initial sprint sequence (kickoff):
 
 - [ ] `A5-030` Frontend integration tests
   - Owner: `@owner-qa`
-  - Status: `not-started`
-  - Deliverable: tests for source switching, model presets, fallback UI, preview rendering
+  - Status: `in-progress`
+  - Deliverable: coverage added for deterministic source-intake field mapping, URL diagnostics outcome rendering (`unreachable`, `unsupported`, `no_transcript`, `ready`), and ready-only URL submit gating under feature flag
 
 - [ ] `A5-031` Backend contract tests
   - Owner: `@owner-qa`
-  - Status: `not-started`
-  - Deliverable: schema + fallback contract tests in CI
+  - Status: `completed`
+  - Deliverable: schema + fallback contract tests wired as CI gates and validated green in CI
 
 - [ ] `A5-032` Smoke scenario expansion
   - Owner: `@owner-qa`
