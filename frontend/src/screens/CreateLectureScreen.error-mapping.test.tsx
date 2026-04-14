@@ -331,6 +331,40 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     expect(codeNode.props.children).toBe('no_transcript');
   });
 
+  it('keeps URL create blocked for non-ready outcome even when URL flag is enabled', async () => {
+    process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 = 'true';
+    (lectureService.diagnoseSourceUrl as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        success: false,
+        schema: 'url-diagnostics-v1',
+        contract_version: 'v1a',
+        source_uri: 'https://open.spotify.com/episode/blocked',
+        source_class: 'podcast',
+        outcome: 'unsupported',
+        diagnostics: {
+          code: 'unsupported',
+          message: 'Podcast/audio URL ingestion is deferred to the next slice.',
+          retryable: false,
+          status_code: 200,
+        },
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+    fireEvent.press(getByTestId('source-mode-url'));
+    fireEvent.changeText(getByTestId('url-input'), 'https://open.spotify.com/episode/blocked');
+    fireEvent.press(getByTestId('run-url-diagnostics-button'));
+
+    const codeNode = await findByTestId('url-diagnostics-code');
+    expect(codeNode.props.children).toBe('unsupported');
+
+    const createCallsBefore = (lectureService.createLecture as jest.Mock).mock.calls.length;
+    fireEvent.press(getByTestId('create-lecture-button'));
+    const createCallsAfter = (lectureService.createLecture as jest.Mock).mock.calls.length;
+    expect(createCallsAfter).toBe(createCallsBefore);
+  });
+
   it('renders URL diagnostics outcome: ready and submits when URL flag is enabled', async () => {
     process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 = 'true';
 

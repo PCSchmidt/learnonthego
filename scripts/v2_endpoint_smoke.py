@@ -22,6 +22,8 @@ PASSWORD = os.getenv("LOTG_PASSWORD")
 TOKEN = os.getenv("LOTG_TOKEN")
 STRICT_BYOK = os.getenv("LOTG_STRICT_BYOK", "false").lower() == "true"
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOTG_TIMEOUT_SECONDS", "8"))
+URL_READY_SOURCE = os.getenv("LOTG_URL_READY_SOURCE", "https://example.com")
+URL_NON_READY_SOURCE = os.getenv("LOTG_URL_NON_READY_SOURCE", "nota-valid-url")
 
 
 class SmokeError(Exception):
@@ -135,7 +137,7 @@ def validate_success_contract(name: str, data: Dict[str, Any], expected_key_sour
             f"{name}: expected contract_version=v1a, got {data.get('contract_version')}"
         )
 
-    if data.get("source_type") not in {"text", "txt", "md", "pdf"}:
+    if data.get("source_type") not in {"text", "txt", "md", "pdf", "url"}:
         raise SmokeError(
             f"{name}: unexpected source_type={data.get('source_type')}"
         )
@@ -150,6 +152,55 @@ def validate_success_contract(name: str, data: Dict[str, Any], expected_key_sour
     for key in ["provider", "model", "file_path", "bytes_written", "metadata"]:
         if key not in audio:
             raise SmokeError(f"{name}: audio.{key} missing")
+
+
+def validate_url_diagnostics_contract(
+    name: str,
+    data: Dict[str, Any],
+    expected_outcome: str,
+    expected_success: bool,
+) -> None:
+    if data.get("schema") != "url-diagnostics-v1":
+        raise SmokeError(f"{name}: missing or invalid schema")
+
+    if data.get("contract_version") != "v1a":
+        raise SmokeError(f"{name}: expected contract_version=v1a")
+
+    if data.get("outcome") != expected_outcome:
+        raise SmokeError(
+            f"{name}: expected outcome={expected_outcome}, got {data.get('outcome')}"
+        )
+
+    if bool(data.get("success")) != expected_success:
+        raise SmokeError(
+            f"{name}: expected success={expected_success}, got {data.get('success')}"
+        )
+
+    diagnostics = data.get("diagnostics") or {}
+    if diagnostics.get("code") != expected_outcome:
+        raise SmokeError(
+            f"{name}: expected diagnostics.code={expected_outcome}, got {diagnostics.get('code')}"
+        )
+
+    if not diagnostics.get("message"):
+        raise SmokeError(f"{name}: diagnostics.message missing")
+
+
+def validate_source_intake_error_contract(name: str, data: Dict[str, Any], expected_code: str) -> None:
+    detail = data.get("detail") if isinstance(data, dict) else None
+    if not isinstance(detail, dict):
+        raise SmokeError(f"{name}: response detail missing or invalid: {data}")
+
+    if detail.get("schema") != "source-intake-error-v1":
+        raise SmokeError(f"{name}: expected source-intake-error-v1 schema")
+
+    if detail.get("contract_version") != "v1a":
+        raise SmokeError(f"{name}: expected contract_version=v1a")
+
+    if detail.get("code") != expected_code:
+        raise SmokeError(
+            f"{name}: expected code={expected_code}, got {detail.get('code')}"
+        )
 
 
 def main() -> int:
@@ -177,6 +228,98 @@ def main() -> int:
         )
     validate_success_contract("env-key endpoint", env_result["data"], "environment")
     print("PASS: /api/lectures/generate-document-v2 contract validated")
+
+    print("Checking URL diagnostics ready signature...")
+    url_ready_result = post_form(
+        "/api/lectures/url-diagnostics-v1",
+        {"source_uri": URL_READY_SOURCE},
+        token=token,
+    )
+    if not url_ready_result["ok"]:
+        raise SmokeError(
+            f"url diagnostics ready failed ({url_ready_result['status']}): {url_ready_result['data']}"
+        )
+    validate_url_diagnostics_contract(
+        "url diagnostics ready",
+        url_ready_result["data"],
+        expected_outcome="ready",
+        expected_success=True,
+    )
+    print("PASS: /api/lectures/url-diagnostics-v1 ready signature validated")
+
+    print("Checking URL diagnostics deterministic non-ready signature...")
+    url_non_ready_result = post_form(
+        "/api/lectures/url-diagnostics-v1",
+        {"source_uri": URL_NON_READY_SOURCE},
+        token=token,
+    )
+    if not url_non_ready_result["ok"]:
+        raise SmokeError(
+            f"url diagnostics non-ready failed ({url_non_ready_result['status']}): {url_non_ready_result['data']}"
+        )
+    validate_url_diagnostics_contract(
+        "url diagnostics non-ready",
+        url_non_ready_result["data"],
+        expected_outcome="unsupported",
+        expected_success=False,
+    )
+    print("PASS: /api/lectures/url-diagnostics-v1 deterministic non-ready signature validated")
+
+    print("Checking URL generation ready pass signature...")
+    url_generate_ready_payload = {
+        "source_type": "url",
+        "source_uri": URL_READY_SOURCE,
+        "duration": 8,
+        "difficulty": "intermediate",
+        "llm_provider": "openrouter",
+        "tts_provider": "elevenlabs",
+        "dry_run": "true",
+    }
+    url_generate_ready_result = post_form(
+        "/api/lectures/generate-document-v2",
+        url_generate_ready_payload,
+        token=token,
+    )
+    if not url_generate_ready_result["ok"]:
+        raise SmokeError(
+            f"url generation ready failed ({url_generate_ready_result['status']}): {url_generate_ready_result['data']}"
+        )
+    validate_success_contract("url generation ready", url_generate_ready_result["data"], "environment")
+    if url_generate_ready_result["data"].get("source_type") != "url":
+        raise SmokeError(
+            f"url generation ready: expected source_type=url, got {url_generate_ready_result['data'].get('source_type')}"
+        )
+    print("PASS: /api/lectures/generate-document-v2 URL-ready pass signature validated")
+
+    print("Checking URL generation deterministic non-ready fail signature...")
+    url_generate_non_ready_payload = {
+        "source_type": "url",
+        "source_uri": URL_NON_READY_SOURCE,
+        "duration": 8,
+        "difficulty": "intermediate",
+        "llm_provider": "openrouter",
+        "tts_provider": "elevenlabs",
+        "dry_run": "true",
+    }
+    url_generate_non_ready_result = post_form(
+        "/api/lectures/generate-document-v2",
+        url_generate_non_ready_payload,
+        token=token,
+    )
+    if url_generate_non_ready_result["ok"]:
+        raise SmokeError(
+            "url generation non-ready unexpectedly succeeded; expected deterministic source-intake error"
+        )
+    if url_generate_non_ready_result["status"] != 400:
+        raise SmokeError(
+            f"url generation non-ready expected 400, got {url_generate_non_ready_result['status']}"
+        )
+    validate_source_intake_error_contract(
+        "url generation non-ready",
+        url_generate_non_ready_result["data"],
+        expected_code="url_not_ready",
+    )
+    print("PASS: /api/lectures/generate-document-v2 URL non-ready fail signature validated")
 
     print("Checking BYOK V2 endpoint...")
     byok_result = post_form("/api/lectures/generate-document-v2-byok", shared_form, token=token)

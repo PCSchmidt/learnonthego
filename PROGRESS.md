@@ -53,6 +53,12 @@
   - `tests/test_v2_source_intake_v1a.py`
   - `tests/test_url_diagnostics_scaffold.py`
 - [x] Confirmed backend CI green on `dev` with required A5-031 contract gates passing
+- [x] Expanded local smoke signatures in `scripts/v2_endpoint_smoke.py` for URL-ready flow:
+  - URL diagnostics ready pass signature
+  - URL diagnostics deterministic non-ready signature
+  - URL generation ready pass signature
+  - URL generation deterministic non-ready fail signature (`url_not_ready`)
+- [x] Added A5-030 frontend guardrail test ensuring URL create remains blocked for non-ready outcomes even when URL feature flag is enabled
 
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
@@ -87,11 +93,11 @@
 7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
-1. [ ] `A5-032` Expand smoke scenarios to include feature-flagged URL-ready pass and deterministic non-ready fail signatures.
-2. [ ] `A5-030` Add one frontend integration test: non-ready URL keeps create disabled even when URL flag is enabled.
-3. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
-4. [ ] Publish URL-ready feature-flag runbook notes in setup/testing docs for smoother local onboarding.
-5. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
+1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
+2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
+3. [ ] A5-011 Model selection UX (presets + advanced toggle).
+4. [ ] A5-012 BYOK status/fallback messaging in Create/Settings flows.
+5. [ ] A5-013 Script preview and confirm flow.
 
 ### Verification Commands
 ```bash
@@ -204,18 +210,18 @@ Initial sprint sequence (kickoff):
 
 - [ ] `A5-030` Frontend integration tests
   - Owner: `@owner-qa`
-  - Status: `in-progress`
-  - Deliverable: coverage added for deterministic source-intake field mapping, URL diagnostics outcome rendering (`unreachable`, `unsupported`, `no_transcript`, `ready`), and ready-only URL submit gating under feature flag
+  - Status: `completed`
+  - Deliverable: coverage added for deterministic source-intake field mapping, URL diagnostics outcome rendering (`unreachable`, `unsupported`, `no_transcript`, `ready`), ready-only URL submit gating under feature flag, and explicit non-ready blocked-submit guardrail
 
 - [x] `A5-031` Backend contract tests
   - Owner: `@owner-qa`
   - Status: `completed`
   - Deliverable: schema + fallback contract tests wired as CI gates and validated green in CI
 
-- [ ] `A5-032` Smoke scenario expansion
+- [x] `A5-032` Smoke scenario expansion
   - Owner: `@owner-qa`
-  - Status: `not-started`
-  - Deliverable: smoke signatures for each supported source type
+  - Status: `completed`
+  - Deliverable: smoke signatures expanded for URL-ready pass and deterministic non-ready fail scenarios in V2 URL flow
 
 #### Milestone Tracking
 
@@ -232,7 +238,7 @@ Initial sprint sequence (kickoff):
 - [ ] `M3` Reliability gates
   - Scope: `A5-030`, `A5-031`, `A5-032`
   - Owner: `@owner-qa`
-  - Status: `not-started`
+  - Status: `completed`
 
 ---
 
