@@ -680,7 +680,7 @@ const CreateLectureScreen: React.FC = () => {
           <View testID="script-preview-card" style={styles.infoCard}>
             <Text style={styles.infoTitle}>Script Preview</Text>
             <Text testID="script-preview-text" style={styles.infoText}>
-              {scriptPreview.script || 'No preview script returned.'}
+              {scriptPreview.preview_script?.content || scriptPreview.script || 'No preview script returned.'}
             </Text>
             <Text style={styles.modeSubtle}>
               Confirm to generate audio, or change inputs to regenerate preview.

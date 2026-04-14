@@ -79,6 +79,12 @@ describe('CreateLectureScreen deterministic error mapping', () => {
       data: {
         title: 'Dry Run Lecture Contract',
         script: 'Dry run mode validates contract only. No LLM/TTS generation executed.',
+        preview_script: {
+          title: 'Dry Run Lecture Contract',
+          content: 'Dry run mode validates contract only. No LLM/TTS generation executed.',
+          duration_minutes: 15,
+          difficulty: 'beginner',
+        },
         dry_run: true,
         key_source: 'environment',
       },
@@ -295,6 +301,12 @@ describe('CreateLectureScreen deterministic error mapping', () => {
         data: {
           title: 'Dry Run Lecture Contract',
           script: 'Preview script content for confirmation.',
+          preview_script: {
+            title: 'Dry Run Lecture Contract',
+            content: 'Preview script content for confirmation.',
+            duration_minutes: 15,
+            difficulty: 'beginner',
+          },
           dry_run: true,
           key_source: 'environment',
         },

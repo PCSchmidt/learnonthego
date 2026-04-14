@@ -414,6 +414,12 @@ def _build_v2_dry_run_response(
     execution_mode: str,
 ) -> Dict[str, Any]:
     """Return a stable response contract without invoking paid generation."""
+    preview_script = {
+        "title": "Dry Run Lecture Contract",
+        "content": "Dry run mode validates contract only. No LLM/TTS generation executed.",
+        "duration_minutes": duration,
+        "difficulty": difficulty,
+    }
     return {
         "success": True,
         "dry_run": True,
@@ -426,11 +432,21 @@ def _build_v2_dry_run_response(
         "execution_mode": execution_mode,
         "title": "Dry Run Lecture Contract",
         "script": "Dry run mode validates contract only. No LLM/TTS generation executed.",
+        "summary": "Dry run preview only. Confirm to run final generation.",
+        "preview_script": preview_script,
         "llm": {
             "provider": llm_provider,
             "model": llm_model or "dry-run",
             "usage": {},
         },
+        "script_sections": [
+            {
+                "id": "preview-main",
+                "heading": "Preview Script",
+                "content": preview_script["content"],
+            }
+        ],
+        "citations": [],
         "audio": {
             "provider": tts_provider,
             "model": "dry-run",
@@ -439,6 +455,29 @@ def _build_v2_dry_run_response(
             "metadata": {"skipped": True},
         },
     }
+
+
+def _build_script_sections(script: str) -> list:
+    cleaned = (script or "").strip()
+    if not cleaned:
+        return []
+    return [
+        {
+            "id": "main",
+            "heading": "Main Script",
+            "content": cleaned,
+        }
+    ]
+
+
+def _build_script_summary(script: str) -> str:
+    cleaned = (script or "").strip()
+    if not cleaned:
+        return ""
+    summary = cleaned.split("\n", 1)[0].strip()
+    if len(summary) > 220:
+        summary = summary[:217].rstrip() + "..."
+    return summary
 
 
 def _classify_url_source(source_uri: str) -> str:
@@ -560,6 +599,9 @@ async def generate_document_audio_v2(
             "duration": duration,
             "difficulty": difficulty,
             "execution_mode": "environment",
+            "summary": _build_script_summary(result.get("script", "")),
+            "script_sections": _build_script_sections(result.get("script", "")),
+            "citations": [],
             **result,
         }
     except ValueError as e:
@@ -1130,6 +1172,9 @@ async def generate_document_audio_v2_byok(
             "difficulty": difficulty,
             "key_source": "user-encrypted-storage",
             "execution_mode": "byok",
+            "summary": _build_script_summary(result.get("script", "")),
+            "script_sections": _build_script_sections(result.get("script", "")),
+            "citations": [],
             **result,
         }
     except ValueError as e:

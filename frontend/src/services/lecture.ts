@@ -90,6 +90,23 @@ export interface LectureResponse {
   key_source?: 'environment' | 'user-encrypted-storage';
   source?: string;
   script?: string;
+  summary?: string;
+  preview_script?: {
+    title: string;
+    content: string;
+    duration_minutes: number;
+    difficulty: string;
+  };
+  script_sections?: Array<{
+    id: string;
+    heading: string;
+    content: string;
+  }>;
+  citations?: Array<{
+    label?: string;
+    source_uri?: string;
+    note?: string;
+  }>;
   metadata?: {
     topic: string;
     difficulty: string;

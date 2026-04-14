@@ -100,10 +100,15 @@ def test_v2_preview_dry_run_response_shape_contract(auth_client, monkeypatch):
     assert body["execution_mode"] == "environment"
     assert isinstance(body["script"], str)
     assert body["script"]
+    assert isinstance(body.get("preview_script"), dict)
+    assert {"title", "content", "duration_minutes", "difficulty"}.issubset(body["preview_script"].keys())
+    assert isinstance(body.get("summary"), str)
     assert isinstance(body.get("llm"), dict)
     assert {"provider", "model", "usage"}.issubset(body["llm"].keys())
     assert isinstance(body.get("audio"), dict)
     assert {"provider", "model", "file_path", "bytes_written", "metadata"}.issubset(body["audio"].keys())
+    assert isinstance(body.get("script_sections"), list)
+    assert isinstance(body.get("citations"), list)
 
 
 def test_v2_byok_endpoint_enabled_returns_contract(auth_client, monkeypatch):
@@ -217,6 +222,11 @@ def test_v2_final_generation_contract_includes_execution_mode(
     assert body["execution_mode"] == expected_execution_mode
     assert body["title"] == "Mocked final generation"
     assert body["script"] == "Final generated script"
+    assert isinstance(body.get("summary"), str)
+    assert isinstance(body.get("script_sections"), list)
+    assert len(body["script_sections"]) >= 1
+    assert {"id", "heading", "content"}.issubset(body["script_sections"][0].keys())
+    assert isinstance(body.get("citations"), list)
 
 
 def test_v2_requires_auth_header(auth_client, monkeypatch):

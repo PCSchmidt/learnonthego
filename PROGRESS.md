@@ -95,7 +95,7 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-002 Summary/script response contract.
+3. [ ] A5-022 Duration best-effort policy.
 
 ### Verification Commands
 ```bash
@@ -146,6 +146,7 @@ Initial sprint sequence (kickoff):
 6. `A5-012` -> `completed`
 7. `A5-013` -> `completed`
 8. `A5-003` -> `completed`
+9. `A5-002` -> `completed`
 
 #### A. Product + API Contract
 
@@ -155,10 +156,11 @@ Initial sprint sequence (kickoff):
   - Sequence: `#1`
   - Deliverable: v1a request/response contract locked for `text`, `.txt`, `.md`, `.pdf` with explicit deferred handling for YouTube/podcast/url ingestion
 
-- [ ] `A5-002` Summary/script response contract
+- [x] `A5-002` Summary/script response contract
   - Owner: `@owner-backend`
-  - Status: `not-started`
-  - Deliverable: response shape includes script sections, duration estimate, citations array
+  - Status: `completed`
+  - Sequence: `#9`
+  - Deliverable: standardized V2 preview script fields (`preview_script`) and final generation shape (`summary`, `script_sections`, `citations`) with backend contract assertions and frontend compatibility
 
 - [x] `A5-003` Generation mode contract
   - Owner: `@owner-backend`
@@ -168,7 +170,7 @@ Initial sprint sequence (kickoff):
 
 #### B. Frontend UX + Interaction
 
-- [ ] `A5-010` Create screen source switcher
+- [x] `A5-010` Create screen source switcher
   - Owner: `@owner-frontend`
   - Status: `completed`
   - Sequence: `#3`
@@ -200,7 +202,6 @@ Initial sprint sequence (kickoff):
   - Sequence: `#2`
   - Deliverable: robust parsing/validation for `.txt`, `.md`, `.pdf` with consistent error schema + stable error codes for UI handling
 
-- [ ] `A5-021` URL diagnostics scaffold
 - [x] `A5-021` URL diagnostics scaffold
   - Owner: `@owner-backend`
   - Status: `completed`
@@ -214,7 +215,7 @@ Initial sprint sequence (kickoff):
 
 #### D. Testing + Reliability
 
-- [ ] `A5-030` Frontend integration tests
+- [x] `A5-030` Frontend integration tests
   - Owner: `@owner-qa`
   - Status: `completed`
   - Deliverable: coverage added for deterministic source-intake field mapping, URL diagnostics outcome rendering (`unreachable`, `unsupported`, `no_transcript`, `ready`), ready-only URL submit gating under feature flag, and explicit non-ready blocked-submit guardrail
@@ -231,17 +232,17 @@ Initial sprint sequence (kickoff):
 
 #### Milestone Tracking
 
-- [ ] `M1` Contracts + source intake scaffold
+- [x] `M1` Contracts + source intake scaffold
   - Scope: `A5-001`, `A5-010`, `A5-021`
   - Owner: `@owner-product` + `@owner-frontend` + `@owner-backend`
-  - Status: `in-progress`
+  - Status: `completed`
 
-- [ ] `M2` Model/BYOK + preview
+- [x] `M2` Model/BYOK + preview
   - Scope: `A5-003`, `A5-011`, `A5-012`, `A5-013`
   - Owner: `@owner-frontend` + `@owner-backend`
-  - Status: `in-progress`
+  - Status: `completed`
 
-- [ ] `M3` Reliability gates
+- [x] `M3` Reliability gates
   - Scope: `A5-030`, `A5-031`, `A5-032`
   - Owner: `@owner-qa`
   - Status: `completed`
