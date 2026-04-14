@@ -95,8 +95,7 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-012 BYOK status/fallback messaging in Create/Settings flows.
-4. [ ] A5-013 Script preview and confirm flow.
+3. [ ] A5-013 Script preview and confirm flow.
 
 ### Verification Commands
 ```bash
@@ -144,6 +143,7 @@ Initial sprint sequence (kickoff):
 3. `A5-010` -> `completed`
 4. `A5-021` -> `completed`
 5. `A5-011` -> `completed`
+6. `A5-012` -> `completed`
 
 #### A. Product + API Contract
 
@@ -177,10 +177,11 @@ Initial sprint sequence (kickoff):
   - Sequence: `#5`
   - Deliverable: presets (`Cost Saver`, `Balanced`, `High Fidelity`) + advanced raw model toggle implemented and validated via targeted frontend tests (`lecture.mode-selection`, `CreateLectureScreen.error-mapping`)
 
-- [ ] `A5-012` BYOK status and fallback messaging
+- [x] `A5-012` BYOK status and fallback messaging
   - Owner: `@owner-frontend`
-  - Status: `not-started`
-  - Deliverable: clear BYOK key status and explicit fallback indicator in UI
+  - Status: `completed`
+  - Sequence: `#6`
+  - Deliverable: clear BYOK key status and explicit fallback indicator in Create + Settings flows with focused frontend coverage
 
 - [ ] `A5-013` Script preview and confirm flow
   - Owner: `@owner-frontend`
@@ -217,7 +218,7 @@ Initial sprint sequence (kickoff):
 - [x] `A5-031` Backend contract tests
   - Owner: `@owner-qa`
   - Status: `completed`
-  - Deliverable: schema + fallback contract tests wired as CI gates and validated green in CI
+  - Deliverable: schema + fallback contract tests wired as CI gates and validated green in CI, including explicit V2 `llm_model` passthrough assertion across environment + BYOK dry-run contracts
 
 - [x] `A5-032` Smoke scenario expansion
   - Owner: `@owner-qa`

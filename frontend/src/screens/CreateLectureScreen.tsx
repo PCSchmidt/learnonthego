@@ -465,13 +465,19 @@ const CreateLectureScreen: React.FC = () => {
             <Text style={styles.modeSubtle}>Checking key status...</Text>
           ) : (
             <>
-              <Text style={styles.modeSubtle}>
+              <Text testID="byok-status-summary" style={styles.modeSubtle}>
                 {keyStatus?.setup_complete
                   ? 'BYOK keys detected for OpenRouter and ElevenLabs.'
                   : `Missing keys: ${(keyStatus?.missing_keys || []).join(', ') || 'unknown'}`}
               </Text>
+              <Text testID="fallback-status-message" style={styles.modeSubtle}>
+                {useByok
+                  ? 'Primary path: BYOK secure storage (OpenRouter + ElevenLabs).'
+                  : 'Fallback path active: Environment-managed providers (OpenRouter + OpenAI TTS).'}
+              </Text>
               <View style={styles.modeActions}>
                 <TouchableOpacity
+                  testID="generation-mode-byok"
                   style={[styles.modeButton, useByok && styles.modeButtonActive]}
                   onPress={() => setUseByok(true)}
                   disabled={!keyStatus?.setup_complete}
@@ -481,6 +487,7 @@ const CreateLectureScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="generation-mode-environment"
                   style={[styles.modeButton, !useByok && styles.modeButtonActive]}
                   onPress={() => setUseByok(false)}
                 >
@@ -489,6 +496,11 @@ const CreateLectureScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
               </View>
+              {!keyStatus?.setup_complete ? (
+                <Text testID="byok-settings-hint" style={styles.modeSubtle}>
+                  BYOK is unavailable until required keys are configured in Settings.
+                </Text>
+              ) : null}
             </>
           )}
         </View>

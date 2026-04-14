@@ -264,6 +264,29 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     expect(request.llmModelId).toBe('openai/gpt-4.1');
   });
 
+  it('shows fallback messaging when BYOK is not configured and environment mode is selected', async () => {
+    (lectureService.getApiKeyStatus as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        can_generate_lectures: false,
+        missing_keys: ['openrouter', 'elevenlabs'],
+        setup_complete: false,
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    const statusSummary = await findByTestId('byok-status-summary');
+    expect(statusSummary.props.children).toContain('Missing keys: openrouter, elevenlabs');
+
+    const byokHint = await findByTestId('byok-settings-hint');
+    expect(byokHint.props.children).toContain('BYOK is unavailable');
+
+    fireEvent.press(getByTestId('generation-mode-environment'));
+    const fallbackStatus = await findByTestId('fallback-status-message');
+    expect(fallbackStatus.props.children).toContain('Fallback path active: Environment-managed providers');
+  });
+
   it('submits file mode with inferred sourceType and upload file', async () => {
     const file = { name: 'outline.md', size: 2048, type: 'text/markdown' };
 

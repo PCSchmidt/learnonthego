@@ -3,7 +3,7 @@
  * Phase 0: Basic settings placeholder
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,28 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import lectureService, { ApiKeyStatus } from '../services/lecture';
 
 const SettingsScreen: React.FC = () => {
+  const [isKeyStatusLoading, setIsKeyStatusLoading] = useState(true);
+  const [keyStatus, setKeyStatus] = useState<ApiKeyStatus | null>(null);
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      setIsKeyStatusLoading(true);
+      try {
+        const response = await lectureService.getApiKeyStatus();
+        if (response.success && response.data) {
+          setKeyStatus(response.data);
+        }
+      } finally {
+        setIsKeyStatusLoading(false);
+      }
+    };
+
+    loadStatus();
+  }, []);
+
   const handleAbout = () => {
     Alert.alert(
       'About LearnOnTheGo',
@@ -90,6 +110,28 @@ const SettingsScreen: React.FC = () => {
         </View>
 
         <View style={styles.panel}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Generation Key Status</Text>
+            <View style={styles.statusCard}>
+              {isKeyStatusLoading ? (
+                <Text testID="settings-key-status-loading" style={styles.statusText}>Checking provider key status...</Text>
+              ) : (
+                <>
+                  <Text testID="settings-byok-status" style={styles.statusText}>
+                    {keyStatus?.setup_complete
+                      ? 'BYOK ready: OpenRouter and ElevenLabs keys are configured.'
+                      : `BYOK not ready: missing ${(keyStatus?.missing_keys || []).join(', ') || 'required provider keys'}.`}
+                  </Text>
+                  <Text testID="settings-fallback-status" style={styles.statusSubtle}>
+                    {keyStatus?.setup_complete
+                      ? 'Create screen can use BYOK by default, with environment mode available as manual fallback.'
+                      : 'Fallback behavior: generation uses environment-managed providers until BYOK keys are complete.'}
+                  </Text>
+                </>
+              )}
+            </View>
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Available Now</Text>
             {settingsItems.map((item, index) => (
@@ -211,6 +253,24 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 18,
+  },
+  statusCard: {
+    backgroundColor: '#f8f7f3',
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    padding: 14,
+  },
+  statusText: {
+    color: '#243045',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  statusSubtle: {
+    color: '#59667b',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 6,
   },
   sectionTitle: {
     fontSize: 12,

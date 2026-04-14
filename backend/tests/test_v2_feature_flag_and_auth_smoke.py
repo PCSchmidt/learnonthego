@@ -44,6 +44,7 @@ def _v2_payload() -> dict:
         "duration": "8",
         "difficulty": "intermediate",
         "llm_provider": "openrouter",
+        "llm_model": "openai/gpt-4.1-mini",
         "tts_provider": "elevenlabs",
         "dry_run": "true",
     }
@@ -101,6 +102,40 @@ def test_v2_byok_endpoint_enabled_returns_contract(auth_client, monkeypatch):
     assert body["success"] is True
     assert body["dry_run"] is True
     assert body["key_source"] == "user-encrypted-storage"
+
+
+@pytest.mark.parametrize(
+    "endpoint,expected_key_source",
+    [
+        ("/api/lectures/generate-document-v2", "environment"),
+        ("/api/lectures/generate-document-v2-byok", "user-encrypted-storage"),
+    ],
+)
+def test_v2_endpoints_echo_llm_model_in_dry_run_contract(
+    auth_client,
+    monkeypatch,
+    endpoint,
+    expected_key_source,
+):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+
+    async def fake_get_user_api_key(db, user_id, provider):
+        return "dummy-api-key-for-tests"
+
+    monkeypatch.setattr(lecture_routes, "_get_user_api_key", fake_get_user_api_key)
+
+    response = auth_client.post(
+        endpoint,
+        data=_v2_payload(),
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["dry_run"] is True
+    assert body["key_source"] == expected_key_source
+    assert body["llm"]["model"] == "openai/gpt-4.1-mini"
 
 
 def test_v2_requires_auth_header(auth_client, monkeypatch):
