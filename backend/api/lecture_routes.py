@@ -45,6 +45,7 @@ SOURCE_INTAKE_ERROR_SCHEMA = "source-intake-error-v1"
 URL_DIAGNOSTICS_SCHEMA = "url-diagnostics-v1"
 DURATION_POLICY_SCHEMA = "duration-best-effort-v1"
 V2_GENERATION_ERROR_SCHEMA = "v2-generation-error-v1"
+BYOK_PRIORITY_PAID_ENV_FLAG = "ENABLE_BYOK_PRIORITY_FOR_PAID"
 DURATION_TOLERANCE_RATIO = 0.15
 DURATION_MIN_TOLERANCE_MINUTES = 1.0
 DURATION_WPM_BY_DIFFICULTY = {
@@ -56,6 +57,10 @@ DURATION_WPM_BY_DIFFICULTY = {
 
 def _url_ingestion_v1_enabled() -> bool:
     return os.getenv("ENABLE_URL_INGESTION_V1", "false").lower() == "true"
+
+
+def _byok_priority_for_paid_enabled() -> bool:
+    return os.getenv(BYOK_PRIORITY_PAID_ENV_FLAG, "false").lower() == "true"
 
 
 def _supported_source_types_v1a() -> List[str]:
@@ -610,6 +615,7 @@ async def generate_document_audio_v2(
     voice_id: Optional[str] = Form(None),
     dry_run: bool = Form(False),
     current_user = Depends(get_current_user),
+    db = Depends(get_async_db),
 ):
     """Feature-flagged V2 path: document -> script -> audio via pluggable providers."""
     if not v2_pipeline_enabled():
@@ -648,6 +654,25 @@ async def generate_document_audio_v2(
             execution_mode="environment",
         )
 
+    execution_mode = "environment"
+    key_source = "environment"
+    llm_api_key: Optional[str] = None
+    tts_api_key: Optional[str] = None
+
+    if _byok_priority_for_paid_enabled():
+        provider_map = {
+            "openrouter": APIProvider.OPENROUTER,
+            "elevenlabs": APIProvider.ELEVENLABS,
+        }
+        llm_enum = provider_map.get((llm_provider or "").lower())
+        tts_enum = provider_map.get((tts_provider or "").lower())
+        if llm_enum and tts_enum:
+            llm_api_key = await _get_user_api_key(db, current_user.id, llm_enum)
+            tts_api_key = await _get_user_api_key(db, current_user.id, tts_enum)
+            if llm_api_key and tts_api_key:
+                execution_mode = "byok"
+                key_source = "user-encrypted-storage"
+
     try:
         pipeline = create_document_pipeline_v2()
         result = await pipeline.run(
@@ -659,6 +684,8 @@ async def generate_document_audio_v2(
             tts_provider=tts_provider,
             context=context,
             voice_id=voice_id,
+            llm_api_key=llm_api_key,
+            tts_api_key=tts_api_key,
         )
 
         logger.info(
@@ -675,7 +702,8 @@ async def generate_document_audio_v2(
             "source_type": normalized_source_type,
             "duration": duration,
             "difficulty": difficulty,
-            "execution_mode": "environment",
+            "key_source": key_source,
+            "execution_mode": execution_mode,
             "summary": _build_script_summary(result.get("script", "")),
             "script_sections": _build_script_sections(result.get("script", "")),
             "citations": [],
@@ -696,7 +724,7 @@ async def generate_document_audio_v2(
             e.status_code,
             e.cause_type,
         )
-        raise HTTPException(status_code=502, detail=_v2_provider_error_detail(e, execution_mode="environment"))
+        raise HTTPException(status_code=502, detail=_v2_provider_error_detail(e, execution_mode=execution_mode))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:

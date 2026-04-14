@@ -66,14 +66,56 @@
   - `tests/test_url_diagnostics_scaffold.py` -> pass
   - `tests/test_api_key_lifecycle_contract.py` -> pass
   - Notes: run emitted known deprecation warnings only (SQLAlchemy/FastAPI/Pydantic), no test failures
+- [x] Phase 3 deployment confidence gate completed on April 14, 2026 (milestone-grade):
+  - Backend confidence gate -> green (all required V2 contract/reliability suites pass)
+  - Frontend confidence gate -> green (`type-check`, `build`, Create/Settings focused suites)
+  - Production route availability -> green (`/health` 200 on Railway backend, frontend URL 200 on Vercel)
+  - Auth route availability -> green (`/api/auth/login` reachable and returns expected 401 for invalid credentials)
+  - CI gate alignment -> green (`.github/workflows/backend-tests.yml` still enforces required reliability suites)
+- [x] Phase 4 portfolio reliability gate started on April 14, 2026:
+  - Confirmed scripted preview -> confirm generation flow coverage in frontend integration tests
+  - Confirmed Create + Settings reliability suites green as baseline for walkthrough execution
+  - Identified remaining gate work: end-to-end production walkthrough evidence for auth -> create -> preview -> confirm -> playback
+- [x] Phase 4 production walkthrough run executed on April 14, 2026 (pass/fail evidence captured):
+  - Evidence artifact: `phase4_walkthrough.json`
+  - `auth_register` -> pass (`201`)
+  - `auth_login` -> pass (`200`)
+  - `auth_me` -> pass (`200`)
+  - `create_preview` -> fail (`404`, detail: `Endpoint not found`)
+  - `confirm_generation` -> fail (`404`, detail: `Endpoint not found`)
+  - `playback_probe` -> fail (blocked; no generation artifact available)
+  - Walkthrough score: `3/6` steps passing
+- [x] Phase 4 production walkthrough rerun executed on April 14, 2026 after deploy unblock:
+  - Evidence artifact: `phase4_walkthrough_rerun.json`
+  - `auth_register` -> pass (`201`)
+  - `auth_login` -> pass (`200`)
+  - `auth_me` -> pass (`200`)
+  - `create_preview` -> pass (`200`, `dry_run=true`, `execution_mode=environment`)
+  - `confirm_generation` -> fail (`400`, detail: `OPENROUTER_API_KEY is required for OpenRouter adapter`)
+  - `playback_probe` -> fail (blocked; final generation artifact unavailable)
+  - Walkthrough score improved: `4/6` steps passing
+- [x] Production provider-secret validation run executed on April 14, 2026:
+  - Verified non-dry-run generation currently fails without environment provider credentials
+  - `openrouter + openai` -> fail (`400`, missing `OPENROUTER_API_KEY`)
+  - `openrouter + elevenlabs` -> fail (`400`, missing `OPENROUTER_API_KEY`)
+  - `openai + openai` -> fail (`400`, missing `OPENAI_API_KEY`)
+  - `openai + elevenlabs` -> fail (`400`, missing `OPENAI_API_KEY`)
+- [x] Final short reliability cadence gate rerun completed on April 14, 2026:
+  - `tests/test_v2_source_intake_v1a.py` -> pass
+  - `tests/test_url_diagnostics_scaffold.py` -> pass
+  - `tests/test_v2_feature_flag_and_auth_smoke.py` -> pass
+  - Result: short-form cadence gate green (warnings only)
 
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
 - [ ] Broader backend test coverage is needed beyond the current V2 regression set
-- [ ] Legacy docs from 2025 require archival to keep root documentation focused
 - [ ] Key governance: replace placeholder local BYOK keys with real user BYOK keys only when testing non-dry-run audio generation
 - [ ] BYOK UX is not yet productized for users (status, failure reasons, guided setup)
 - [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
+- [ ] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
+- [ ] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
+- [ ] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
+- [ ] Production blocker: playback probe remains blocked until final generation succeeds and audio artifact is produced
 
 ### Newly Confirmed Product Direction (April 2026)
 
@@ -100,9 +142,54 @@
 7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
-1. [x] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-2. [x] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
-3. [x] Add a quick in-app tooltip linking Generation Mode to Provider Cost Guidance in Settings.
+1. [ ] Configure production provider credentials for non-dry-run path (`OPENROUTER_API_KEY` and `OPENAI_API_KEY`; verify TTS provider secret).
+2. [ ] Re-run Phase 4 production walkthrough and verify full auth -> create -> preview -> confirm -> playback path (target `6/6`).
+3. [ ] Publish release-readiness checkpoint and close Phase 4 once walkthrough reaches full pass.
+
+### 1-Week BYOK Productization Checklist (Minimum Change, Phase-4-Aligned)
+
+Goal: make BYOK a first-class user path without derailing current release work.
+
+#### Day 1 - Runtime Safety + Flags
+- [x] Add explicit runtime toggle to prioritize BYOK for paid generation paths when user keys exist.
+- [x] Keep env-managed path as fallback only for controlled scenarios.
+- [x] Verify dry-run remains no-cost and unchanged.
+
+#### Day 2 - API Contract Hardening
+- [ ] Add explicit response metadata field for provider credential source used at execution time (`byok` vs `environment`).
+- [ ] Add structured error shape for BYOK key-missing/invalid-provider-key states (non-sensitive, actionable).
+- [ ] Add regression tests for BYOK key-required contracts.
+
+#### Day 3 - Settings UX Completion
+- [ ] Ensure Settings shows key status per provider with last validation outcome.
+- [ ] Add guided remediation copy for missing/invalid keys.
+- [ ] Add single-click recheck/refresh status action.
+
+#### Day 4 - Create Flow BYOK Guardrails
+- [ ] Ensure Create flow blocks paid generation when BYOK is selected but required keys are missing.
+- [ ] Keep preview (dry-run) available for user confidence without cost.
+- [ ] Add clear mode/cost indicator before confirm generation.
+
+#### Day 5 - Reliability + Evidence
+- [ ] Run focused BYOK contract suite locally and in CI.
+- [ ] Run one approved production paid-path smoke using BYOK (single request).
+- [ ] Capture evidence artifact and update Phase 4 tracker with pass/fail plus blocker status.
+
+#### Day 6 - Governance + Security Review
+- [ ] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
+- [ ] Confirm no key material leaks in logs, errors, or telemetry.
+- [ ] Confirm docs reflect BYOK-first billing responsibility model.
+
+#### Day 7 - Release Gate + Phase 4 Closure
+- [ ] Re-run Phase 4 walkthrough target path (`auth -> create -> preview -> confirm -> playback`) with BYOK-enabled flow.
+- [ ] Re-run short cadence gate and confirm green.
+- [ ] Publish final Phase 4 checkpoint and close with explicit remaining risks (if any).
+
+##### Completion Criteria (BYOK Productization)
+- [ ] User can complete paid generation via BYOK with clear status messaging.
+- [ ] Missing/invalid keys fail fast with actionable guidance.
+- [ ] Dry-run preview remains available with no paid usage.
+- [ ] Phase 4 walkthrough reaches operational acceptance for selected BYOK path.
 
 ### Verification Commands
 ```bash

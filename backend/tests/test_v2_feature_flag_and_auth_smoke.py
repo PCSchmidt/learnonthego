@@ -142,6 +142,64 @@ def test_v2_byok_endpoint_enabled_returns_contract(auth_client, monkeypatch):
     assert body["execution_mode"] == "byok"
 
 
+def test_v2_env_route_prefers_byok_for_paid_when_toggle_enabled(auth_client, monkeypatch):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+    monkeypatch.setattr(lecture_routes, "_byok_priority_for_paid_enabled", lambda: True)
+
+    async def fake_get_user_api_key(db, user_id, provider):
+        return "test-user-key"
+
+    captured = {}
+
+    class StubPipeline:
+        async def run(self, **kwargs):
+            captured.update(kwargs)
+            return {
+                "title": "t",
+                "script": "s",
+                "audio_url": "https://example.com/a.mp3",
+                "audio_duration": 100,
+                "word_count": 10,
+                "estimated_duration": 1,
+                "sources": [],
+                "llm_provider": kwargs.get("llm_provider"),
+                "tts_provider": kwargs.get("tts_provider"),
+                "audio_metadata": {},
+            }
+
+    monkeypatch.setattr(lecture_routes, "_get_user_api_key", fake_get_user_api_key)
+    monkeypatch.setattr(lecture_routes, "create_document_pipeline_v2", lambda: StubPipeline())
+
+    response = auth_client.post(
+        "/api/lectures/generate-document-v2",
+        data=_v2_payload(dry_run="false"),
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["execution_mode"] == "byok"
+    assert body["key_source"] == "user-encrypted-storage"
+    assert captured.get("llm_api_key") == "test-user-key"
+    assert captured.get("tts_api_key") == "test-user-key"
+
+
+def test_v2_env_route_dry_run_stays_environment_when_toggle_enabled(auth_client, monkeypatch):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+    monkeypatch.setattr(lecture_routes, "_byok_priority_for_paid_enabled", lambda: True)
+
+    response = auth_client.post(
+        "/api/lectures/generate-document-v2",
+        data=_v2_payload(dry_run="true"),
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["execution_mode"] == "environment"
+    assert body["key_source"] == "environment"
+
+
 @pytest.mark.parametrize(
     "endpoint,expected_key_source,expected_execution_mode",
     [
