@@ -86,6 +86,7 @@ export interface LectureResponse {
   created_at?: string;
   status?: 'generating' | 'completed' | 'failed';
   dry_run?: boolean;
+  execution_mode?: 'environment' | 'byok';
   key_source?: 'environment' | 'user-encrypted-storage';
   source?: string;
   script?: string;

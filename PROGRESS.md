@@ -95,7 +95,7 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-003 Generation mode contract.
+3. [ ] A5-002 Summary/script response contract.
 
 ### Verification Commands
 ```bash
@@ -145,6 +145,7 @@ Initial sprint sequence (kickoff):
 5. `A5-011` -> `completed`
 6. `A5-012` -> `completed`
 7. `A5-013` -> `completed`
+8. `A5-003` -> `completed`
 
 #### A. Product + API Contract
 
@@ -159,10 +160,11 @@ Initial sprint sequence (kickoff):
   - Status: `not-started`
   - Deliverable: response shape includes script sections, duration estimate, citations array
 
-- [ ] `A5-003` Generation mode contract
+- [x] `A5-003` Generation mode contract
   - Owner: `@owner-backend`
-  - Status: `not-started`
-  - Deliverable: explicit `execution_mode` in responses (`byok` or `environment`)
+  - Status: `completed`
+  - Sequence: `#8`
+  - Deliverable: explicit `execution_mode` in V2 preview and final responses (`byok` or `environment`) with backend contract assertions and frontend response-model compatibility
 
 #### B. Frontend UX + Interaction
 

@@ -296,7 +296,10 @@ const CreateLectureScreen: React.FC = () => {
         }
 
         const generatedLectureId = response.data.id || `v2-${Date.now()}`;
-        const keySource = response.data.key_source === 'user-encrypted-storage'
+        const executionMode = response.data.execution_mode || (
+          response.data.key_source === 'user-encrypted-storage' ? 'byok' : 'environment'
+        );
+        const keySource = executionMode === 'byok'
           ? 'BYOK secure storage'
           : 'environment provider config';
 

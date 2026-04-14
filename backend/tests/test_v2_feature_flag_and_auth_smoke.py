@@ -38,7 +38,7 @@ def auth_client(monkeypatch):
     app.dependency_overrides.clear()
 
 
-def _v2_payload() -> dict:
+def _v2_payload(*, dry_run: str = "true") -> dict:
     return {
         "document_text": "Feature flag and auth smoke regression",
         "duration": "8",
@@ -46,7 +46,7 @@ def _v2_payload() -> dict:
         "llm_provider": "openrouter",
         "llm_model": "openai/gpt-4.1-mini",
         "tts_provider": "elevenlabs",
-        "dry_run": "true",
+        "dry_run": dry_run,
     }
 
 
@@ -81,6 +81,7 @@ def test_v2_endpoint_enabled_returns_contract(auth_client, monkeypatch):
     assert body["success"] is True
     assert body["dry_run"] is True
     assert body["key_source"] == "environment"
+    assert body["execution_mode"] == "environment"
 
 
 def test_v2_preview_dry_run_response_shape_contract(auth_client, monkeypatch):
@@ -96,6 +97,7 @@ def test_v2_preview_dry_run_response_shape_contract(auth_client, monkeypatch):
     body = response.json()
     assert body["success"] is True
     assert body["dry_run"] is True
+    assert body["execution_mode"] == "environment"
     assert isinstance(body["script"], str)
     assert body["script"]
     assert isinstance(body.get("llm"), dict)
@@ -123,13 +125,14 @@ def test_v2_byok_endpoint_enabled_returns_contract(auth_client, monkeypatch):
     assert body["success"] is True
     assert body["dry_run"] is True
     assert body["key_source"] == "user-encrypted-storage"
+    assert body["execution_mode"] == "byok"
 
 
 @pytest.mark.parametrize(
-    "endpoint,expected_key_source",
+    "endpoint,expected_key_source,expected_execution_mode",
     [
-        ("/api/lectures/generate-document-v2", "environment"),
-        ("/api/lectures/generate-document-v2-byok", "user-encrypted-storage"),
+        ("/api/lectures/generate-document-v2", "environment", "environment"),
+        ("/api/lectures/generate-document-v2-byok", "user-encrypted-storage", "byok"),
     ],
 )
 def test_v2_endpoints_echo_llm_model_in_dry_run_contract(
@@ -137,6 +140,7 @@ def test_v2_endpoints_echo_llm_model_in_dry_run_contract(
     monkeypatch,
     endpoint,
     expected_key_source,
+    expected_execution_mode,
 ):
     monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
 
@@ -156,7 +160,63 @@ def test_v2_endpoints_echo_llm_model_in_dry_run_contract(
     assert body["success"] is True
     assert body["dry_run"] is True
     assert body["key_source"] == expected_key_source
+    assert body["execution_mode"] == expected_execution_mode
     assert body["llm"]["model"] == "openai/gpt-4.1-mini"
+
+
+@pytest.mark.parametrize(
+    "endpoint,expected_execution_mode",
+    [
+        ("/api/lectures/generate-document-v2", "environment"),
+        ("/api/lectures/generate-document-v2-byok", "byok"),
+    ],
+)
+def test_v2_final_generation_contract_includes_execution_mode(
+    auth_client,
+    monkeypatch,
+    endpoint,
+    expected_execution_mode,
+):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+
+    async def fake_get_user_api_key(db, user_id, provider):
+        return "dummy-api-key-for-tests"
+
+    monkeypatch.setattr(lecture_routes, "_get_user_api_key", fake_get_user_api_key)
+
+    class FakePipeline:
+        async def run(self, **kwargs):
+            return {
+                "title": "Mocked final generation",
+                "script": "Final generated script",
+                "llm": {
+                    "provider": kwargs.get("llm_provider"),
+                    "model": kwargs.get("llm_model") or "mock-model",
+                    "usage": {"prompt_tokens": 10, "completion_tokens": 20},
+                },
+                "audio": {
+                    "provider": kwargs.get("tts_provider"),
+                    "model": "mock-tts",
+                    "file_path": "mock.wav",
+                    "bytes_written": 1234,
+                    "metadata": {},
+                },
+            }
+
+    monkeypatch.setattr(lecture_routes, "create_document_pipeline_v2", lambda: FakePipeline())
+
+    response = auth_client.post(
+        endpoint,
+        data=_v2_payload(dry_run="false"),
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["execution_mode"] == expected_execution_mode
+    assert body["title"] == "Mocked final generation"
+    assert body["script"] == "Final generated script"
 
 
 def test_v2_requires_auth_header(auth_client, monkeypatch):

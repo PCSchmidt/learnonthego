@@ -411,6 +411,7 @@ def _build_v2_dry_run_response(
     llm_model: Optional[str],
     tts_provider: str,
     key_source: str,
+    execution_mode: str,
 ) -> Dict[str, Any]:
     """Return a stable response contract without invoking paid generation."""
     return {
@@ -422,6 +423,7 @@ def _build_v2_dry_run_response(
         "duration": duration,
         "difficulty": difficulty,
         "key_source": key_source,
+        "execution_mode": execution_mode,
         "title": "Dry Run Lecture Contract",
         "script": "Dry run mode validates contract only. No LLM/TTS generation executed.",
         "llm": {
@@ -527,6 +529,7 @@ async def generate_document_audio_v2(
             llm_model=llm_model,
             tts_provider=tts_provider,
             key_source="environment",
+            execution_mode="environment",
         )
 
     try:
@@ -556,6 +559,7 @@ async def generate_document_audio_v2(
             "source_type": normalized_source_type,
             "duration": duration,
             "difficulty": difficulty,
+            "execution_mode": "environment",
             **result,
         }
     except ValueError as e:
@@ -1092,6 +1096,7 @@ async def generate_document_audio_v2_byok(
             llm_model=llm_model,
             tts_provider=tts_provider,
             key_source="user-encrypted-storage",
+            execution_mode="byok",
         )
 
     try:
@@ -1124,6 +1129,7 @@ async def generate_document_audio_v2_byok(
             "duration": duration,
             "difficulty": difficulty,
             "key_source": "user-encrypted-storage",
+            "execution_mode": "byok",
             **result,
         }
     except ValueError as e:
