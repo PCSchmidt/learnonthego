@@ -19,6 +19,16 @@ This folder contains historical markdown files moved from the repository root du
 - WEEK_1_PROGRESS_REPORT.md: Time-boxed weekly status snapshot.
 - WEEK_2_FRONTEND_COMPLETE.md: Time-boxed weekly frontend status snapshot.
 
+### root-legacy-2025/
+
+- root-legacy-2025/PHASE1_COMPLETE.md: Historical phase completion summary (superseded by current trackers).
+- root-legacy-2025/PHASE2A_COMPLETE.md: Historical phase completion summary.
+- root-legacy-2025/PHASE2B_COMPLETE.md: Historical phase completion summary.
+- root-legacy-2025/PHASE2E_COMPLETE.md: Historical phase completion summary.
+- root-legacy-2025/PHASE2F_EXECUTIVE_ACTION_PLAN.md: Historical executive action plan snapshot.
+- root-legacy-2025/MULTI_PROVIDER_EXECUTIVE_SUMMARY.md: Historical multi-provider executive summary snapshot.
+- root-legacy-2025/UNIFIED_AI_IMPLEMENTATION_ROADMAP.md: Historical implementation roadmap snapshot.
+
 ## Current Canonical Docs
 
 Use these as current source-of-truth first:
