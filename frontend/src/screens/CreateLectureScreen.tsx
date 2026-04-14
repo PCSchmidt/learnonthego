@@ -17,11 +17,15 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { UrlIngestionPreviewStep } from '../components';
 import lectureService, {
   ApiKeyStatus,
   AVAILABLE_VOICES,
   DIFFICULTY_LEVELS,
   LectureRequest,
+  SourceIntakeErrorDetail,
+  SourceInputType,
+  UrlDiagnosticsResponse,
 } from '../services/lecture';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -42,12 +46,25 @@ const CreateLectureScreen: React.FC = () => {
   const [isStatusLoading, setIsStatusLoading] = useState(true);
   const [useByok, setUseByok] = useState(true);
   const [keyStatus, setKeyStatus] = useState<ApiKeyStatus | null>(null);
+  const [sourceMode, setSourceMode] = useState<'text' | 'file' | 'url'>('text');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [urlInput, setUrlInput] = useState('');
+  const [isUrlDiagnosticsLoading, setIsUrlDiagnosticsLoading] = useState(false);
+  const [urlDiagnostics, setUrlDiagnostics] = useState<UrlDiagnosticsResponse | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    source?: string;
+    topic?: string;
+    file?: string;
+    url?: string;
+    general?: string;
+  }>({});
   const [formData, setFormData] = useState<LectureRequest>({
     topic: '',
     duration: 15,
     difficulty: 'beginner',
     voice: 'Rachel', // Default to first available voice
   });
+  const isUrlGenerationEnabled = process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 === 'true';
 
   React.useEffect(() => {
     const loadKeyStatus = async () => {
@@ -63,14 +80,170 @@ const CreateLectureScreen: React.FC = () => {
     loadKeyStatus();
   }, []);
 
-  const handleCreateLecture = async () => {
-    if (!formData.topic.trim()) {
-      Alert.alert('Error', 'Please enter a topic for your lecture');
+  const clearFieldError = (field: 'source' | 'topic' | 'file' | 'url' | 'general') => {
+    setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+  };
+
+  const getUrlOutcomeGuidance = (diagnostics: UrlDiagnosticsResponse): string => {
+    switch (diagnostics.outcome) {
+      case 'unreachable':
+        return 'The service could not reach this URL. Verify the link and try diagnostics again.';
+      case 'unsupported':
+        return 'This URL type is recognized but not supported for generation in this slice.';
+      case 'no_transcript':
+        return 'Transcript extraction is required first. Video transcript ingestion is not yet enabled.';
+      case 'ready':
+        return isUrlGenerationEnabled
+          ? 'URL is ready. You can now generate a lecture from this source.'
+          : 'URL looks reachable and classifiable. Generation remains disabled until the URL ingestion feature flag is enabled.';
+      default:
+        return diagnostics.diagnostics.message;
+    }
+  };
+
+  const getSourceTypeForUpload = (file: File): SourceInputType | null => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension === 'txt') return 'txt';
+    if (extension === 'md') return 'md';
+    if (extension === 'pdf') return 'pdf';
+    return null;
+  };
+
+  const pickFileForSource = () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert(
+        'File Upload On Mobile',
+        'File picker wiring for mobile is next. For now, use web for .txt/.md/.pdf uploads or switch to pasted text.'
+      );
       return;
     }
 
-    if (formData.topic.length < 3) {
-      Alert.alert('Error', 'Topic must be at least 3 characters long');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.md,.pdf,text/plain,text/markdown,application/pdf';
+    input.onchange = () => {
+      const chosen = input.files?.[0] || null;
+      setSelectedFile(chosen);
+      if (chosen) {
+        clearFieldError('file');
+        clearFieldError('source');
+      }
+    };
+    input.click();
+  };
+
+  const resetFileSelection = () => {
+    setSelectedFile(null);
+    clearFieldError('file');
+    clearFieldError('general');
+  };
+
+  const handleRunUrlDiagnostics = async () => {
+    clearFieldError('url');
+    clearFieldError('general');
+    setUrlDiagnostics(null);
+
+    if (!urlInput.trim()) {
+      setFieldErrors(prev => ({ ...prev, url: 'Enter a URL before running diagnostics.' }));
+      return;
+    }
+
+    setIsUrlDiagnosticsLoading(true);
+    try {
+      const response = await lectureService.diagnoseSourceUrl(urlInput);
+      if (response.success && response.data) {
+        setUrlDiagnostics(response.data);
+      } else {
+        setFieldErrors(prev => ({
+          ...prev,
+          url: response.error || 'URL diagnostics failed. Try again.',
+        }));
+      }
+    } catch (error) {
+      setFieldErrors(prev => ({
+        ...prev,
+        url: error instanceof Error ? error.message : 'URL diagnostics failed. Try again.',
+      }));
+    } finally {
+      setIsUrlDiagnosticsLoading(false);
+    }
+  };
+
+  const setDeterministicErrorFromDetail = (detail: SourceIntakeErrorDetail | undefined, fallback: string) => {
+    if (!detail || detail.schema !== 'source-intake-error-v1') {
+      setFieldErrors({ general: fallback || 'Generation failed. Please try again.' });
+      return;
+    }
+
+    const message = detail.message || fallback || 'Generation failed.';
+    switch (detail.code) {
+      case 'unsupported_source_type':
+      case 'source_type_input_mismatch':
+        setFieldErrors({ source: message });
+        return;
+      case 'invalid_source_input_combination':
+        if (sourceMode === 'text') {
+          setFieldErrors({ topic: message });
+        } else {
+          setFieldErrors({ source: message });
+        }
+        return;
+      case 'unsupported_file_extension':
+      case 'file_too_large':
+      case 'invalid_text_encoding':
+      case 'empty_text_content':
+      case 'pdf_parse_failed':
+        setFieldErrors({ file: message });
+        return;
+      default:
+        setFieldErrors({ general: message });
+    }
+  };
+
+  const handleCreateLecture = async () => {
+    setFieldErrors({});
+
+    if (sourceMode === 'url') {
+      if (!isUrlGenerationEnabled) {
+        setFieldErrors({
+          general: 'URL generation is disabled in this environment. Set EXPO_PUBLIC_ENABLE_URL_INGESTION_V1=true.',
+        });
+        return;
+      }
+      if (!urlDiagnostics) {
+        setFieldErrors({
+          url: 'Run URL diagnostics before generating from URL.',
+        });
+        return;
+      }
+      if (urlDiagnostics.outcome !== 'ready') {
+        setFieldErrors({
+          url: urlDiagnostics.diagnostics.message,
+        });
+        return;
+      }
+    }
+
+    if (sourceMode === 'text') {
+      if (!formData.topic.trim()) {
+        setFieldErrors({ topic: 'Please enter text content for your lecture.' });
+        return;
+      }
+
+      if (formData.topic.length < 3) {
+        setFieldErrors({ topic: 'Topic must be at least 3 characters long.' });
+        return;
+      }
+    }
+
+    if (sourceMode === 'file' && !selectedFile) {
+      setFieldErrors({ file: 'Select one file (.txt, .md, or .pdf) to continue.' });
+      return;
+    }
+
+    const inferredSourceType = selectedFile ? getSourceTypeForUpload(selectedFile) : 'text';
+    if (sourceMode === 'file' && !inferredSourceType) {
+      setFieldErrors({ file: 'Unsupported file type. Allowed: .txt, .md, .pdf.' });
       return;
     }
 
@@ -79,6 +252,9 @@ const CreateLectureScreen: React.FC = () => {
     try {
       const response = await lectureService.createLecture(formData, {
         useByok,
+        sourceType: (sourceMode === 'file' ? inferredSourceType : sourceMode === 'url' ? 'url' : 'text') as SourceInputType,
+        uploadFile: sourceMode === 'file' ? selectedFile || undefined : undefined,
+        sourceUrl: sourceMode === 'url' ? urlInput.trim() : undefined,
       });
       
       if (response.success && response.data) {
@@ -105,7 +281,8 @@ const CreateLectureScreen: React.FC = () => {
           ]
         );
       } else {
-        throw new Error(
+        setDeterministicErrorFromDetail(
+          response.errorDetails as SourceIntakeErrorDetail | undefined,
           response.error ||
             (useByok
               ? 'Failed to create lecture using BYOK path. Verify your provider keys in settings.'
@@ -114,20 +291,12 @@ const CreateLectureScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error creating lecture:', error);
-      Alert.alert(
-        'Generation Failed',
-        error instanceof Error ? error.message : 'Failed to create lecture. Please check your connection and try again.',
-        [
-          {
-            text: 'Retry',
-            onPress: handleCreateLecture,
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
+      setFieldErrors({
+        general:
+          error instanceof Error
+            ? error.message
+            : 'Failed to create lecture. Please check your connection and try again.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -156,18 +325,121 @@ const CreateLectureScreen: React.FC = () => {
         </View>
 
         <View style={styles.formPanel}>
+          <Text style={styles.label}>Source Type</Text>
+          <View style={styles.sourceSwitchRow}>
+            {[
+              { id: 'text', label: 'Text' },
+              { id: 'file', label: 'File' },
+              { id: 'url', label: 'URL (Next)' },
+            ].map(option => (
+              <TouchableOpacity
+                key={option.id}
+                testID={`source-mode-${option.id}`}
+                style={[
+                  styles.sourceSwitchButton,
+                  sourceMode === option.id && styles.sourceSwitchButtonActive,
+                ]}
+                onPress={() => {
+                  setSourceMode(option.id as 'text' | 'file' | 'url');
+                  clearFieldError('source');
+                  clearFieldError('topic');
+                  clearFieldError('file');
+                  clearFieldError('url');
+                  clearFieldError('general');
+                  if (option.id !== 'url') {
+                    setUrlDiagnostics(null);
+                  }
+                }}>
+                <Text
+                  style={[
+                    styles.sourceSwitchButtonText,
+                    sourceMode === option.id && styles.sourceSwitchButtonTextActive,
+                  ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {sourceMode === 'text' ? (
+            <Text style={styles.sourceHelperText}>
+              Paste your content directly. Best for quick drafts and copied notes.
+            </Text>
+          ) : null}
+          {sourceMode === 'file' ? (
+            <Text style={styles.sourceHelperText}>
+              Upload one file at a time. Supported: .txt, .md, .pdf.
+            </Text>
+          ) : null}
+          {sourceMode === 'url' ? (
+            <Text style={styles.sourceHelperText}>
+              Run URL diagnostics first. URL generation is allowed only when diagnostics outcome is ready.
+            </Text>
+          ) : null}
+          {fieldErrors.source ? <Text testID="source-error" style={styles.fieldError}>{fieldErrors.source}</Text> : null}
+
+          {sourceMode === 'text' ? (
+            <>
           <Text style={styles.label}>Lecture Topic *</Text>
         <TextInput
+          testID="topic-input"
           style={styles.textInput}
           value={formData.topic}
-          onChangeText={(text) => setFormData({...formData, topic: text})}
+          onChangeText={(text) => {
+            setFormData({...formData, topic: text});
+            clearFieldError('topic');
+            clearFieldError('general');
+          }}
           placeholder="e.g., Machine Learning Basics, Quantum Physics, History of Rome"
           placeholderTextColor="#7f8492"
           multiline
           numberOfLines={3}
           maxLength={500}
         />
+        {fieldErrors.topic ? <Text testID="topic-error" style={styles.fieldError}>{fieldErrors.topic}</Text> : null}
         <Text style={styles.charCount}>{formData.topic.length}/500</Text>
+            </>
+          ) : null}
+
+          {sourceMode === 'file' ? (
+            <View style={styles.fileCard}>
+              <Text style={styles.fileLabel}>Upload Source File</Text>
+              <Text style={styles.fileSubtle}>Accepted formats: .txt, .md, .pdf</Text>
+              <TouchableOpacity testID="pick-file-button" style={styles.filePickButton} onPress={pickFileForSource}>
+                <Text style={styles.filePickButtonText}>
+                  {selectedFile ? 'Change File' : 'Choose File'}
+                </Text>
+              </TouchableOpacity>
+              <Text style={styles.fileMeta}>
+                {selectedFile
+                  ? `${selectedFile.name} (${Math.max(1, Math.round(selectedFile.size / 1024))} KB)`
+                  : 'No file selected'}
+              </Text>
+              {selectedFile ? (
+                <TouchableOpacity testID="clear-file-button" onPress={resetFileSelection} style={styles.fileResetButton}>
+                  <Text style={styles.fileResetButtonText}>Clear Selected File</Text>
+                </TouchableOpacity>
+              ) : null}
+              {fieldErrors.file ? <Text testID="file-error" style={styles.fieldError}>{fieldErrors.file}</Text> : null}
+            </View>
+          ) : null}
+
+          {sourceMode === 'url' ? (
+            <UrlIngestionPreviewStep
+              urlInput={urlInput}
+              onUrlChange={(text) => {
+                setUrlInput(text);
+                clearFieldError('url');
+                clearFieldError('general');
+              }}
+              onRunDiagnostics={handleRunUrlDiagnostics}
+              isDiagnosticsLoading={isUrlDiagnosticsLoading}
+              diagnostics={urlDiagnostics}
+              diagnosticsGuidance={urlDiagnostics ? getUrlOutcomeGuidance(urlDiagnostics) : undefined}
+              urlError={fieldErrors.url}
+            />
+          ) : null}
+
+          {fieldErrors.general ? <Text testID="general-error" style={styles.formError}>{fieldErrors.general}</Text> : null}
 
         <View style={styles.modeCard}>
           <Text style={styles.modeTitle}>Generation Mode</Text>
@@ -274,16 +546,25 @@ const CreateLectureScreen: React.FC = () => {
         </View>
 
         <TouchableOpacity
+          testID="create-lecture-button"
           style={[styles.createButton, isLoading && styles.createButtonDisabled]}
           onPress={handleCreateLecture}
-          disabled={isLoading}>
+          disabled={isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready'))}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator color="#ffffff" />
               <Text style={styles.loadingText}>Generating your lecture...</Text>
             </View>
           ) : (
-            <Text style={styles.createButtonText}>Create Lecture</Text>
+            <Text style={styles.createButtonText}>
+              {sourceMode === 'url' && !isUrlGenerationEnabled
+                ? 'URL Generation Disabled By Feature Flag'
+                : sourceMode === 'url' && urlDiagnostics?.outcome !== 'ready'
+                  ? 'Run Diagnostics Until URL Is Ready'
+                  : sourceMode === 'url'
+                    ? 'Create Lecture From URL'
+                    : 'Create Lecture'}
+            </Text>
           )}
         </TouchableOpacity>
         </View>
@@ -398,6 +679,152 @@ const styles = StyleSheet.create({
     color: '#0d1119',
     textAlignVertical: 'top',
     minHeight: 80,
+  },
+  sourceSwitchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  sourceSwitchButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  sourceSwitchButtonActive: {
+    backgroundColor: '#111722',
+    borderColor: '#111722',
+  },
+  sourceSwitchButtonText: {
+    color: '#2f3644',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  sourceSwitchButtonTextActive: {
+    color: '#f2efe8',
+  },
+  sourceHelperText: {
+    marginTop: 8,
+    color: '#5a6272',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  fileCard: {
+    marginTop: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
+  },
+  fileLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2b3240',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  fileSubtle: {
+    color: '#616979',
+    fontSize: 12,
+    marginBottom: 10,
+  },
+  filePickButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#111722',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: '#111722',
+  },
+  filePickButtonText: {
+    color: '#f2efe8',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  fileMeta: {
+    marginTop: 8,
+    color: '#2f3644',
+    fontSize: 12,
+  },
+  fileResetButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#939aa8',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#ffffff',
+  },
+  fileResetButtonText: {
+    color: '#2f3644',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  urlCard: {
+    marginTop: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
+  },
+  urlLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2b3240',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  urlInput: {
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#111722',
+    fontSize: 14,
+  },
+  urlDiagnosticsButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#111722',
+    backgroundColor: '#111722',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  urlDiagnosticsButtonText: {
+    color: '#f2efe8',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  fieldError: {
+    color: '#a93d2a',
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '600',
+  },
+  formError: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#c06b5d',
+    backgroundColor: '#f8e7e3',
+    padding: 10,
+    color: '#7d2f22',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
   },
   charCount: {
     fontSize: 12,

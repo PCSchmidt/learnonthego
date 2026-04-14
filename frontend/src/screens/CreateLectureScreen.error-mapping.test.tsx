@@ -1,0 +1,355 @@
+import React from 'react';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Platform } from 'react-native';
+
+import CreateLectureScreen from './CreateLectureScreen';
+import lectureService from '../services/lecture';
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: jest.fn(),
+  }),
+}));
+
+jest.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { email: 'tester@example.com' },
+  }),
+}));
+
+jest.mock('../services/lecture', () => ({
+  __esModule: true,
+  default: {
+    getApiKeyStatus: jest.fn(),
+    createLecture: jest.fn(),
+    diagnoseSourceUrl: jest.fn(),
+  },
+  AVAILABLE_VOICES: [
+    { id: 'Rachel', name: 'Rachel (Professional Female)' },
+    { id: 'Josh', name: 'Josh (Professional Male)' },
+  ],
+  DIFFICULTY_LEVELS: [
+    { id: 'beginner', name: 'Beginner', description: 'Basic concepts and simple explanations' },
+    { id: 'intermediate', name: 'Intermediate', description: 'Moderate complexity with examples' },
+    { id: 'advanced', name: 'Advanced', description: 'In-depth analysis and technical details' },
+  ],
+}));
+
+describe('CreateLectureScreen deterministic error mapping', () => {
+  const mockAlert = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(jest.fn());
+  const originalUrlFlag = process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 = 'false';
+    Object.defineProperty(Platform, 'OS', {
+      configurable: true,
+      get: () => 'web',
+    });
+    (lectureService.getApiKeyStatus as jest.Mock).mockResolvedValue({
+      success: true,
+      data: {
+        can_generate_lectures: true,
+        missing_keys: [],
+        setup_complete: true,
+      },
+    });
+    (lectureService.createLecture as jest.Mock).mockResolvedValue({
+      success: true,
+      data: {
+        id: 'lecture-123',
+        title: 'Generated Lecture',
+        key_source: 'environment',
+      },
+    });
+    (lectureService.diagnoseSourceUrl as jest.Mock).mockResolvedValue({
+      success: true,
+      data: {
+        success: true,
+        schema: 'url-diagnostics-v1',
+        contract_version: 'v1a',
+        source_uri: 'https://example.com',
+        source_class: 'web',
+        outcome: 'ready',
+        diagnostics: {
+          code: 'ready',
+          message: 'URL is reachable and ready for upcoming web-source ingestion flow.',
+          retryable: false,
+          status_code: 200,
+        },
+      },
+    });
+  });
+
+  afterAll(() => {
+    process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 = originalUrlFlag;
+    mockAlert.mockRestore();
+  });
+
+  it('maps unsupported_source_type to source field', async () => {
+    (lectureService.createLecture as jest.Mock).mockResolvedValue({
+      success: false,
+      error: 'bad request',
+      errorDetails: {
+        schema: 'source-intake-error-v1',
+        code: 'unsupported_source_type',
+        message: 'Source type is not supported in v1a.',
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'A valid topic for submission');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const sourceError = await findByTestId('source-error');
+    expect(sourceError.props.children).toBe('Source type is not supported in v1a.');
+  });
+
+  it('maps invalid_source_input_combination to topic field when in text mode', async () => {
+    (lectureService.createLecture as jest.Mock).mockResolvedValue({
+      success: false,
+      error: 'bad request',
+      errorDetails: {
+        schema: 'source-intake-error-v1',
+        code: 'invalid_source_input_combination',
+        message: 'Provide exactly one input source: either document_text or file.',
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'Another valid topic');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const topicError = await findByTestId('topic-error');
+    expect(topicError.props.children).toBe('Provide exactly one input source: either document_text or file.');
+  });
+
+  it('maps file_too_large to file field when in file mode', async () => {
+    (lectureService.createLecture as jest.Mock).mockResolvedValue({
+      success: false,
+      error: 'bad request',
+      errorDetails: {
+        schema: 'source-intake-error-v1',
+        code: 'file_too_large',
+        message: 'Text file size must be under 2MB.',
+      },
+    });
+
+    const file = { name: 'notes.txt', size: 1024, type: 'text/plain' };
+
+    const documentMock = {
+      createElement: jest.fn(() => {
+        const input: any = {
+          type: 'file',
+          accept: '',
+          files: [file],
+          onchange: null,
+          click: function click() {
+            if (typeof input.onchange === 'function') {
+              input.onchange();
+            }
+          },
+        };
+        return input;
+      }),
+    };
+
+    Object.defineProperty(global, 'document', {
+      value: documentMock,
+      configurable: true,
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.press(getByTestId('source-mode-file'));
+    fireEvent.press(getByTestId('pick-file-button'));
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const fileError = await findByTestId('file-error');
+    expect(fileError.props.children).toBe('Text file size must be under 2MB.');
+  });
+
+  it('maps unknown schema to general field', async () => {
+    (lectureService.createLecture as jest.Mock).mockResolvedValue({
+      success: false,
+      error: 'Generic failure fallback',
+      errorDetails: {
+        schema: 'unexpected-schema',
+        code: 'anything',
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'Valid topic text');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const generalError = await findByTestId('general-error');
+    expect(generalError.props.children).toBe('Generic failure fallback');
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalled();
+    });
+  });
+
+  it('submits text mode with sourceType text and no upload file', async () => {
+    const { getByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'Text mode payload verification');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalled();
+    });
+
+    const [, options] = (lectureService.createLecture as jest.Mock).mock.calls[0];
+    expect(options.sourceType).toBe('text');
+    expect(options.uploadFile).toBeUndefined();
+  });
+
+  it('submits file mode with inferred sourceType and upload file', async () => {
+    const file = { name: 'outline.md', size: 2048, type: 'text/markdown' };
+
+    Object.defineProperty(global, 'document', {
+      value: {
+        createElement: jest.fn(() => {
+          const input: any = {
+            type: 'file',
+            accept: '',
+            files: [file],
+            onchange: null,
+            click: function click() {
+              if (typeof input.onchange === 'function') {
+                input.onchange();
+              }
+            },
+          };
+          return input;
+        }),
+      },
+      configurable: true,
+    });
+
+    const { getByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.press(getByTestId('source-mode-file'));
+    fireEvent.press(getByTestId('pick-file-button'));
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalled();
+    });
+
+    const [, options] = (lectureService.createLecture as jest.Mock).mock.calls[0];
+    expect(options.sourceType).toBe('md');
+    expect(options.uploadFile).toBe(file);
+  });
+
+  it('renders URL diagnostics outcome: unreachable', async () => {
+    (lectureService.diagnoseSourceUrl as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        success: false,
+        schema: 'url-diagnostics-v1',
+        contract_version: 'v1a',
+        source_uri: 'https://bad.example.com',
+        source_class: 'web',
+        outcome: 'unreachable',
+        diagnostics: {
+          code: 'unreachable',
+          message: 'URL could not be reached from the service. Check URL and try again.',
+          retryable: true,
+          status_code: null,
+        },
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+    fireEvent.press(getByTestId('source-mode-url'));
+    fireEvent.changeText(getByTestId('url-input'), 'https://bad.example.com');
+    fireEvent.press(getByTestId('run-url-diagnostics-button'));
+
+    const codeNode = await findByTestId('url-diagnostics-code');
+    expect(codeNode.props.children).toBe('unreachable');
+  });
+
+  it('renders URL diagnostics outcome: unsupported', async () => {
+    (lectureService.diagnoseSourceUrl as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        success: false,
+        schema: 'url-diagnostics-v1',
+        contract_version: 'v1a',
+        source_uri: 'https://open.spotify.com/episode/123',
+        source_class: 'podcast',
+        outcome: 'unsupported',
+        diagnostics: {
+          code: 'unsupported',
+          message: 'Podcast/audio URL ingestion is deferred to the next slice.',
+          retryable: false,
+          status_code: 200,
+        },
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+    fireEvent.press(getByTestId('source-mode-url'));
+    fireEvent.changeText(getByTestId('url-input'), 'https://open.spotify.com/episode/123');
+    fireEvent.press(getByTestId('run-url-diagnostics-button'));
+
+    const codeNode = await findByTestId('url-diagnostics-code');
+    expect(codeNode.props.children).toBe('unsupported');
+  });
+
+  it('renders URL diagnostics outcome: no_transcript', async () => {
+    (lectureService.diagnoseSourceUrl as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        success: false,
+        schema: 'url-diagnostics-v1',
+        contract_version: 'v1a',
+        source_uri: 'https://www.youtube.com/watch?v=abc',
+        source_class: 'video',
+        outcome: 'no_transcript',
+        diagnostics: {
+          code: 'no_transcript',
+          message: 'Video transcript ingestion is not enabled in this slice yet.',
+          retryable: false,
+          status_code: 200,
+        },
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+    fireEvent.press(getByTestId('source-mode-url'));
+    fireEvent.changeText(getByTestId('url-input'), 'https://www.youtube.com/watch?v=abc');
+    fireEvent.press(getByTestId('run-url-diagnostics-button'));
+
+    const codeNode = await findByTestId('url-diagnostics-code');
+    expect(codeNode.props.children).toBe('no_transcript');
+  });
+
+  it('renders URL diagnostics outcome: ready and submits when URL flag is enabled', async () => {
+    process.env.EXPO_PUBLIC_ENABLE_URL_INGESTION_V1 = 'true';
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+    fireEvent.press(getByTestId('source-mode-url'));
+    fireEvent.changeText(getByTestId('url-input'), 'https://example.com/article');
+    fireEvent.press(getByTestId('run-url-diagnostics-button'));
+
+    const codeNode = await findByTestId('url-diagnostics-code');
+    expect(codeNode.props.children).toBe('ready');
+
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalled();
+    });
+
+    const [, options] = (lectureService.createLecture as jest.Mock).mock.calls[0];
+    expect(options.sourceType).toBe('url');
+    expect(options.sourceUrl).toBe('https://example.com/article');
+  });
+});

@@ -15,6 +15,57 @@ export interface LectureRequest {
   file_data?: string; // Base64 encoded PDF data
 }
 
+export type SourceInputType = 'text' | 'txt' | 'md' | 'pdf' | 'url';
+
+export interface SourceIntakeErrorDetail {
+  schema?: string;
+  code?:
+    | 'unsupported_source_type'
+    | 'invalid_source_input_combination'
+    | 'source_type_input_mismatch'
+    | 'unsupported_file_extension'
+    | 'file_too_large'
+    | 'invalid_text_encoding'
+    | 'empty_text_content'
+    | 'pdf_parse_failed'
+    | 'url_ingestion_disabled'
+    | 'url_not_ready'
+    | 'url_fetch_failed'
+    | 'empty_url_content'
+    | string;
+  message?: string;
+  contract_version?: string;
+  supported_source_types?: string[];
+  field?: string;
+  hint?: string;
+  max_bytes?: number;
+}
+
+export interface LectureCreateOptions {
+  useByok?: boolean;
+  dryRun?: boolean;
+  sourceType?: SourceInputType;
+  uploadFile?: File;
+  sourceUrl?: string;
+}
+
+export type UrlDiagnosticsOutcome = 'unreachable' | 'unsupported' | 'no_transcript' | 'ready';
+
+export interface UrlDiagnosticsResponse {
+  success: boolean;
+  schema: 'url-diagnostics-v1';
+  contract_version: string;
+  source_uri: string;
+  source_class: 'video' | 'podcast' | 'audio' | 'web' | 'unknown';
+  outcome: UrlDiagnosticsOutcome;
+  diagnostics: {
+    code: UrlDiagnosticsOutcome;
+    message: string;
+    retryable: boolean;
+    status_code?: number | null;
+  };
+}
+
 export interface LectureResponse {
   id?: string;
   title: string;
@@ -68,41 +119,116 @@ export const DIFFICULTY_LEVELS = [
 
 // Lecture Service Class
 class LectureService {
+  private mapSourceIntakeError(
+    detail: SourceIntakeErrorDetail | undefined,
+    fallback?: string
+  ): string {
+    if (!detail || detail.schema !== 'source-intake-error-v1') {
+      return fallback || 'Failed to create lecture';
+    }
+
+    switch (detail.code) {
+      case 'unsupported_source_type':
+        return 'Source type is not supported in this slice. Use pasted text, .txt, .md, or .pdf.';
+      case 'invalid_source_input_combination':
+        return 'Select exactly one source input: pasted text or a single file.';
+      case 'source_type_input_mismatch':
+        return 'Selected source type does not match the provided input.';
+      case 'unsupported_file_extension':
+        return 'Unsupported file type. Allowed extensions: .txt, .md, .pdf.';
+      case 'file_too_large':
+        if (detail.max_bytes) {
+          const mb = Math.max(1, Math.round(detail.max_bytes / (1024 * 1024)));
+          return `File is too large. Maximum allowed size is ${mb}MB.`;
+        }
+        return 'File is too large for this source type.';
+      case 'invalid_text_encoding':
+        return 'Text files must be UTF-8 encoded.';
+      case 'empty_text_content':
+        return 'Uploaded text file is empty.';
+      case 'pdf_parse_failed':
+        return detail.message || 'Unable to extract content from PDF file.';
+      case 'url_ingestion_disabled':
+        return 'URL ingestion is currently disabled for this environment.';
+      case 'url_not_ready':
+        return detail.message || 'URL is not ready for generation. Run diagnostics and use a ready URL.';
+      case 'url_fetch_failed':
+        return detail.message || 'Failed to fetch URL content for generation.';
+      case 'empty_url_content':
+        return 'URL content was empty after extraction. Try a different article URL.';
+      default:
+        return detail.message || fallback || 'Failed to create lecture';
+    }
+  }
+
   // Generate new lecture from text topic using V2 endpoints.
   async generateLecture(
     request: LectureRequest,
-    options?: { useByok?: boolean; dryRun?: boolean }
+    options?: LectureCreateOptions
   ): Promise<ApiResponse<LectureResponse>> {
     const useByok = Boolean(options?.useByok);
     const endpoint = useByok
       ? '/api/lectures/generate-document-v2-byok'
       : '/api/lectures/generate-document-v2';
+    const sourceType = options?.sourceType || 'text';
+    const sourceUrl = (options?.sourceUrl || '').trim();
 
     // Cost-aware default strategy:
     // - Environment path defaults to OpenAI TTS for lower-cost baseline.
     // - BYOK path keeps ElevenLabs as premium user-provided option.
     const ttsProvider = useByok ? 'elevenlabs' : 'openai';
 
-    const formData: Record<string, string> = {
-      document_text: request.topic,
-      duration: String(request.duration),
-      difficulty: request.difficulty,
-      llm_provider: 'openrouter',
-      tts_provider: ttsProvider,
-      voice_id: request.voice,
-      dry_run: String(options?.dryRun ?? false),
-    };
+    let response: ApiResponse<LectureResponse>;
+    if (options?.uploadFile) {
+      const multipart = new FormData();
+      multipart.append('source_type', sourceType);
+      multipart.append('duration', String(request.duration));
+      multipart.append('difficulty', request.difficulty);
+      multipart.append('llm_provider', 'openrouter');
+      multipart.append('tts_provider', ttsProvider);
+      multipart.append('voice_id', request.voice);
+      multipart.append('dry_run', String(options?.dryRun ?? false));
+      multipart.append('file', options.uploadFile);
+      response = await apiClient.postMultipart<LectureResponse>(endpoint, multipart);
+    } else {
+      const formData: Record<string, string> = {
+        source_type: sourceType,
+        duration: String(request.duration),
+        difficulty: request.difficulty,
+        llm_provider: 'openrouter',
+        tts_provider: ttsProvider,
+        voice_id: request.voice,
+        dry_run: String(options?.dryRun ?? false),
+      };
+      if (sourceType === 'url' && sourceUrl) {
+        formData.source_uri = sourceUrl;
+      } else {
+        formData.document_text = request.topic;
+      }
+      response = await apiClient.postForm<LectureResponse>(endpoint, formData);
+    }
 
-    return apiClient.postForm<LectureResponse>(endpoint, formData);
+    if (!response.success) {
+      const detail = (response.errorDetails || undefined) as SourceIntakeErrorDetail | undefined;
+      return {
+        ...response,
+        error: this.mapSourceIntakeError(detail, response.error),
+      };
+    }
+
+    return response;
   }
 
   // Create new lecture (alias for generateLecture)
   async createLecture(
     request: LectureRequest,
-    options?: { useByok?: boolean; dryRun?: boolean }
+    options?: LectureCreateOptions
   ): Promise<ApiResponse<LectureResponse>> {
     // Validate request first
-    const validationErrors = this.validateLectureRequest(request);
+    const validationErrors = this.validateLectureRequest(request, {
+      hasUploadFile: Boolean(options?.uploadFile),
+      hasSourceUrl: Boolean(options?.sourceUrl),
+    });
     if (validationErrors.length > 0) {
       return {
         success: false,
@@ -144,6 +270,20 @@ class LectureService {
 
   async getApiKeyStatus(): Promise<ApiResponse<ApiKeyStatus>> {
     return apiClient.get<ApiKeyStatus>('/api/api-keys/status');
+  }
+
+  async diagnoseSourceUrl(sourceUri: string): Promise<ApiResponse<UrlDiagnosticsResponse>> {
+    const cleaned = (sourceUri || '').trim();
+    if (!cleaned) {
+      return {
+        success: false,
+        error: 'Enter a URL to run diagnostics.',
+      };
+    }
+
+    return apiClient.postForm<UrlDiagnosticsResponse>('/api/lectures/url-diagnostics-v1', {
+      source_uri: cleaned,
+    });
   }
 
   // Get user's lecture library
@@ -217,10 +357,15 @@ class LectureService {
   }
 
   // Validate lecture request
-  validateLectureRequest(request: Partial<LectureRequest>): string[] {
+  validateLectureRequest(
+    request: Partial<LectureRequest>,
+    options?: { hasUploadFile?: boolean; hasSourceUrl?: boolean }
+  ): string[] {
     const errors: string[] = [];
+    const hasUploadFile = Boolean(options?.hasUploadFile);
+    const hasSourceUrl = Boolean(options?.hasSourceUrl);
 
-    if (!request.topic || request.topic.trim().length < 3) {
+    if (!hasUploadFile && !hasSourceUrl && (!request.topic || request.topic.trim().length < 3)) {
       errors.push('Topic must be at least 3 characters long');
     }
 

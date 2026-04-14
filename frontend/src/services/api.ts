@@ -26,6 +26,8 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
+  status?: number;
+  errorDetails?: any;
 }
 
 export interface ApiError {
@@ -82,9 +84,12 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     const token = await this.getAuthToken();
 
-    const defaultHeaders: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const defaultHeaders: HeadersInit = isFormData
+      ? {}
+      : {
+          'Content-Type': 'application/json',
+        };
 
     // Add authorization header if token exists
     if (token) {
@@ -114,18 +119,22 @@ class ApiClient {
         return {
           success: false,
           error: data.detail || data.message || `HTTP ${response.status}`,
+          status: response.status,
+          errorDetails: data.detail || data,
         };
       }
 
       return {
         success: true,
         data,
+        status: response.status,
       };
     } catch (error) {
       console.error('API Request Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
+        errorDetails: error,
       };
     }
   }
@@ -150,6 +159,13 @@ class ApiClient {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: params.toString(),
+    });
+  }
+
+  async postMultipart<T>(endpoint: string, data: FormData): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: data,
     });
   }
 

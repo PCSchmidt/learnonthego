@@ -104,7 +104,17 @@ def get_access_token() -> str:
 
 
 def validate_success_contract(name: str, data: Dict[str, Any], expected_key_source: str) -> None:
-    required_top = ["success", "dry_run", "title", "script", "llm", "audio", "key_source"]
+    required_top = [
+        "success",
+        "dry_run",
+        "title",
+        "script",
+        "llm",
+        "audio",
+        "key_source",
+        "source_type",
+        "contract_version",
+    ]
     missing_top = [k for k in required_top if k not in data]
     if missing_top:
         raise SmokeError(f"{name}: missing top-level keys: {missing_top}")
@@ -118,6 +128,16 @@ def validate_success_contract(name: str, data: Dict[str, Any], expected_key_sour
     if data.get("key_source") != expected_key_source:
         raise SmokeError(
             f"{name}: expected key_source={expected_key_source}, got {data.get('key_source')}"
+        )
+
+    if data.get("contract_version") != "v1a":
+        raise SmokeError(
+            f"{name}: expected contract_version=v1a, got {data.get('contract_version')}"
+        )
+
+    if data.get("source_type") not in {"text", "txt", "md", "pdf"}:
+        raise SmokeError(
+            f"{name}: unexpected source_type={data.get('source_type')}"
         )
 
     llm = data.get("llm", {})
