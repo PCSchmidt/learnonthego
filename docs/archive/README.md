@@ -29,6 +29,15 @@ This folder contains historical markdown files moved from the repository root du
 - root-legacy-2025/MULTI_PROVIDER_EXECUTIVE_SUMMARY.md: Historical multi-provider executive summary snapshot.
 - root-legacy-2025/UNIFIED_AI_IMPLEMENTATION_ROADMAP.md: Historical implementation roadmap snapshot.
 
+### root-legacy-2026/
+
+- root-legacy-2026/CONCEPT.md: Legacy concept strategy moved from root during April 2026 hygiene pass.
+- root-legacy-2026/PRD.md: Legacy product requirements moved from root during April 2026 hygiene pass.
+- root-legacy-2026/AUTHENTICATION_SYSTEM_OVERVIEW.md: Archived auth architecture note.
+- root-legacy-2026/MULTI_PROVIDER_LLM_STRATEGY.md: Archived model-provider strategy reference.
+- root-legacy-2026/TTS_PROVIDER_STRATEGY.md: Archived TTS provider comparison and notes.
+- root-legacy-2026/INTEGRATION_CHECKLIST.md: Archived integration checklist snapshot.
+
 ## Current Canonical Docs
 
 Use these as current source-of-truth first:
@@ -37,5 +46,4 @@ Use these as current source-of-truth first:
 - TESTING_GUIDE.md
 - PROGRESS.md
 - GETTING_STARTED.md
-- PRD.md
 - SECURITY.md

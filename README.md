@@ -197,11 +197,10 @@ For detailed setup instructions, see [GETTING_STARTED.md](GETTING_STARTED.md).
 
 ## 📖 Documentation
 
-- **[Product Requirements Document](PRD.md)** - Complete feature specifications and technical requirements
-- **[Concept Document](CONCEPT.md)** - Development strategy and cost optimization
 - **[Getting Started Guide](GETTING_STARTED.md)** - Step-by-step setup instructions
 - **[Testing Guide](TESTING_GUIDE.md)** - Current local and CI validation flows
 - **[Archive Index](docs/archive/README.md)** - Historical session and dated status documents
+- **[Archived Product Docs](docs/archive/root-legacy-2026/)** - Legacy PRD/concept/strategy references
 - **[API Documentation](http://localhost:8000/docs)** - Interactive API docs (when running locally)
 
 ## 🛠️ Development

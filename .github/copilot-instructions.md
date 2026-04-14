@@ -217,7 +217,7 @@ async def generate_lecture(
 - **Audio controls**: Must have proper ARIA labels
 
 ## When Contributing Code
-1. **Check PRD.md and CONCEPT.md first** for feature specifications and cost constraints
+1. **Check docs/archive/root-legacy-2026/PRD.md and docs/archive/root-legacy-2026/CONCEPT.md first** for feature specifications and cost constraints
 2. **Use free-tier services** unless explicitly approved for paid alternatives
 3. **Include comprehensive error handling** with user-friendly messages
 4. **Write tests for critical paths** (auth, lecture generation, PDF processing)

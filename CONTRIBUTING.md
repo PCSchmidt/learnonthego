@@ -7,7 +7,8 @@ Thank you for your interest in contributing to LearnOnTheGo! This document provi
 1. **Fork the repository** and clone your fork
 2. **Read the documentation**:
    - [README.md](README.md) - Project overview
-   - [PRD.md](PRD.md) - Product requirements
+   - [PROGRESS.md](PROGRESS.md) - Current execution status and priorities
+   - [docs/archive/root-legacy-2026/PRD.md](docs/archive/root-legacy-2026/PRD.md) - Archived product requirements context
    - [GETTING_STARTED.md](GETTING_STARTED.md) - Development setup
    - [.github/copilot-instructions.md](.github/copilot-instructions.md) - Coding conventions
 
