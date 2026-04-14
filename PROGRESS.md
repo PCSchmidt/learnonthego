@@ -87,10 +87,10 @@
 7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
-1. [ ] `A5-031` Promote backend contract tests as a CI gate for source-intake + URL-ready behavior (env and BYOK V2 endpoints).
-2. [ ] `A5-032` Expand smoke scenarios to include feature-flagged URL-ready pass and deterministic non-ready fail signatures.
-3. [ ] `A5-030` Add one frontend integration test: non-ready URL keeps create disabled even when URL flag is enabled.
-4. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
+1. [ ] `A5-032` Expand smoke scenarios to include feature-flagged URL-ready pass and deterministic non-ready fail signatures.
+2. [ ] `A5-030` Add one frontend integration test: non-ready URL keeps create disabled even when URL flag is enabled.
+3. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
+4. [ ] Publish URL-ready feature-flag runbook notes in setup/testing docs for smoother local onboarding.
 5. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
 
 ### Verification Commands
@@ -207,7 +207,7 @@ Initial sprint sequence (kickoff):
   - Status: `in-progress`
   - Deliverable: coverage added for deterministic source-intake field mapping, URL diagnostics outcome rendering (`unreachable`, `unsupported`, `no_transcript`, `ready`), and ready-only URL submit gating under feature flag
 
-- [ ] `A5-031` Backend contract tests
+- [x] `A5-031` Backend contract tests
   - Owner: `@owner-qa`
   - Status: `completed`
   - Deliverable: schema + fallback contract tests wired as CI gates and validated green in CI

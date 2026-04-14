@@ -9,6 +9,9 @@ This guide reflects the current validated testing path for the V2 lecture pipeli
 - Fast contract validation first (`dry_run=true`)
 - BYOK contract validation second (`LOTG_STRICT_BYOK=true`)
 - Focused regression guard in CI (`tests/test_v2_form_coercion.py`)
+- Required source-intake + URL diagnostics contract gates in CI:
+  - `tests/test_v2_source_intake_v1a.py`
+  - `tests/test_url_diagnostics_scaffold.py`
 - Required BYOK key-management gate in CI (`tests/test_api_key_lifecycle_contract.py`) for add/replace/delete contract proof
 
 ## Prerequisites
@@ -16,6 +19,7 @@ This guide reflects the current validated testing path for the V2 lecture pipeli
 - Backend running locally (default: `http://localhost:8000`)
 - `JWT_SECRET_KEY` set before backend startup
 - `ENABLE_V2_PIPELINE=true` set before backend startup (required for V2 routes)
+- `ENABLE_URL_INGESTION_V1=true` set before backend startup (required for URL-ready generation path)
 - Test user account available
 - For strict BYOK checks: user has valid provider keys stored via `POST /api/api-keys/`
 
@@ -115,9 +119,11 @@ Expected result:
 
 ## 4) CI Validation
 
-Backend workflow now includes the V2 coercion regression test on push/PR for `dev` and `main`.
+Backend workflow now includes required contract gates on push/PR for `dev` and `main`.
 
 Reviewer gate note:
+- `tests/test_v2_source_intake_v1a.py` is the required source-intake contract gate.
+- `tests/test_url_diagnostics_scaffold.py` is the required URL diagnostics contract gate.
 - `tests/test_api_key_lifecycle_contract.py` is the required BYOK key-management contract gate.
 - This is the canonical evidence for API key add/replace/delete behavior.
 

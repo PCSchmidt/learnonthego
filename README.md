@@ -19,6 +19,11 @@ LearnOnTheGo is currently in a hardened MVP state with core backend capabilities
 - ✅ API key storage path fixed for async DB usage and encryption compatibility
 - ✅ Backend CI now runs a regression test for V2 form coercion on every push/PR
 - ✅ Cost-aware TTS default strategy in create flow: environment mode defaults to OpenAI TTS, BYOK mode keeps ElevenLabs optional premium
+- ✅ URL generation now supports ready web URLs behind feature flags (`ENABLE_URL_INGESTION_V1`, `EXPO_PUBLIC_ENABLE_URL_INGESTION_V1`)
+- ✅ Backend CI contract gates added and validated green for:
+    - `tests/test_v2_source_intake_v1a.py`
+    - `tests/test_url_diagnostics_scaffold.py`
+    - `tests/test_api_key_lifecycle_contract.py`
 
 ### Completed
 - ✅ Backend API deployed on Railway: https://learnonthego-production.up.railway.app
@@ -131,9 +136,18 @@ Create `backend/.env`:
 ```bash
 DATABASE_URL=sqlite:///./learnonthego.db
 JWT_SECRET_KEY=your-secret-key
+ENABLE_V2_PIPELINE=true
+ENABLE_URL_INGESTION_V1=true
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+```
+
+For frontend URL-ready generation in Create flow, set:
+
+```bash
+# frontend/.env (or CI frontend env config)
+EXPO_PUBLIC_ENABLE_URL_INGESTION_V1=true
 ```
 
 ### 5. Deterministic Local V2 Runbook (Recommended)
