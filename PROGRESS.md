@@ -1,6 +1,6 @@
 # LearnOnTheGo Development Progress
 
-**Last Updated**: April 13, 2026  
+**Last Updated**: April 14, 2026  
 **Current Branch**: dev  
 **Phase**: Hardened MVP with V2 provider abstraction and BYOK validation - IN PROGRESS  
 **Previous**: Legacy phase notes (2025) preserved below for historical reference
@@ -59,6 +59,13 @@
   - URL generation ready pass signature
   - URL generation deterministic non-ready fail signature (`url_not_ready`)
 - [x] Added A5-030 frontend guardrail test ensuring URL create remains blocked for non-ready outcomes even when URL feature flag is enabled
+- [x] Weekly A5-031/A5-032 guardrail cadence run completed locally on April 14, 2026:
+  - `tests/test_v2_form_coercion.py` -> pass
+  - `tests/test_v2_feature_flag_and_auth_smoke.py` -> pass
+  - `tests/test_v2_source_intake_v1a.py` -> pass
+  - `tests/test_url_diagnostics_scaffold.py` -> pass
+  - `tests/test_api_key_lifecycle_contract.py` -> pass
+  - Notes: run emitted known deprecation warnings only (SQLAlchemy/FastAPI/Pydantic), no test failures
 
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
@@ -94,7 +101,7 @@
 
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-2. [ ] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
+2. [x] A5-031/A5-032 CI smoke cadence check (weekly guardrail run).
 3. [ ] Add a quick in-app tooltip linking Generation Mode to Provider Cost Guidance in Settings.
 
 ### Verification Commands
