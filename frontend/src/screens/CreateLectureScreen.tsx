@@ -22,6 +22,7 @@ import lectureService, {
   ApiKeyStatus,
   AVAILABLE_VOICES,
   DIFFICULTY_LEVELS,
+  LectureResponse,
   LectureRequest,
   MODEL_PRESETS,
   ModelPresetId,
@@ -56,6 +57,7 @@ const CreateLectureScreen: React.FC = () => {
   const [modelPreset, setModelPreset] = useState<ModelPresetId>('balanced');
   const [isAdvancedModelMode, setIsAdvancedModelMode] = useState(false);
   const [customModelId, setCustomModelId] = useState('');
+  const [scriptPreview, setScriptPreview] = useState<LectureResponse | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     source?: string;
     topic?: string;
@@ -88,6 +90,10 @@ const CreateLectureScreen: React.FC = () => {
 
   const clearFieldError = (field: 'source' | 'topic' | 'file' | 'url' | 'model' | 'general') => {
     setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+  };
+
+  const clearPreview = () => {
+    setScriptPreview(null);
   };
 
   const getUrlOutcomeGuidance = (diagnostics: UrlDiagnosticsResponse): string => {
@@ -130,6 +136,7 @@ const CreateLectureScreen: React.FC = () => {
     input.onchange = () => {
       const chosen = input.files?.[0] || null;
       setSelectedFile(chosen);
+      clearPreview();
       if (chosen) {
         clearFieldError('file');
         clearFieldError('source');
@@ -140,6 +147,7 @@ const CreateLectureScreen: React.FC = () => {
 
   const resetFileSelection = () => {
     setSelectedFile(null);
+    clearPreview();
     clearFieldError('file');
     clearFieldError('general');
   };
@@ -264,17 +272,29 @@ const CreateLectureScreen: React.FC = () => {
       llmModelId: isAdvancedModelMode ? customModelId.trim() : undefined,
     };
 
+    const requestingPreview = !scriptPreview;
+
     setIsLoading(true);
 
     try {
       const response = await lectureService.createLecture(lectureRequest, {
         useByok,
+        dryRun: requestingPreview,
         sourceType: (sourceMode === 'file' ? inferredSourceType : sourceMode === 'url' ? 'url' : 'text') as SourceInputType,
         uploadFile: sourceMode === 'file' ? selectedFile || undefined : undefined,
         sourceUrl: sourceMode === 'url' ? urlInput.trim() : undefined,
       });
       
       if (response.success && response.data) {
+        if (requestingPreview) {
+          if (response.data.dry_run) {
+            setScriptPreview(response.data);
+            return;
+          }
+          setFieldErrors({ general: 'Preview response did not match dry-run contract. Please retry.' });
+          return;
+        }
+
         const generatedLectureId = response.data.id || `v2-${Date.now()}`;
         const keySource = response.data.key_source === 'user-encrypted-storage'
           ? 'BYOK secure storage'
@@ -303,7 +323,9 @@ const CreateLectureScreen: React.FC = () => {
           response.error ||
             (useByok
               ? 'Failed to create lecture using BYOK path. Verify your provider keys in settings.'
-              : 'Failed to create lecture')
+              : requestingPreview
+                ? 'Failed to generate script preview'
+                : 'Failed to create lecture')
         );
       }
     } catch (error) {
@@ -364,6 +386,7 @@ const CreateLectureScreen: React.FC = () => {
                   clearFieldError('url');
                   clearFieldError('model');
                   clearFieldError('general');
+                  clearPreview();
                   if (option.id !== 'url') {
                     setUrlDiagnostics(null);
                   }
@@ -406,6 +429,7 @@ const CreateLectureScreen: React.FC = () => {
             setFormData({...formData, topic: text});
             clearFieldError('topic');
             clearFieldError('general');
+            clearPreview();
           }}
           placeholder="e.g., Machine Learning Basics, Quantum Physics, History of Rome"
           placeholderTextColor="#7f8492"
@@ -448,6 +472,7 @@ const CreateLectureScreen: React.FC = () => {
                 setUrlInput(text);
                 clearFieldError('url');
                 clearFieldError('general');
+                clearPreview();
               }}
               onRunDiagnostics={handleRunUrlDiagnostics}
               isDiagnosticsLoading={isUrlDiagnosticsLoading}
@@ -479,7 +504,10 @@ const CreateLectureScreen: React.FC = () => {
                 <TouchableOpacity
                   testID="generation-mode-byok"
                   style={[styles.modeButton, useByok && styles.modeButtonActive]}
-                  onPress={() => setUseByok(true)}
+                  onPress={() => {
+                    setUseByok(true);
+                    clearPreview();
+                  }}
                   disabled={!keyStatus?.setup_complete}
                 >
                   <Text style={[styles.modeButtonText, useByok && styles.modeButtonTextActive]}>
@@ -489,7 +517,10 @@ const CreateLectureScreen: React.FC = () => {
                 <TouchableOpacity
                   testID="generation-mode-environment"
                   style={[styles.modeButton, !useByok && styles.modeButtonActive]}
-                  onPress={() => setUseByok(false)}
+                  onPress={() => {
+                    setUseByok(false);
+                    clearPreview();
+                  }}
                 >
                   <Text style={[styles.modeButtonText, !useByok && styles.modeButtonTextActive]}>
                     Environment
@@ -517,6 +548,7 @@ const CreateLectureScreen: React.FC = () => {
                 onPress={() => {
                   setModelPreset(preset.id);
                   clearFieldError('model');
+                  clearPreview();
                 }}
               >
                 <Text style={[styles.modeButtonText, modelPreset === preset.id && styles.modeButtonTextActive]}>
@@ -535,6 +567,7 @@ const CreateLectureScreen: React.FC = () => {
             onPress={() => {
               setIsAdvancedModelMode((prev) => !prev);
               clearFieldError('model');
+              clearPreview();
             }}
           >
             <Text style={[styles.modeButtonText, isAdvancedModelMode && styles.modeButtonTextActive]}>
@@ -550,6 +583,7 @@ const CreateLectureScreen: React.FC = () => {
               onChangeText={(value) => {
                 setCustomModelId(value);
                 clearFieldError('model');
+                clearPreview();
               }}
               placeholder="e.g., anthropic/claude-3.5-sonnet"
               placeholderTextColor="#7f8492"
@@ -569,7 +603,10 @@ const CreateLectureScreen: React.FC = () => {
                 styles.durationButton,
                 formData.duration === duration && styles.durationButtonActive,
               ]}
-              onPress={() => setFormData({...formData, duration})}>
+              onPress={() => {
+                setFormData({...formData, duration});
+                clearPreview();
+              }}>
               <Text
                 style={[
                   styles.durationButtonText,
@@ -590,7 +627,10 @@ const CreateLectureScreen: React.FC = () => {
                 styles.difficultyButton,
                 formData.difficulty === diff.id && styles.difficultyButtonActive,
               ]}
-              onPress={() => setFormData({...formData, difficulty: diff.id as any})}>
+              onPress={() => {
+                setFormData({...formData, difficulty: diff.id as any});
+                clearPreview();
+              }}>
               <Text
                 style={[
                   styles.difficultyButtonText,
@@ -611,7 +651,10 @@ const CreateLectureScreen: React.FC = () => {
                 styles.voiceButton,
                 formData.voice === voice.id && styles.voiceButtonActive,
               ]}
-              onPress={() => setFormData({...formData, voice: voice.id})}>
+              onPress={() => {
+                setFormData({...formData, voice: voice.id});
+                clearPreview();
+              }}>
               <Text
                 style={[
                   styles.voiceButtonText,
@@ -630,6 +673,18 @@ const CreateLectureScreen: React.FC = () => {
           </Text>
         </View>
 
+        {scriptPreview?.dry_run ? (
+          <View testID="script-preview-card" style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Script Preview</Text>
+            <Text testID="script-preview-text" style={styles.infoText}>
+              {scriptPreview.script || 'No preview script returned.'}
+            </Text>
+            <Text style={styles.modeSubtle}>
+              Confirm to generate audio, or change inputs to regenerate preview.
+            </Text>
+          </View>
+        ) : null}
+
         <TouchableOpacity
           testID="create-lecture-button"
           style={[styles.createButton, isLoading && styles.createButtonDisabled]}
@@ -646,9 +701,11 @@ const CreateLectureScreen: React.FC = () => {
                 ? 'URL Generation Disabled By Feature Flag'
                 : sourceMode === 'url' && urlDiagnostics?.outcome !== 'ready'
                   ? 'Run Diagnostics Until URL Is Ready'
+                  : scriptPreview?.dry_run
+                    ? 'Confirm And Generate Audio'
                   : sourceMode === 'url'
-                    ? 'Create Lecture From URL'
-                    : 'Create Lecture'}
+                    ? 'Preview Script From URL'
+                    : 'Preview Script'}
             </Text>
           )}
         </TouchableOpacity>

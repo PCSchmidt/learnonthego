@@ -83,6 +83,27 @@ def test_v2_endpoint_enabled_returns_contract(auth_client, monkeypatch):
     assert body["key_source"] == "environment"
 
 
+def test_v2_preview_dry_run_response_shape_contract(auth_client, monkeypatch):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+
+    response = auth_client.post(
+        "/api/lectures/generate-document-v2",
+        data=_v2_payload(),
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["dry_run"] is True
+    assert isinstance(body["script"], str)
+    assert body["script"]
+    assert isinstance(body.get("llm"), dict)
+    assert {"provider", "model", "usage"}.issubset(body["llm"].keys())
+    assert isinstance(body.get("audio"), dict)
+    assert {"provider", "model", "file_path", "bytes_written", "metadata"}.issubset(body["audio"].keys())
+
+
 def test_v2_byok_endpoint_enabled_returns_contract(auth_client, monkeypatch):
     monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
 

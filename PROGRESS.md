@@ -95,7 +95,7 @@
 ### Next Most Optimal Steps (Priority Order)
 1. [ ] Add provider-cost copy in frontend settings to make default vs premium trade-offs explicit to users.
 2. [ ] Continue archive cleanup of legacy 2025 root docs to keep discovery focused.
-3. [ ] A5-013 Script preview and confirm flow.
+3. [ ] A5-003 Generation mode contract.
 
 ### Verification Commands
 ```bash
@@ -144,6 +144,7 @@ Initial sprint sequence (kickoff):
 4. `A5-021` -> `completed`
 5. `A5-011` -> `completed`
 6. `A5-012` -> `completed`
+7. `A5-013` -> `completed`
 
 #### A. Product + API Contract
 
@@ -183,10 +184,11 @@ Initial sprint sequence (kickoff):
   - Sequence: `#6`
   - Deliverable: clear BYOK key status and explicit fallback indicator in Create + Settings flows with focused frontend coverage
 
-- [ ] `A5-013` Script preview and confirm flow
+- [x] `A5-013` Script preview and confirm flow
   - Owner: `@owner-frontend`
-  - Status: `not-started`
-  - Deliverable: pre-audio preview step with regenerate option
+  - Status: `completed`
+  - Sequence: `#7`
+  - Deliverable: pre-audio script preview + explicit confirm generation flow in Create screen with matching frontend integration coverage and backend dry-run preview response-shape assertion
 
 #### C. Backend Services + Validation
 

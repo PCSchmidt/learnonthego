@@ -77,8 +77,9 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     (lectureService.createLecture as jest.Mock).mockResolvedValue({
       success: true,
       data: {
-        id: 'lecture-123',
-        title: 'Generated Lecture',
+        title: 'Dry Run Lecture Contract',
+        script: 'Dry run mode validates contract only. No LLM/TTS generation executed.',
+        dry_run: true,
         key_source: 'environment',
       },
     });
@@ -285,6 +286,45 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     fireEvent.press(getByTestId('generation-mode-environment'));
     const fallbackStatus = await findByTestId('fallback-status-message');
     expect(fallbackStatus.props.children).toContain('Fallback path active: Environment-managed providers');
+  });
+
+  it('renders script preview first, then confirms final generation', async () => {
+    (lectureService.createLecture as jest.Mock)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          title: 'Dry Run Lecture Contract',
+          script: 'Preview script content for confirmation.',
+          dry_run: true,
+          key_source: 'environment',
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          id: 'lecture-final-1',
+          title: 'Generated Lecture',
+          key_source: 'environment',
+        },
+      });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'Preview and confirm flow topic');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const previewCard = await findByTestId('script-preview-card');
+    expect(previewCard).toBeTruthy();
+    const previewText = await findByTestId('script-preview-text');
+    expect(previewText.props.children).toBe('Preview script content for confirmation.');
+
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(lectureService.createLecture).toHaveBeenCalledTimes(2);
+    });
+    expect((lectureService.createLecture as jest.Mock).mock.calls[0][1].dryRun).toBe(true);
+    expect((lectureService.createLecture as jest.Mock).mock.calls[1][1].dryRun).toBe(false);
   });
 
   it('submits file mode with inferred sourceType and upload file', async () => {
