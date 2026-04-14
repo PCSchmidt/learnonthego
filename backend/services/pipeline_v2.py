@@ -69,7 +69,7 @@ class DocumentToAudioPipelineV2:
 
 
 def v2_pipeline_enabled() -> bool:
-    return os.getenv("ENABLE_V2_PIPELINE", "false").lower() == "true"
+    return os.getenv("ENABLE_V2_PIPELINE", "true").lower() != "false"
 
 
 def create_document_pipeline_v2() -> DocumentToAudioPipelineV2:
