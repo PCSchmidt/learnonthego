@@ -1,0 +1,51 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776256960,
+  "variant": "environment-paid-elevenlabs-end-to-end",
+  "email": "phase4_final_env_1776256960@example.com",
+  "results": [
+    {
+      "step": "health",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_register",
+      "status_code": 201,
+      "pass": true,
+      "detail": null
+    },
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_me",
+      "status_code": 200,
+      "pass": true,
+      "email": "phase4_final_env_1776256960@example.com"
+    },
+    {
+      "step": "create_preview",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "confirm_generation_environment_elevenlabs",
+      "status_code": 200,
+      "pass": true,
+      "execution_mode": "environment",
+      "audio_url": null,
+      "detail": null
+    },
+    {
+      "step": "playback_probe",
+      "status_code": null,
+      "pass": false,
+      "detail": "No probeable audio URL returned from confirm step."
+    }
+  ],
+  "passed_steps": 6,
+  "total_steps": 7
+}

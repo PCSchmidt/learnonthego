@@ -204,7 +204,7 @@ Day 6 governance snapshot (April 15, 2026):
 #### Day 7 - Release Gate + Phase 4 Closure
 - [x] Re-run Phase 4 walkthrough target path (`auth -> create -> preview -> confirm -> playback`) with BYOK-enabled flow.
 - [x] Re-run short cadence gate and confirm green.
-- [ ] Publish final Phase 4 checkpoint and close with explicit remaining risks (if any).
+- [x] Publish final Phase 4 checkpoint and close with explicit remaining risks (if any).
 
 Day 7 gate snapshot (April 15, 2026):
 - Deploy parity restored: `origin/main` promoted to `d44822a` (matches current `origin/dev` at time of promotion).
@@ -223,6 +223,19 @@ Release checkpoint status:
 - Core reliability and contract gates are green.
 - Environment-mode paid generation is now confirmed working in production.
 - Phase 4 full BYOK closure remains conditionally blocked only by missing/invalid BYOK provider keys for the paid generation test account.
+
+Final closure statement (April 15, 2026):
+- Final environment-paid end-to-end walkthrough artifact: `phase4_final_environment_walkthrough.json`.
+- Result: `6/7` steps passed:
+  - `health`, `auth_register`, `auth_login`, `auth_me`, `create_preview`, and `confirm_generation_environment_elevenlabs` all passed (`200`).
+  - `confirm_generation_environment_elevenlabs` returned success with `execution_mode=environment`.
+- Explicit residual risk:
+  - `playback_probe` remains non-pass in scripted verification because the confirm response did not include a probeable audio URL (`audio_url` absent / non-HTTP `audio.file_path`).
+  - This is currently treated as an observability/contract gap in playback verification rather than a paid-generation failure.
+
+Phase 4 closure decision:
+- Environment-path production generation is considered operationally closed for auth -> create -> preview -> confirm.
+- Remaining follow-up (post-closure): make playback probe externally verifiable in contract output, and complete full BYOK paid success for a user account with validated provider keys.
 
 ##### Completion Criteria (BYOK Productization)
 - [ ] User can complete paid generation via BYOK with clear status messaging.
