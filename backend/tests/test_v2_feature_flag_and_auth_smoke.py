@@ -349,8 +349,27 @@ def test_v2_final_generation_surfaces_provider_stage_error(auth_client, monkeypa
 
 def test_api_key_status_reports_missing_required_keys(auth_client, monkeypatch):
     class FakeApiKeyService:
-        async def get_api_key(self, db, user_id, provider):
-            return None
+        async def get_user_api_keys_status(self, db, user_id):
+            return {
+                "openrouter": {
+                    "has_key": False,
+                    "is_valid": False,
+                    "last_used_at": None,
+                    "last_validation_at": None,
+                    "validation_error": None,
+                    "usage_count": 0,
+                    "key_name": None,
+                },
+                "elevenlabs": {
+                    "has_key": False,
+                    "is_valid": False,
+                    "last_used_at": None,
+                    "last_validation_at": None,
+                    "validation_error": None,
+                    "usage_count": 0,
+                    "key_name": None,
+                },
+            }
 
     monkeypatch.setattr(api_key_routes, "get_api_key_service", lambda: FakeApiKeyService())
 
@@ -364,6 +383,10 @@ def test_api_key_status_reports_missing_required_keys(auth_client, monkeypatch):
     assert body["can_generate_lectures"] is False
     assert body["setup_complete"] is False
     assert set(body["missing_keys"]) == {"openrouter", "elevenlabs"}
+    assert "provider_status" in body
+    assert body["provider_status"]["openrouter"]["last_validation_outcome"] == "missing"
+    assert body["provider_status"]["elevenlabs"]["last_validation_outcome"] == "missing"
+    assert "remediation_hint" in body["provider_status"]["openrouter"]
 
 
 def test_v2_byok_missing_keys_contract(auth_client, monkeypatch):

@@ -15,25 +15,60 @@ import {
 } from 'react-native';
 import lectureService, { ApiKeyStatus } from '../services/lecture';
 
+type ProviderStatusItem = {
+  provider: string;
+  last_validation_outcome: 'missing' | 'valid' | 'invalid';
+  remediation_hint: string;
+  validation_error: string | null;
+  key_name: string | null;
+  last_validation_at: string | null;
+};
+
 const SettingsScreen: React.FC = () => {
   const [isKeyStatusLoading, setIsKeyStatusLoading] = useState(true);
   const [keyStatus, setKeyStatus] = useState<ApiKeyStatus | null>(null);
 
-  useEffect(() => {
-    const loadStatus = async () => {
-      setIsKeyStatusLoading(true);
-      try {
-        const response = await lectureService.getApiKeyStatus();
-        if (response.success && response.data) {
-          setKeyStatus(response.data);
-        }
-      } finally {
-        setIsKeyStatusLoading(false);
+  const loadKeyStatus = async () => {
+    setIsKeyStatusLoading(true);
+    try {
+      const response = await lectureService.getApiKeyStatus();
+      if (response.success && response.data) {
+        setKeyStatus(response.data);
       }
-    };
+    } finally {
+      setIsKeyStatusLoading(false);
+    }
+  };
 
-    loadStatus();
+  useEffect(() => {
+    loadKeyStatus();
   }, []);
+
+  const providerStatusItems: ProviderStatusItem[] = keyStatus?.provider_status
+    ? Object.entries(keyStatus.provider_status).map(([provider, state]) => ({
+        provider,
+        last_validation_outcome: state.last_validation_outcome,
+        remediation_hint: state.remediation_hint,
+        validation_error: state.validation_error,
+        key_name: state.key_name,
+        last_validation_at: state.last_validation_at,
+      }))
+    : ["openrouter", "elevenlabs"].map((provider) => ({
+        provider,
+        last_validation_outcome: (keyStatus?.missing_keys || []).includes(provider) ? "missing" : "valid",
+        remediation_hint: (keyStatus?.missing_keys || []).includes(provider)
+          ? `Add your ${provider} key in Settings and run validation.`
+          : "Key is valid and ready for generation.",
+        validation_error: null,
+        key_name: null,
+        last_validation_at: null,
+      }));
+
+  const formatProviderLabel = (provider: string) =>
+    provider === 'openrouter' ? 'OpenRouter' : provider === 'elevenlabs' ? 'ElevenLabs' : provider;
+
+  const getOutcomeLabel = (outcome: ProviderStatusItem['last_validation_outcome']) =>
+    outcome === 'valid' ? 'Valid' : outcome === 'invalid' ? 'Invalid' : 'Missing';
 
   const handleAbout = () => {
     Alert.alert(
@@ -127,6 +162,32 @@ const SettingsScreen: React.FC = () => {
                       ? 'Create screen can use BYOK by default, with environment mode available as manual fallback.'
                       : 'Fallback behavior: generation uses environment-managed providers until BYOK keys are complete.'}
                   </Text>
+                  <View style={styles.providerStatusList}>
+                    {providerStatusItems.map((item) => (
+                      <View key={item.provider} style={styles.providerStatusRow}>
+                        <Text style={styles.providerTitle}>
+                          {formatProviderLabel(item.provider)} - {getOutcomeLabel(item.last_validation_outcome)}
+                        </Text>
+                        <Text style={styles.providerHint}>{item.remediation_hint}</Text>
+                        {item.key_name ? (
+                          <Text style={styles.providerMeta}>Key: {item.key_name}</Text>
+                        ) : null}
+                        {item.last_validation_at ? (
+                          <Text style={styles.providerMeta}>Last validation: {item.last_validation_at}</Text>
+                        ) : null}
+                        {item.validation_error ? (
+                          <Text style={styles.providerError}>Validation error: {item.validation_error}</Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                  <TouchableOpacity
+                    testID="settings-refresh-key-status"
+                    style={styles.refreshButton}
+                    onPress={loadKeyStatus}
+                  >
+                    <Text style={styles.refreshButtonText}>Refresh provider status</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -283,6 +344,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 6,
+  },
+  providerStatusList: {
+    marginTop: 10,
+    gap: 8,
+  },
+  providerStatusRow: {
+    borderWidth: 1,
+    borderColor: '#d4d8e1',
+    backgroundColor: '#ffffff',
+    padding: 10,
+  },
+  providerTitle: {
+    color: '#1f2a3d',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  providerHint: {
+    color: '#4c5a73',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  providerMeta: {
+    color: '#5f6a7f',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  providerError: {
+    color: '#8b2f2f',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  refreshButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#30384a',
+    backgroundColor: '#fdf8ec',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  refreshButtonText: {
+    color: '#30384a',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   sectionTitle: {
     fontSize: 12,

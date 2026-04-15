@@ -139,6 +139,20 @@ export interface ApiKeyStatus {
   can_generate_lectures: boolean;
   missing_keys: string[];
   setup_complete: boolean;
+  provider_status?: Record<
+    string,
+    {
+      has_key: boolean;
+      is_valid: boolean;
+      last_used_at: string | null;
+      last_validation_at: string | null;
+      validation_error: string | null;
+      usage_count: number;
+      key_name: string | null;
+      last_validation_outcome: 'missing' | 'valid' | 'invalid';
+      remediation_hint: string;
+    }
+  >;
 }
 
 // Available Voices

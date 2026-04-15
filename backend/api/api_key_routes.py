@@ -126,26 +126,47 @@ async def get_api_keys_status(
     """
     try:
         api_key_service = get_api_key_service()
+        provider_status = await api_key_service.get_user_api_keys_status(
+            db=db,
+            user_id=current_user.id,
+        )
         
         # Check for required providers
-        openrouter_key = await api_key_service.get_api_key(
-            db, current_user.id, APIProvider.OPENROUTER
-        )
-        elevenlabs_key = await api_key_service.get_api_key(
-            db, current_user.id, APIProvider.ELEVENLABS
-        )
+        openrouter_state = provider_status.get("openrouter", {})
+        elevenlabs_state = provider_status.get("elevenlabs", {})
+        has_openrouter = bool(openrouter_state.get("has_key"))
+        has_elevenlabs = bool(elevenlabs_state.get("has_key"))
         
-        can_generate_lectures = bool(openrouter_key and elevenlabs_key)
+        can_generate_lectures = bool(has_openrouter and has_elevenlabs)
+
+        # Attach normalized validation outcome for frontend UX.
+        for provider, state in provider_status.items():
+            if not state.get("has_key"):
+                outcome = "missing"
+            elif state.get("is_valid"):
+                outcome = "valid"
+            else:
+                outcome = "invalid"
+
+            state["last_validation_outcome"] = outcome
+            state["remediation_hint"] = (
+                f"Add your {provider} key in Settings and run validation."
+                if outcome == "missing"
+                else "Replace or revalidate this key in Settings."
+                if outcome == "invalid"
+                else "Key is valid and ready for generation."
+            )
         
         return {
             "can_generate_lectures": can_generate_lectures,
             "missing_keys": [
                 provider for provider, has_key in [
-                    ("openrouter", bool(openrouter_key)),
-                    ("elevenlabs", bool(elevenlabs_key))
+                    ("openrouter", has_openrouter),
+                    ("elevenlabs", has_elevenlabs)
                 ] if not has_key
             ],
-            "setup_complete": can_generate_lectures
+            "setup_complete": can_generate_lectures,
+            "provider_status": provider_status,
         }
         
     except Exception as e:

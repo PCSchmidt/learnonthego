@@ -161,9 +161,9 @@ Goal: make BYOK a first-class user path without derailing current release work.
 - [x] Add regression tests for BYOK key-required contracts.
 
 #### Day 3 - Settings UX Completion
-- [ ] Ensure Settings shows key status per provider with last validation outcome.
-- [ ] Add guided remediation copy for missing/invalid keys.
-- [ ] Add single-click recheck/refresh status action.
+- [x] Ensure Settings shows key status per provider with last validation outcome.
+- [x] Add guided remediation copy for missing/invalid keys.
+- [x] Add single-click recheck/refresh status action.
 
 #### Day 4 - Create Flow BYOK Guardrails
 - [ ] Ensure Create flow blocks paid generation when BYOK is selected but required keys are missing.
