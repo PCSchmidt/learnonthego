@@ -8,12 +8,20 @@ jest.mock('../services/lecture', () => ({
   __esModule: true,
   default: {
     getApiKeyStatus: jest.fn(),
+    storeApiKey: jest.fn(),
+    validateApiKey: jest.fn(),
+    deleteApiKey: jest.fn(),
   },
 }));
 
 describe('SettingsScreen BYOK status messaging', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('shows fallback guidance when BYOK is incomplete', async () => {
@@ -160,6 +168,104 @@ describe('SettingsScreen BYOK status messaging', () => {
 
     await waitFor(() => {
       expect(getByTestId('settings-byok-status').props.children).toContain('BYOK ready');
+    });
+    expect(lectureService.getApiKeyStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('saves and validates an OpenRouter key from Settings key-entry controls', async () => {
+    (lectureService.getApiKeyStatus as jest.Mock)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          can_generate_lectures: false,
+          missing_keys: ['openrouter', 'elevenlabs'],
+          setup_complete: false,
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          can_generate_lectures: false,
+          missing_keys: ['elevenlabs'],
+          setup_complete: false,
+        },
+      });
+    (lectureService.storeApiKey as jest.Mock).mockResolvedValueOnce({ success: true, data: { message: 'ok' } });
+    (lectureService.validateApiKey as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: { is_valid: true, provider: 'openrouter', message: 'API key is valid' },
+    });
+
+    const { getByTestId } = render(<SettingsScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId('settings-byok-status').props.children).toContain('BYOK not ready');
+    });
+
+    fireEvent.changeText(getByTestId('settings-openrouter-key-input'), 'sk-or-v1-test-key');
+    fireEvent.press(getByTestId('settings-openrouter-save-validate'));
+
+    await waitFor(() => {
+      expect(lectureService.storeApiKey).toHaveBeenCalledWith('openrouter', 'sk-or-v1-test-key');
+    });
+    expect(lectureService.validateApiKey).toHaveBeenCalledWith('openrouter');
+    expect(lectureService.getApiKeyStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('deletes an ElevenLabs key from Settings key-entry controls', async () => {
+    (lectureService.getApiKeyStatus as jest.Mock)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          can_generate_lectures: true,
+          missing_keys: [],
+          setup_complete: true,
+          provider_status: {
+            elevenlabs: {
+              has_key: true,
+              is_valid: true,
+              last_used_at: null,
+              last_validation_at: '2026-04-15T00:00:00Z',
+              validation_error: null,
+              usage_count: 1,
+              key_name: 'Primary ElevenLabs',
+              last_validation_outcome: 'valid',
+              remediation_hint: 'Key is valid and ready for generation.',
+            },
+            openrouter: {
+              has_key: true,
+              is_valid: true,
+              last_used_at: null,
+              last_validation_at: '2026-04-15T00:00:00Z',
+              validation_error: null,
+              usage_count: 1,
+              key_name: 'Primary OpenRouter',
+              last_validation_outcome: 'valid',
+              remediation_hint: 'Key is valid and ready for generation.',
+            },
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          can_generate_lectures: false,
+          missing_keys: ['elevenlabs'],
+          setup_complete: false,
+        },
+      });
+    (lectureService.deleteApiKey as jest.Mock).mockResolvedValueOnce({ success: true, data: { message: 'deleted' } });
+
+    const { getByTestId } = render(<SettingsScreen />);
+
+    await waitFor(() => {
+      expect(getByTestId('settings-byok-status').props.children).toContain('BYOK ready');
+    });
+
+    fireEvent.press(getByTestId('settings-elevenlabs-delete'));
+
+    await waitFor(() => {
+      expect(lectureService.deleteApiKey).toHaveBeenCalledWith('elevenlabs');
     });
     expect(lectureService.getApiKeyStatus).toHaveBeenCalledTimes(2);
   });

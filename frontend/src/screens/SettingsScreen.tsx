@@ -12,6 +12,7 @@ import {
   ScrollView,
   Alert,
   Platform,
+  TextInput,
 } from 'react-native';
 import lectureService, { ApiKeyStatus } from '../services/lecture';
 
@@ -26,7 +27,10 @@ type ProviderStatusItem = {
 
 const SettingsScreen: React.FC = () => {
   const [isKeyStatusLoading, setIsKeyStatusLoading] = useState(true);
+  const [isSavingKey, setIsSavingKey] = useState(false);
   const [keyStatus, setKeyStatus] = useState<ApiKeyStatus | null>(null);
+  const [openRouterKey, setOpenRouterKey] = useState('');
+  const [elevenLabsKey, setElevenLabsKey] = useState('');
 
   const loadKeyStatus = async () => {
     setIsKeyStatusLoading(true);
@@ -90,6 +94,60 @@ const SettingsScreen: React.FC = () => {
         'Connection Test',
         '❌ Failed to connect to backend\n\nPlease check your internet connection.'
       );
+    }
+  };
+
+  const handleSaveKey = async (provider: 'openrouter' | 'elevenlabs') => {
+    const rawKey = provider === 'openrouter' ? openRouterKey : elevenLabsKey;
+    const normalizedKey = rawKey.trim();
+    if (!normalizedKey) {
+      Alert.alert('Missing API key', `Enter your ${formatProviderLabel(provider)} API key first.`);
+      return;
+    }
+
+    setIsSavingKey(true);
+    try {
+      const storeResponse = await lectureService.storeApiKey(provider, normalizedKey);
+      if (!storeResponse.success) {
+        Alert.alert('Save failed', storeResponse.error || 'Unable to save API key.');
+        return;
+      }
+
+      const validateResponse = await lectureService.validateApiKey(provider);
+      if (validateResponse.success && validateResponse.data?.is_valid) {
+        Alert.alert('Key saved', `${formatProviderLabel(provider)} key saved and validated.`);
+      } else {
+        Alert.alert(
+          'Key saved but not validated',
+          validateResponse.data?.message || validateResponse.error || 'Recheck the key and provider account.'
+        );
+      }
+
+      if (provider === 'openrouter') {
+        setOpenRouterKey('');
+      } else {
+        setElevenLabsKey('');
+      }
+
+      await loadKeyStatus();
+    } finally {
+      setIsSavingKey(false);
+    }
+  };
+
+  const handleDeleteKey = async (provider: 'openrouter' | 'elevenlabs') => {
+    setIsSavingKey(true);
+    try {
+      const response = await lectureService.deleteApiKey(provider);
+      if (!response.success) {
+        Alert.alert('Delete failed', response.error || 'Unable to delete API key.');
+        return;
+      }
+
+      Alert.alert('Key removed', `${formatProviderLabel(provider)} key deleted.`);
+      await loadKeyStatus();
+    } finally {
+      setIsSavingKey(false);
     }
   };
 
@@ -190,6 +248,84 @@ const SettingsScreen: React.FC = () => {
                   </TouchableOpacity>
                 </>
               )}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>BYOK Key Entry</Text>
+            <View style={styles.statusCard}>
+              <Text style={styles.statusText}>Add your provider keys for BYOK generation.</Text>
+              <Text style={styles.statusSubtle}>
+                Keys are encrypted server-side and tied to your signed-in user account.
+              </Text>
+
+              <View style={styles.keyFormSection}>
+                <Text style={styles.providerTitle}>OpenRouter API Key</Text>
+                <TextInput
+                  testID="settings-openrouter-key-input"
+                  value={openRouterKey}
+                  onChangeText={setOpenRouterKey}
+                  placeholder="sk-or-v1-..."
+                  placeholderTextColor="#7f8492"
+                  style={styles.keyInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  editable={!isSavingKey}
+                />
+                <View style={styles.keyButtonRow}>
+                  <TouchableOpacity
+                    testID="settings-openrouter-save-validate"
+                    style={[styles.keyActionButton, isSavingKey && styles.buttonDisabled]}
+                    onPress={() => handleSaveKey('openrouter')}
+                    disabled={isSavingKey}
+                  >
+                    <Text style={styles.keyActionButtonText}>Save + Validate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    testID="settings-openrouter-delete"
+                    style={[styles.keyDangerButton, isSavingKey && styles.buttonDisabled]}
+                    onPress={() => handleDeleteKey('openrouter')}
+                    disabled={isSavingKey}
+                  >
+                    <Text style={styles.keyDangerButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.keyFormSection}>
+                <Text style={styles.providerTitle}>ElevenLabs API Key</Text>
+                <TextInput
+                  testID="settings-elevenlabs-key-input"
+                  value={elevenLabsKey}
+                  onChangeText={setElevenLabsKey}
+                  placeholder="sk-..."
+                  placeholderTextColor="#7f8492"
+                  style={styles.keyInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  editable={!isSavingKey}
+                />
+                <View style={styles.keyButtonRow}>
+                  <TouchableOpacity
+                    testID="settings-elevenlabs-save-validate"
+                    style={[styles.keyActionButton, isSavingKey && styles.buttonDisabled]}
+                    onPress={() => handleSaveKey('elevenlabs')}
+                    disabled={isSavingKey}
+                  >
+                    <Text style={styles.keyActionButtonText}>Save + Validate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    testID="settings-elevenlabs-delete"
+                    style={[styles.keyDangerButton, isSavingKey && styles.buttonDisabled]}
+                    onPress={() => handleDeleteKey('elevenlabs')}
+                    disabled={isSavingKey}
+                  >
+                    <Text style={styles.keyDangerButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -391,6 +527,59 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+  },
+  keyFormSection: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#d4d8e1',
+    backgroundColor: '#ffffff',
+    padding: 10,
+  },
+  keyInput: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    color: '#1f2a3d',
+    fontSize: 13,
+  },
+  keyButtonRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  keyActionButton: {
+    borderWidth: 1,
+    borderColor: '#30384a',
+    backgroundColor: '#fdf8ec',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  keyActionButtonText: {
+    color: '#30384a',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  keyDangerButton: {
+    borderWidth: 1,
+    borderColor: '#5f2525',
+    backgroundColor: '#fff4f4',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  keyDangerButtonText: {
+    color: '#5f2525',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   sectionTitle: {
     fontSize: 12,

@@ -155,6 +155,20 @@ export interface ApiKeyStatus {
   >;
 }
 
+export interface ApiKeyMutationResponse {
+  message: string;
+  provider: string;
+  key_name?: string | null;
+  created_at?: string;
+  is_valid?: boolean;
+}
+
+export interface ApiKeyValidationResponse {
+  is_valid: boolean;
+  provider: string;
+  message: string;
+}
+
 // Available Voices
 export const AVAILABLE_VOICES = [
   { id: 'Rachel', name: 'Rachel (Professional Female)' },
@@ -350,6 +364,30 @@ class LectureService {
 
   async getApiKeyStatus(): Promise<ApiResponse<ApiKeyStatus>> {
     return apiClient.get<ApiKeyStatus>('/api/api-keys/status');
+  }
+
+  async storeApiKey(
+    provider: 'openrouter' | 'elevenlabs',
+    apiKey: string,
+    keyName?: string
+  ): Promise<ApiResponse<ApiKeyMutationResponse>> {
+    return apiClient.post<ApiKeyMutationResponse>('/api/api-keys/', {
+      provider,
+      api_key: apiKey,
+      key_name: keyName || `${provider} key`,
+    });
+  }
+
+  async validateApiKey(
+    provider: 'openrouter' | 'elevenlabs'
+  ): Promise<ApiResponse<ApiKeyValidationResponse>> {
+    return apiClient.post<ApiKeyValidationResponse>(`/api/api-keys/${provider}/validate`);
+  }
+
+  async deleteApiKey(
+    provider: 'openrouter' | 'elevenlabs'
+  ): Promise<ApiResponse<ApiKeyMutationResponse>> {
+    return apiClient.delete<ApiKeyMutationResponse>(`/api/api-keys/${provider}`);
   }
 
   async diagnoseSourceUrl(sourceUri: string): Promise<ApiResponse<UrlDiagnosticsResponse>> {
