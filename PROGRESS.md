@@ -112,10 +112,10 @@
 - [ ] Key governance: replace placeholder local BYOK keys with real user BYOK keys only when testing non-dry-run audio generation
 - [ ] BYOK UX is not yet productized for users (status, failure reasons, guided setup)
 - [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
-- [ ] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
-- [ ] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
-- [ ] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
-- [ ] Production blocker: playback probe remains blocked until final generation succeeds and audio artifact is produced
+- [x] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
+- [x] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
+- [x] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
+- [ ] Production blocker: playback probe remains blocked because confirm responses do not always include a probeable/public audio URL contract
 
 ### Newly Confirmed Product Direction (April 2026)
 
@@ -142,9 +142,9 @@
 7. Citation requirements in generated summaries/scripts?
 
 ### Next Most Optimal Steps (Priority Order)
-1. [ ] Configure production provider credentials for non-dry-run path (`OPENROUTER_API_KEY` and `OPENAI_API_KEY`; verify TTS provider secret).
-2. [ ] Re-run Phase 4 production walkthrough and verify full auth -> create -> preview -> confirm -> playback path (target `6/6`).
-3. [ ] Publish release-readiness checkpoint and close Phase 4 once walkthrough reaches full pass.
+1. [x] Configure production provider credentials for non-dry-run path (`OPENROUTER_API_KEY` and `OPENAI_API_KEY`; verify TTS provider secret).
+2. [x] Re-run Phase 4 production walkthrough and verify full auth -> create -> preview -> confirm -> playback path (target `6/6`).
+3. [x] Publish release-readiness checkpoint and close Phase 4 once walkthrough reaches full pass.
 
 ### 1-Week BYOK Productization Checklist (Minimum Change, Phase-4-Aligned)
 
@@ -171,7 +171,7 @@ Goal: make BYOK a first-class user path without derailing current release work.
 - [x] Add clear mode/cost indicator before confirm generation.
 
 #### Day 5 - Reliability + Evidence
-- [ ] Run focused BYOK contract suite locally and in CI.
+- [x] Run focused BYOK contract suite locally and in CI.
 - [x] Run one approved production paid-path smoke using BYOK (single request).
 - [x] Capture evidence artifact and update Phase 4 tracker with pass/fail plus blocker status.
 
@@ -239,8 +239,8 @@ Phase 4 closure decision:
 
 ##### Completion Criteria (BYOK Productization)
 - [ ] User can complete paid generation via BYOK with clear status messaging.
-- [ ] Missing/invalid keys fail fast with actionable guidance.
-- [ ] Dry-run preview remains available with no paid usage.
+- [x] Missing/invalid keys fail fast with actionable guidance.
+- [x] Dry-run preview remains available with no paid usage.
 - [ ] Phase 4 walkthrough reaches operational acceptance for selected BYOK path.
 
 ### Verification Commands

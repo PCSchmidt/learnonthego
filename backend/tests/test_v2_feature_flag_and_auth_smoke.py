@@ -303,6 +303,24 @@ def test_v2_final_generation_contract_includes_execution_mode(
     assert policy.get("target_duration_minutes") == 8
     assert isinstance(policy.get("estimated_duration_minutes"), (int, float))
     assert isinstance(policy.get("within_tolerance"), bool)
+    assert isinstance(body.get("audio_url"), str)
+    assert "/api/lectures/audio/v2/mock.wav" in body["audio_url"]
+
+
+def test_v2_audio_download_rejects_path_traversal(auth_client):
+    response = auth_client.get(
+        "/api/lectures/audio/v2/../secrets.txt",
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+    assert response.status_code in {400, 404}
+
+
+def test_v2_audio_download_returns_404_for_missing_file(auth_client):
+    response = auth_client.get(
+        "/api/lectures/audio/v2/does-not-exist.mp3",
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+    assert response.status_code == 404
 
 
 def test_v2_requires_auth_header(auth_client, monkeypatch):

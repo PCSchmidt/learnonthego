@@ -3,8 +3,8 @@ Authenticated Lecture API Routes
 Protected endpoints for lecture generation and management
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, Request
+from fastapi.responses import JSONResponse, FileResponse
  # Removed Session and AsyncSession imports to avoid FastAPI type inference issues
 from sqlalchemy import select
 from typing import List, Optional, Dict, Any, NoReturn
@@ -16,7 +16,7 @@ import asyncio
 import socket
 import re
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import Request as UrlRequest, urlopen
 from urllib.error import HTTPError, URLError
 from pathlib import Path
 
@@ -586,6 +586,26 @@ def _v2_provider_error_detail(exc: PipelineExecutionError, *, execution_mode: st
     return detail
 
 
+def _resolve_v2_audio_url(result: Dict[str, Any], request: Request) -> Optional[str]:
+    explicit = result.get("audio_url")
+    if isinstance(explicit, str) and explicit.startswith("http"):
+        return explicit
+
+    audio = result.get("audio") if isinstance(result.get("audio"), dict) else None
+    file_path = audio.get("file_path") if audio else None
+    if not isinstance(file_path, str) or not file_path:
+        return None
+
+    if file_path.startswith("http"):
+        return file_path
+
+    filename = os.path.basename(file_path)
+    if not filename:
+        return None
+
+    return f"{str(request.base_url).rstrip('/')}/api/lectures/audio/v2/{filename}"
+
+
 def _classify_url_source(source_uri: str) -> str:
     parsed = urlparse(source_uri)
     host = (parsed.netloc or "").lower()
@@ -601,7 +621,7 @@ def _classify_url_source(source_uri: str) -> str:
 
 
 def _probe_url_availability(source_uri: str) -> Dict[str, Any]:
-    request = Request(source_uri, method="GET", headers={"User-Agent": "LearnOnTheGo/diagnostics"})
+    request = UrlRequest(source_uri, method="GET", headers={"User-Agent": "LearnOnTheGo/diagnostics"})
     try:
         with urlopen(request, timeout=5) as response:
             return {"reachable": True, "status_code": getattr(response, "status", 200)}
@@ -625,6 +645,7 @@ async def diagnose_source_url_v1(
 
 @router.post("/generate-document-v2", response_model=None)
 async def generate_document_audio_v2(
+    request: Request,
     background_tasks: BackgroundTasks,
     source_type: Optional[str] = Form(None),
     document_text: Optional[str] = Form(None),
@@ -732,6 +753,7 @@ async def generate_document_audio_v2(
             "script_sections": _build_script_sections(result.get("script", "")),
             "citations": [],
             **result,
+            "audio_url": _resolve_v2_audio_url(result, request),
             "metadata": _build_response_metadata(
                 script=result.get("script", ""),
                 target_duration_minutes=duration,
@@ -1200,8 +1222,26 @@ async def _get_user_api_key(db, user_id: int, provider: APIProvider) -> Optional
     return decryptor.decrypt_api_key(key_row.encrypted_key, str(user_id))
 
 
+@router.get("/audio/v2/{filename}")
+async def download_v2_audio_file(
+    filename: str,
+    current_user = Depends(get_current_user),
+):
+    """Serve V2 generated audio files from temp storage for authenticated playback probes."""
+    if os.path.basename(filename) != filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    audio_path = os.path.join("temp_audio", filename)
+    if not os.path.exists(audio_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+
+    media_type = "audio/mpeg" if filename.lower().endswith(".mp3") else "application/octet-stream"
+    return FileResponse(audio_path, media_type=media_type, filename=filename)
+
+
 @router.post("/generate-document-v2-byok", response_model=None)
 async def generate_document_audio_v2_byok(
+    request: Request,
     background_tasks: BackgroundTasks,
     source_type: Optional[str] = Form(None),
     document_text: Optional[str] = Form(None),
@@ -1337,6 +1377,7 @@ async def generate_document_audio_v2_byok(
             "script_sections": _build_script_sections(result.get("script", "")),
             "citations": [],
             **result,
+            "audio_url": _resolve_v2_audio_url(result, request),
             "metadata": _build_response_metadata(
                 script=result.get("script", ""),
                 target_duration_minutes=duration,
