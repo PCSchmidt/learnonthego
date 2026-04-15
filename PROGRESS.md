@@ -172,7 +172,7 @@ Goal: make BYOK a first-class user path without derailing current release work.
 
 #### Day 5 - Reliability + Evidence
 - [ ] Run focused BYOK contract suite locally and in CI.
-- [ ] Run one approved production paid-path smoke using BYOK (single request).
+- [x] Run one approved production paid-path smoke using BYOK (single request).
 - [x] Capture evidence artifact and update Phase 4 tracker with pass/fail plus blocker status.
 
 Day 5 evidence pass (April 15, 2026):
@@ -183,7 +183,13 @@ Day 5 evidence pass (April 15, 2026):
 - Focused frontend suites passed locally (`22 passed`):
   - `src/screens/SettingsScreen.test.tsx`
   - `src/screens/CreateLectureScreen.error-mapping.test.tsx`
-- Remaining blocker for full Day 5 closure: one explicitly approved paid BYOK production smoke is still pending.
+- Single guarded paid BYOK smoke executed and captured in `phase4_day5_single_paid_byok.json`:
+  - No-cost pre-steps passed (`5/5`).
+  - Paid BYOK step returned `400` with structured contract:
+    - `schema=byok-key-error-v1`
+    - `code=missing_or_invalid_provider_key`
+    - `providers=[openrouter, elevenlabs]`
+  - Current blocker remains provider key availability/validity for the newly created test account in production.
 
 #### Day 6 - Governance + Security Review
 - [ ] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
