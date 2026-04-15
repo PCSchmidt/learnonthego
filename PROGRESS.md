@@ -1,6 +1,6 @@
 # LearnOnTheGo Development Progress
 
-**Last Updated**: April 14, 2026  
+**Last Updated**: April 15, 2026  
 **Current Branch**: dev  
 **Phase**: Hardened MVP with V2 provider abstraction and BYOK validation - IN PROGRESS  
 **Previous**: Legacy phase notes (2025) preserved below for historical reference
@@ -192,14 +192,33 @@ Day 5 evidence pass (April 15, 2026):
   - Current blocker remains provider key availability/validity for the newly created test account in production.
 
 #### Day 6 - Governance + Security Review
-- [ ] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
-- [ ] Confirm no key material leaks in logs, errors, or telemetry.
-- [ ] Confirm docs reflect BYOK-first billing responsibility model.
+- [x] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
+- [x] Confirm no key material leaks in logs, errors, or telemetry.
+- [x] Confirm docs reflect BYOK-first billing responsibility model.
+
+Day 6 governance snapshot (April 15, 2026):
+- Encrypted key lifecycle coverage is validated by contract gate `tests/test_api_key_lifecycle_contract.py` (add/replace/delete/status path).
+- Log/error leak audit: no backend logger patterns found that print API key values; paid-path failures continue to return structured non-sensitive contracts (`v2-generation-error-v1` and `byok-key-error-v1`).
+- Docs alignment check confirms BYOK-first and environment fallback/cost messaging is reflected in `README.md`, `TESTING_GUIDE.md`, and Create/Settings UX copy.
 
 #### Day 7 - Release Gate + Phase 4 Closure
-- [ ] Re-run Phase 4 walkthrough target path (`auth -> create -> preview -> confirm -> playback`) with BYOK-enabled flow.
-- [ ] Re-run short cadence gate and confirm green.
+- [x] Re-run Phase 4 walkthrough target path (`auth -> create -> preview -> confirm -> playback`) with BYOK-enabled flow.
+- [x] Re-run short cadence gate and confirm green.
 - [ ] Publish final Phase 4 checkpoint and close with explicit remaining risks (if any).
+
+Day 7 gate snapshot (April 15, 2026):
+- Deploy parity restored: `origin/main` promoted to `d44822a` (matches current `origin/dev` at time of promotion).
+- Post-sync Phase 4 walkthrough evidence:
+  - No-cost rerun artifact: `phase4_phase2_nocost_after_main_sync.json` (`5/5` pass).
+  - Single guarded paid BYOK rerun artifact: `phase4_phase2_single_paid_byok_after_main_sync.json` (`5/6`, paid step blocked).
+  - Paid BYOK blocker remains explicit and deterministic: `schema=byok-key-error-v1`, `code=missing_or_invalid_provider_key`, `providers=[openrouter, elevenlabs]`.
+- Short cadence gate rerun after sync:
+  - Backend suites: `35 passed` (`test_v2_source_intake_v1a`, `test_url_diagnostics_scaffold`, `test_api_key_lifecycle_contract`, `test_v2_form_coercion`, `test_v2_feature_flag_and_auth_smoke`).
+  - Frontend focused suites: `22 passed` (`SettingsScreen.test.tsx`, `CreateLectureScreen.error-mapping.test.tsx`).
+
+Release checkpoint status:
+- Core reliability and contract gates are green.
+- Phase 4 full closure is conditionally blocked only by missing/invalid BYOK provider keys for the paid generation test account.
 
 ##### Completion Criteria (BYOK Productization)
 - [ ] User can complete paid generation via BYOK with clear status messaging.
