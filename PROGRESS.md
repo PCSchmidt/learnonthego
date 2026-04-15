@@ -173,7 +173,17 @@ Goal: make BYOK a first-class user path without derailing current release work.
 #### Day 5 - Reliability + Evidence
 - [ ] Run focused BYOK contract suite locally and in CI.
 - [ ] Run one approved production paid-path smoke using BYOK (single request).
-- [ ] Capture evidence artifact and update Phase 4 tracker with pass/fail plus blocker status.
+- [x] Capture evidence artifact and update Phase 4 tracker with pass/fail plus blocker status.
+
+Day 5 evidence pass (April 15, 2026):
+- No-cost production walkthrough passed `5/5` and was captured in `phase4_day5_nocost_reliability.json`.
+- Focused backend suites passed locally (`17 passed`):
+  - `tests/test_v2_feature_flag_and_auth_smoke.py`
+  - `tests/test_v2_form_coercion.py`
+- Focused frontend suites passed locally (`22 passed`):
+  - `src/screens/SettingsScreen.test.tsx`
+  - `src/screens/CreateLectureScreen.error-mapping.test.tsx`
+- Remaining blocker for full Day 5 closure: one explicitly approved paid BYOK production smoke is still pending.
 
 #### Day 6 - Governance + Security Review
 - [ ] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
