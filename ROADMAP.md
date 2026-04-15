@@ -25,6 +25,7 @@ Backend and validation baseline already achieved:
 - Dry-run smoke script validates env-key and BYOK response contracts
 - BYOK user key storage path is fixed and tested
 - Backend CI runs the V2 form coercion regression test
+- Guarded production BYOK paid walkthrough now passes for a validated user key set (`phase4_single_paid_byok_closure_2026-04-15.json`)
 
 Primary gap now is productized frontend user journey and broader reliability coverage.
 
@@ -57,7 +58,7 @@ Target window: 1-2 weeks
 ### Exit Criteria
 
 - [x] A user can sign in, submit text, and play generated output end-to-end
-- [ ] A user with configured BYOK keys can pass strict BYOK smoke validation
+- [x] A user with configured BYOK keys can pass strict BYOK smoke validation
 - [x] Frontend error states are explicit for auth failure, key-missing, and validation errors
 - [ ] Core user-facing screens meet the professional UI mandate (auth/create/player/library)
 - [x] No manual backend hotfixes are needed to demo the core flow

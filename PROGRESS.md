@@ -109,13 +109,13 @@
 ### Current Risks / Follow-ups
 - [ ] Frontend authenticated flows still need full end-to-end polish
 - [ ] Broader backend test coverage is needed beyond the current V2 regression set
-- [ ] Key governance: replace placeholder local BYOK keys with real user BYOK keys only when testing non-dry-run audio generation
-- [ ] BYOK UX is not yet productized for users (status, failure reasons, guided setup)
+- [x] Key governance: production BYOK paid validation now uses real user-level provider keys (no placeholder test keys in paid-path checks)
+- [ ] BYOK Settings key-entry controls are implemented in code and need production deploy verification for end-user self-service
 - [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
 - [x] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
 - [x] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
 - [x] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
-- [x] Production blocker: playback probe remains blocked because confirm responses do not always include a probeable/public audio URL contract
+- [x] Production blocker resolved: confirm responses include probeable/public `audio_url` contract and playback probe path now passes
 
 ### Newly Confirmed Product Direction (April 2026)
 
@@ -222,7 +222,16 @@ Day 7 gate snapshot (April 15, 2026):
 Release checkpoint status:
 - Core reliability and contract gates are green.
 - Environment-mode paid generation is now confirmed working in production.
-- Phase 4 full BYOK closure remains conditionally blocked only by missing/invalid BYOK provider keys for the paid generation test account.
+- BYOK paid generation is now confirmed working in production for a user with validated provider keys.
+
+BYOK paid closure validation (April 15, 2026):
+- Artifact: `phase4_single_paid_byok_closure_2026-04-15.json`
+- Result: `5/5` passed (`health`, `auth_login`, `auth_me`, `create_preview_dry_run`, `single_non_dry_run_generation_byok`).
+- Confirmed execution path: `execution_mode=byok` with successful non-dry-run generation (`200`).
+
+Final no-cost cleanup sanity validation (April 15, 2026):
+- Artifact: `phase4_nocost_post_cleanup_2026-04-15.json`
+- Result: `5/5` passed (`health`, `auth_register`, `auth_login`, `auth_me`, `create_preview_dry_run`).
 
 Final closure statement (April 15, 2026):
 - Final environment-paid end-to-end walkthrough artifact: `phase4_final_environment_walkthrough.json`.
@@ -231,11 +240,11 @@ Final closure statement (April 15, 2026):
   - `confirm_generation_environment_elevenlabs` returned success with `execution_mode=environment`.
 - Explicit residual risk:
   - Updated: playback observability gap is now resolved after v2 audio URL contract update and authenticated audio route addition.
-  - Current residual risk is narrowed to BYOK paid success for test users with missing/invalid user-level provider keys.
+  - BYOK paid-success gap is closed for validated user-level provider keys.
 
 Phase 4 closure decision:
 - Environment-path production generation is considered operationally closed for auth -> create -> preview -> confirm.
-- Remaining follow-up (post-closure): complete full BYOK paid success for a user account with validated provider keys.
+- BYOK-path production generation is now operationally validated for auth -> preview -> paid confirm on validated user keys.
 
 Playback observability validation (April 15, 2026):
 - Artifact: `phase4_playback_probe_contract_validation.json`
@@ -243,10 +252,10 @@ Playback observability validation (April 15, 2026):
 - Confirm response now includes probeable `audio_url`; playback probe returned `200`.
 
 ##### Completion Criteria (BYOK Productization)
-- [ ] User can complete paid generation via BYOK with clear status messaging.
+- [x] User can complete paid generation via BYOK with clear status messaging.
 - [x] Missing/invalid keys fail fast with actionable guidance.
 - [x] Dry-run preview remains available with no paid usage.
-- [ ] Phase 4 walkthrough reaches operational acceptance for selected BYOK path.
+- [x] Phase 4 walkthrough reaches operational acceptance for selected BYOK path.
 
 ### Verification Commands
 ```bash

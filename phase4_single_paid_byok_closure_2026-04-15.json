@@ -1,0 +1,40 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776267704,
+  "email": "chris123@gmail.com",
+  "paid_mode": true,
+  "guard_env": "LOTG_ALLOW_PAID_CHECKS",
+  "existing_user_mode": true,
+  "results": [
+    {
+      "step": "health",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_me",
+      "status_code": 200,
+      "pass": true,
+      "email": "chris123@gmail.com"
+    },
+    {
+      "step": "create_preview_dry_run",
+      "status_code": 200,
+      "pass": true,
+      "detail": null
+    },
+    {
+      "step": "single_non_dry_run_generation_byok",
+      "status_code": 200,
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "passed_steps": 5,
+  "total_steps": 5
+}
