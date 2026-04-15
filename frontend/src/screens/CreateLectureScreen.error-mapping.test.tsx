@@ -360,6 +360,83 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     expect((lectureService.createLecture as jest.Mock).mock.calls[1][1].dryRun).toBe(false);
   });
 
+  it('shows clear BYOK mode and cost indicator before confirm', async () => {
+    (lectureService.createLecture as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        title: 'Dry Run Lecture Contract',
+        script: 'Preview script content for BYOK indicator.',
+        preview_script: {
+          title: 'Dry Run Lecture Contract',
+          content: 'Preview script content for BYOK indicator.',
+          duration_minutes: 15,
+          difficulty: 'beginner',
+        },
+        dry_run: true,
+        key_source: 'user-encrypted-storage',
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'Indicator validation topic');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const indicator = await findByTestId('confirm-mode-cost-indicator');
+    expect(indicator.props.children).toContain('Confirm mode: BYOK');
+    expect(indicator.props.children).toContain('premium path');
+  });
+
+  it('blocks paid BYOK confirm when required keys are missing while keeping preview available', async () => {
+    (lectureService.getApiKeyStatus as jest.Mock).mockReset();
+    (lectureService.getApiKeyStatus as jest.Mock).mockResolvedValue({
+      success: true,
+      data: {
+        can_generate_lectures: true,
+        missing_keys: ['openrouter'],
+        setup_complete: true,
+      },
+    });
+
+    (lectureService.createLecture as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      data: {
+        title: 'Dry Run Lecture Contract',
+        script: 'Preview script remains available even if BYOK confirm is blocked.',
+        preview_script: {
+          title: 'Dry Run Lecture Contract',
+          content: 'Preview script remains available even if BYOK confirm is blocked.',
+          duration_minutes: 15,
+          difficulty: 'beginner',
+        },
+        dry_run: true,
+        key_source: 'environment',
+      },
+    });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    const statusSummary = await findByTestId('byok-status-summary');
+    expect(statusSummary.props.children).toContain('BYOK keys detected');
+
+    fireEvent.changeText(getByTestId('topic-input'), 'BYOK missing-key guardrail check');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const previewCard = await findByTestId('script-preview-card');
+    expect(previewCard).toBeTruthy();
+    expect((lectureService.createLecture as jest.Mock).mock.calls[0][1].dryRun).toBe(true);
+    expect((lectureService.createLecture as jest.Mock).mock.calls[0][1].useByok).toBe(false);
+
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    const blockedHint = await findByTestId('confirm-byok-blocked-hint');
+    expect(JSON.stringify(blockedHint.props.children)).toContain('BYOK confirm is blocked');
+
+    const generalError = await findByTestId('general-error');
+    expect(generalError.props.children).toContain('BYOK confirm is blocked');
+    expect(lectureService.createLecture).toHaveBeenCalledTimes(1);
+  });
+
   it('submits file mode with inferred sourceType and upload file', async () => {
     const file = { name: 'outline.md', size: 2048, type: 'text/markdown' };
 

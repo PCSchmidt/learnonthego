@@ -96,6 +96,9 @@ const CreateLectureScreen: React.FC = () => {
     setScriptPreview(null);
   };
 
+  const missingByokKeys = keyStatus?.missing_keys || [];
+  const hasMissingByokKeys = missingByokKeys.length > 0;
+
   const getUrlOutcomeGuidance = (diagnostics: UrlDiagnosticsResponse): string => {
     switch (diagnostics.outcome) {
       case 'unreachable':
@@ -274,11 +277,22 @@ const CreateLectureScreen: React.FC = () => {
 
     const requestingPreview = !scriptPreview;
 
+    if (!requestingPreview && useByok && hasMissingByokKeys) {
+      setFieldErrors({
+        general: `BYOK confirm is blocked until required keys are configured: ${missingByokKeys.join(', ')}. You can still run preview while you complete key setup in Settings.`,
+      });
+      return;
+    }
+
+    // Keep preview available even if BYOK is selected but keys are missing.
+    // In that case, preview runs on the environment path and paid confirm stays blocked.
+    const requestUseByok = useByok && !(requestingPreview && hasMissingByokKeys);
+
     setIsLoading(true);
 
     try {
       const response = await lectureService.createLecture(lectureRequest, {
-        useByok,
+        useByok: requestUseByok,
         dryRun: requestingPreview,
         sourceType: (sourceMode === 'file' ? inferredSourceType : sourceMode === 'url' ? 'url' : 'text') as SourceInputType,
         uploadFile: sourceMode === 'file' ? selectedFile || undefined : undefined,
@@ -514,7 +528,7 @@ const CreateLectureScreen: React.FC = () => {
                 onPress={() => navigation.navigate('Settings')}
               >
                 <Text style={styles.modeTooltipLinkText}>
-                  Tip: Compare provider pricing in Settings -> Provider Cost Guidance.
+                  Tip: Compare provider pricing in Settings and open Provider Cost Guidance.
                 </Text>
               </TouchableOpacity>
               <View style={styles.modeActions}>
@@ -696,6 +710,16 @@ const CreateLectureScreen: React.FC = () => {
             <Text testID="script-preview-text" style={styles.infoText}>
               {scriptPreview.preview_script?.content || scriptPreview.script || 'No preview script returned.'}
             </Text>
+            <Text testID="confirm-mode-cost-indicator" style={styles.modeSubtle}>
+              {useByok && !hasMissingByokKeys
+                ? 'Confirm mode: BYOK (OpenRouter + ElevenLabs). Cost profile: premium path on your provider billing.'
+                : 'Confirm mode: Environment (OpenRouter + OpenAI TTS). Cost profile: default budget path.'}
+            </Text>
+            {useByok && hasMissingByokKeys ? (
+              <Text testID="confirm-byok-blocked-hint" style={styles.fieldError}>
+                BYOK confirm is blocked until keys are configured: {missingByokKeys.join(', ')}.
+              </Text>
+            ) : null}
             <Text style={styles.modeSubtle}>
               Confirm to generate audio, or change inputs to regenerate preview.
             </Text>

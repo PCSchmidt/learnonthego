@@ -166,9 +166,9 @@ Goal: make BYOK a first-class user path without derailing current release work.
 - [x] Add single-click recheck/refresh status action.
 
 #### Day 4 - Create Flow BYOK Guardrails
-- [ ] Ensure Create flow blocks paid generation when BYOK is selected but required keys are missing.
-- [ ] Keep preview (dry-run) available for user confidence without cost.
-- [ ] Add clear mode/cost indicator before confirm generation.
+- [x] Ensure Create flow blocks paid generation when BYOK is selected but required keys are missing.
+- [x] Keep preview (dry-run) available for user confidence without cost.
+- [x] Add clear mode/cost indicator before confirm generation.
 
 #### Day 5 - Reliability + Evidence
 - [ ] Run focused BYOK contract suite locally and in CI.
