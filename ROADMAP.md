@@ -1,7 +1,7 @@
 # LearnOnTheGo 2026 Execution Roadmap
 
 Document Version: 2.0  
-Last Updated: April 12, 2026  
+Last Updated: April 15, 2026  
 Status: Active
 
 ## Design Quality Mandate (Non-Negotiable)
@@ -45,22 +45,22 @@ Target window: 1-2 weeks
 
 ### Checklist
 
-- [ ] Wire frontend generate flow to `/api/lectures/generate-document-v2` as default
-- [ ] Add BYOK key-status UI and key setup guidance using `/api/api-keys` endpoints
-- [ ] Add strict handling for missing-key responses from BYOK endpoint
-- [ ] Add generation state UX: idle, submitting, processing, success, failure
-- [ ] Add playback handoff from successful generation to player screen
-- [ ] Add PDF upload path parity with text input path
-- [ ] Validate auth session continuity through generation and playback
+- [x] Wire frontend generate flow to `/api/lectures/generate-document-v2` as default
+- [x] Add BYOK key-status UI and key setup guidance using `/api/api-keys` endpoints
+- [x] Add strict handling for missing-key responses from BYOK endpoint
+- [x] Add generation state UX: idle, submitting, processing, success, failure
+- [x] Add playback handoff from successful generation to player screen
+- [x] Add PDF upload path parity with text input path
+- [x] Validate auth session continuity through generation and playback
 - [ ] Run smoke script in strict mode before each frontend milestone merge
 
 ### Exit Criteria
 
-- [ ] A user can sign in, submit text, and play generated output end-to-end
+- [x] A user can sign in, submit text, and play generated output end-to-end
 - [ ] A user with configured BYOK keys can pass strict BYOK smoke validation
-- [ ] Frontend error states are explicit for auth failure, key-missing, and validation errors
+- [x] Frontend error states are explicit for auth failure, key-missing, and validation errors
 - [ ] Core user-facing screens meet the professional UI mandate (auth/create/player/library)
-- [ ] No manual backend hotfixes are needed to demo the core flow
+- [x] No manual backend hotfixes are needed to demo the core flow
 
 ## Phase A.5 (Immediate): BYOK Productization + Multi-Source Ingestion Foundation
 
@@ -70,20 +70,20 @@ Target window: 1 week
 
 ### Checklist
 
-- [ ] Add explicit BYOK setup status panel in create flow (connected/missing/invalid)
-- [ ] Add model selection UX with provider + model mapping
-- [ ] Add source type switcher (Text, PDF, URL)
-- [ ] Implement URL intake validator and source diagnostics surface
-- [ ] Add script preview before audio generation
-- [ ] Add generation mode explanation (Environment vs BYOK) with fallback policy
+- [x] Add explicit BYOK setup status panel in create flow (connected/missing/invalid)
+- [x] Add model selection UX with provider + model mapping
+- [x] Add source type switcher (Text, PDF, URL)
+- [x] Implement URL intake validator and source diagnostics surface
+- [x] Add script preview before audio generation
+- [x] Add generation mode explanation (Environment vs BYOK) with fallback policy
 - [ ] Add production telemetry for source type, model choice, duration target, and generation outcome
 
 ### Exit Criteria
 
 - [ ] User can produce audio from pasted text and PDF in production UI
-- [ ] User can choose model, voice, and duration with clear defaults
-- [ ] BYOK status and failure reasons are understandable without log inspection
-- [ ] URL ingestion foundation is in place with explicit unsupported-source messaging
+- [x] User can choose model, voice, and duration with clear defaults
+- [x] BYOK status and failure reasons are understandable without log inspection
+- [x] URL ingestion foundation is in place with explicit unsupported-source messaging
 
 ## Phase A.6 (Next): External Source Ingestion (YouTube + Podcast URL)
 
@@ -113,9 +113,9 @@ Target window: 1-2 weeks after Phase A
 
 ### Checklist
 
-- [ ] Add backend tests for API key storage/retrieval with async DB session path
-- [ ] Add backend tests for BYOK missing-key, unsupported provider, and success responses
-- [ ] Add backend tests for non-dry-run guardrails (input validation and failure contracts)
+- [x] Add backend tests for API key storage/retrieval with async DB session path
+- [x] Add backend tests for BYOK missing-key, unsupported provider, and success responses
+- [x] Add backend tests for non-dry-run guardrails (input validation and failure contracts)
 - [ ] Add frontend integration tests for create/generate/playback states
 - [ ] Add a CI step for smoke test contract checks in non-paid mode
 - [ ] Track and fix flaky tests until two consecutive clean CI runs on `dev`
@@ -136,9 +136,9 @@ Target window: 1 week after Phase B
 ### Checklist
 
 - [ ] Produce a release checklist for auth, generation, playback, and key management
-- [ ] Capture demo artifacts: smoke outputs, CI passes, and short walkthrough script
-- [ ] Publish concise architecture summary for V2 provider abstraction and BYOK
-- [ ] Verify docs align: README, TESTING_GUIDE, PROGRESS, ROADMAP
+- [x] Capture demo artifacts: smoke outputs, CI passes, and short walkthrough script
+- [x] Publish concise architecture summary for V2 provider abstraction and BYOK
+- [x] Verify docs align: README, TESTING_GUIDE, PROGRESS, ROADMAP
 - [ ] Tag a release candidate commit and note known limitations
 
 ### Exit Criteria

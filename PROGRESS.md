@@ -115,7 +115,7 @@
 - [x] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
 - [x] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
 - [x] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
-- [ ] Production blocker: playback probe remains blocked because confirm responses do not always include a probeable/public audio URL contract
+- [x] Production blocker: playback probe remains blocked because confirm responses do not always include a probeable/public audio URL contract
 
 ### Newly Confirmed Product Direction (April 2026)
 
@@ -230,12 +230,17 @@ Final closure statement (April 15, 2026):
   - `health`, `auth_register`, `auth_login`, `auth_me`, `create_preview`, and `confirm_generation_environment_elevenlabs` all passed (`200`).
   - `confirm_generation_environment_elevenlabs` returned success with `execution_mode=environment`.
 - Explicit residual risk:
-  - `playback_probe` remains non-pass in scripted verification because the confirm response did not include a probeable audio URL (`audio_url` absent / non-HTTP `audio.file_path`).
-  - This is currently treated as an observability/contract gap in playback verification rather than a paid-generation failure.
+  - Updated: playback observability gap is now resolved after v2 audio URL contract update and authenticated audio route addition.
+  - Current residual risk is narrowed to BYOK paid success for test users with missing/invalid user-level provider keys.
 
 Phase 4 closure decision:
 - Environment-path production generation is considered operationally closed for auth -> create -> preview -> confirm.
-- Remaining follow-up (post-closure): make playback probe externally verifiable in contract output, and complete full BYOK paid success for a user account with validated provider keys.
+- Remaining follow-up (post-closure): complete full BYOK paid success for a user account with validated provider keys.
+
+Playback observability validation (April 15, 2026):
+- Artifact: `phase4_playback_probe_contract_validation.json`
+- Result: `6/6` passed (`health`, `auth_register`, `auth_login`, `create_preview`, `confirm_generation`, `playback_probe`).
+- Confirm response now includes probeable `audio_url`; playback probe returned `200`.
 
 ##### Completion Criteria (BYOK Productization)
 - [ ] User can complete paid generation via BYOK with clear status messaging.
