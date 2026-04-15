@@ -212,13 +212,17 @@ Day 7 gate snapshot (April 15, 2026):
   - No-cost rerun artifact: `phase4_phase2_nocost_after_main_sync.json` (`5/5` pass).
   - Single guarded paid BYOK rerun artifact: `phase4_phase2_single_paid_byok_after_main_sync.json` (`5/6`, paid step blocked).
   - Paid BYOK blocker remains explicit and deterministic: `schema=byok-key-error-v1`, `code=missing_or_invalid_provider_key`, `providers=[openrouter, elevenlabs]`.
+- Additional production paid-provider verification (April 15, 2026):
+  - Environment-path ElevenLabs retry artifact: `phase4_env_paid_elevenlabs_retry.json`.
+  - Result: paid generation request returned `200` (`execution_mode=environment`), confirming provider credential/credit unblock for this path.
 - Short cadence gate rerun after sync:
   - Backend suites: `35 passed` (`test_v2_source_intake_v1a`, `test_url_diagnostics_scaffold`, `test_api_key_lifecycle_contract`, `test_v2_form_coercion`, `test_v2_feature_flag_and_auth_smoke`).
   - Frontend focused suites: `22 passed` (`SettingsScreen.test.tsx`, `CreateLectureScreen.error-mapping.test.tsx`).
 
 Release checkpoint status:
 - Core reliability and contract gates are green.
-- Phase 4 full closure is conditionally blocked only by missing/invalid BYOK provider keys for the paid generation test account.
+- Environment-mode paid generation is now confirmed working in production.
+- Phase 4 full BYOK closure remains conditionally blocked only by missing/invalid BYOK provider keys for the paid generation test account.
 
 ##### Completion Criteria (BYOK Productization)
 - [ ] User can complete paid generation via BYOK with clear status messaging.
