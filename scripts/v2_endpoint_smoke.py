@@ -343,8 +343,20 @@ def main() -> int:
         validate_success_contract("byok endpoint", byok_result["data"], "user-encrypted-storage")
         print("PASS: /api/lectures/generate-document-v2-byok contract validated")
     else:
-        detail = str(byok_result["data"].get("detail", ""))
-        missing_keys_error = byok_result["status"] == 400 and "Missing valid API keys" in detail
+        detail_payload = byok_result["data"].get("detail", {})
+        detail = str(detail_payload)
+        missing_keys_error = (
+            byok_result["status"] == 400
+            and (
+                "Missing valid API keys" in detail
+                or "Missing or invalid BYOK provider keys" in detail
+                or (
+                    isinstance(detail_payload, dict)
+                    and detail_payload.get("schema") == "byok-key-error-v1"
+                    and detail_payload.get("code") == "missing_or_invalid_provider_key"
+                )
+            )
+        )
         if missing_keys_error and not STRICT_BYOK:
             print("WARN: BYOK endpoint reachable but user keys missing; contract test skipped.")
         else:

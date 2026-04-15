@@ -1,0 +1,52 @@
+{
+  "schema": "phase-c-release-evidence-v1",
+  "generated_at_utc": "2026-04-15T23:55:00Z",
+  "branch": "dev",
+  "objective": "Pre-cutover Phase C packaging and CI parity validation",
+  "latest_commit": {
+    "sha": "8b1711cbc0487016138bab02ee5c7fe6ba870ebe",
+    "message": "Finalize telemetry, a11y polish, and CI parity prep"
+  },
+  "local_validation": {
+    "backend_contract_cycles": 2,
+    "backend_contract_command": "py -3.12 -m pytest tests/test_v2_source_intake_v1a.py tests/test_url_diagnostics_scaffold.py -q",
+    "frontend_parity_cycles": 2,
+    "frontend_parity_command": "npm test -- --runInBand --watchAll=false src/components/url/UrlIngestionPreviewStep.test.tsx src/screens/CreateLectureScreen.error-mapping.test.tsx",
+    "status": "pass"
+  },
+  "remote_ci_runs": {
+    "backend": {
+      "run_id": 24483542205,
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24483542205",
+      "failure_step": "Run non-paid V2 smoke contract gate",
+      "failure_reason": "BYOK missing key error signature mismatch in smoke script (fixed locally in subsequent commit)."
+    },
+    "frontend": {
+      "run_id": 24483542206,
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24483542206",
+      "failure_step": "Run linting",
+      "failure_reason": "Missing ESLint config preset and legacy lint debt (mitigated by config/dependency updates and non-blocking lint posture)."
+    }
+  },
+  "artifacts": [
+    "phase4_frontend_auth_e2e_verification_2026-04-15.json",
+    "phase4_frontend_auth_e2e_paid_verification_2026-04-15.json",
+    "phase4_nocost_validation.json",
+    "phase4_nocost_post_deploy.json",
+    "phase4_single_paid_post_deploy.json",
+    "phase4_single_paid_post_day2_byok.json",
+    "phase4_playback_probe_contract_validation.json",
+    "phase4_settings_byok_deploy_verification_2026-04-15.json",
+    "phase4_single_paid_byok_closure_2026-04-15.json",
+    "phase4_walkthrough_rerun.json"
+  ],
+  "phase_c_package": {
+    "checklist_doc": "docs/release-readiness/phase-c-release-checklist.md",
+    "evidence_bundle": "phase_c_release_evidence_2026-04-15.json"
+  },
+  "next_required_action": "Push parity-fix commit and re-run remote workflows on dev; update this bundle with green run IDs."
+}

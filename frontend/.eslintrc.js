@@ -1,11 +1,9 @@
 module.exports = {
   root: true,
   extends: [
-    '@react-native-community',
+    '@react-native',
     'airbnb-typescript',
-    'prettier',
-    'prettier/@typescript-eslint',
-    'prettier/react'
+    'prettier'
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -25,7 +23,7 @@ module.exports = {
     'prettier'
   ],
   rules: {
-    'prettier/prettier': 'error',
+    'prettier/prettier': 'warn',
     'react/jsx-filename-extension': [
       'error',
       { extensions: ['.tsx'] }

@@ -136,7 +136,7 @@ Target window: 1 week after Phase B
 
 ### Checklist
 
-- [ ] Produce a release checklist for auth, generation, playback, and key management
+- [x] Produce a release checklist for auth, generation, playback, and key management (`docs/release-readiness/phase-c-release-checklist.md`)
 - [x] Capture demo artifacts: smoke outputs, CI passes, and short walkthrough script
 - [x] Publish concise architecture summary for V2 provider abstraction and BYOK
 - [x] Verify docs align: README, TESTING_GUIDE, PROGRESS, ROADMAP
@@ -147,7 +147,7 @@ Target window: 1 week after Phase B
 - [ ] One reproducible demo path works from clean checkout to successful generation
 - [ ] Documentation is current and does not rely on archived 2025 session files
 - [ ] Release candidate can be reviewed without tribal context
-- [ ] Portfolio-ready evidence package is complete
+- [ ] Portfolio-ready evidence package is complete (initial bundle created in `phase_c_release_evidence_2026-04-15.json`; update required after green remote CI rerun)
 
 ## Phase C.5 (Owner Target): Deployment Cutover To PCSchmidt.github.io
 
