@@ -59,6 +59,7 @@
   - URL generation ready pass signature
   - URL generation deterministic non-ready fail signature (`url_not_ready`)
 - [x] Added A5-030 frontend guardrail test ensuring URL create remains blocked for non-ready outcomes even when URL feature flag is enabled
+- [x] Added BYOK Settings self-service key-entry test coverage for save/validate/delete flows (`SettingsScreen.test.tsx`) with stable control test IDs in `SettingsScreen.tsx`
 - [x] Weekly A5-031/A5-032 guardrail cadence run completed locally on April 14, 2026:
   - `tests/test_v2_form_coercion.py` -> pass
   - `tests/test_v2_feature_flag_and_auth_smoke.py` -> pass
@@ -110,7 +111,7 @@
 - [ ] Frontend authenticated flows still need full end-to-end polish
 - [ ] Broader backend test coverage is needed beyond the current V2 regression set
 - [x] Key governance: production BYOK paid validation now uses real user-level provider keys (no placeholder test keys in paid-path checks)
-- [ ] BYOK Settings key-entry controls are implemented in code and need production deploy verification for end-user self-service
+- [x] BYOK Settings key-entry controls are production-deployed and verified for end-user self-service (artifact: `phase4_settings_byok_deploy_verification_2026-04-15.json`)
 - [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
 - [x] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
 - [x] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
@@ -189,65 +190,44 @@ Day 5 evidence pass (April 15, 2026):
     - `schema=byok-key-error-v1`
     - `code=missing_or_invalid_provider_key`
     - `providers=[openrouter, elevenlabs]`
-  ## Legacy Reference Index
 
-  The previously embedded 2025 planning block has been intentionally removed from this active progress tracker to avoid conflicting "NEXT" or "IN PROGRESS" signals.
+#### Day 6 - Governance + Security Review
+- [x] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
+- [x] Confirm no key material leaks in logs, errors, or telemetry.
+- [x] Confirm docs reflect BYOK-first billing responsibility model.
 
-  Historical records remain available in:
-  - `docs/archive/root-legacy-2025/PHASE1_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2A_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2B_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2E_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2F_EXECUTIVE_ACTION_PLAN.md`
-  - `docs/archive/root-legacy-2025/UNIFIED_AI_IMPLEMENTATION_ROADMAP.md`
-  - `docs/archive/root-legacy-2025/MULTI_PROVIDER_EXECUTIVE_SUMMARY.md`
+Day 6 governance snapshot (April 15, 2026):
+- Encrypted key lifecycle coverage is validated by contract gate `tests/test_api_key_lifecycle_contract.py` (add/replace/delete/status path).
+- Log/error leak audit: no backend logger patterns found that print API key values; paid-path failures continue to return structured non-sensitive contracts (`v2-generation-error-v1` and `byok-key-error-v1`).
+- Docs alignment check confirms BYOK-first and environment fallback/cost messaging is reflected in `README.md`, `TESTING_GUIDE.md`, and Create/Settings UX copy.
 
-  Use this file's April 2026 snapshot and `ROADMAP.md` for all current planning and execution decisions.
-### Authentication Infrastructure 🔄 IN PROGRESS
-- [x] JWT token handler with python-jose
-- [x] Password hashing with bcrypt (passlib)
-- [x] Authentication middleware structure
-- [x] Protected route decorators
-- [ ] User registration endpoint with password hashing
-- [ ] Login endpoint with JWT token generation
-- [ ] Token refresh mechanism
-- [ ] Password reset functionality
+#### Day 7 - Release Gate + Phase 4 Closure
+- [x] Re-run Phase 4 walkthrough target path (`auth -> create -> preview -> confirm -> playback`) with BYOK-enabled flow.
+- [x] Re-run short cadence gate and confirm green.
+- [x] Publish final Phase 4 checkpoint and close with explicit remaining risks (if any).
 
-### Security Implementation 🔄 STARTED
-- [x] bcrypt password hashing utilities
-- [x] JWT token creation and validation
-- [x] HTTP Bearer token authentication
-- [ ] Token expiration and refresh logic
-- [ ] Account verification system
-- [ ] Rate limiting for auth endpoints
-- [ ] Secure session management
+Release checkpoint status:
+- Core reliability and contract gates are green.
+- Environment-mode paid generation is confirmed working in production.
+- BYOK paid generation is confirmed working in production for a user with validated provider keys.
 
-### API Endpoints 🔄 STARTED
-- [x] Authentication router structure (`/api/auth`)
-- [x] User profile endpoints (`/api/auth/me`)
-- [ ] Registration endpoint (`/api/auth/register`)
-- [ ] Login endpoint (`/api/auth/login`)
-- [ ] Logout endpoint (`/api/auth/logout`)
-- [ ] Token refresh endpoint (`/api/auth/refresh`)
+BYOK paid closure validation (April 15, 2026):
+- Artifact: `phase4_single_paid_byok_closure_2026-04-15.json`.
+- Result: `5/5` passed (`health`, `auth_login`, `auth_me`, `create_preview_dry_run`, `single_non_dry_run_generation_byok`).
 
----
+Final no-cost cleanup sanity validation (April 15, 2026):
+- Artifact: `phase4_nocost_post_cleanup_2026-04-15.json`.
+- Result: `5/5` passed (`health`, `auth_register`, `auth_login`, `auth_me`, `create_preview_dry_run`).
 
-## 🚀 Deployment Status
+Post-promote no-cost sanity validation (April 15, 2026):
+- Artifact: `phase4_post_promote_nocost_sanity_2026-04-15.json`.
+- Result: `5/5` passed (`health`, `auth_register`, `auth_login`, `auth_me`, `create_preview_dry_run`).
 
-### Production Deployments ✅
-
-### Updated Documentation
-- [x] docs/archive/root-legacy-2025/PHASE1_COMPLETE.md - Comprehensive completion summary (archived)
-- [x] COST_OPTIMIZATION.md - Complete cost strategy guide
-- [x] TESTING_GUIDE.md - Mock mode testing instructions
-- [x] README.md - Updated with Phase 1 status
-- [x] API Documentation - Auto-generated with FastAPI
-
-### Development Resources
-- [x] Docker development environment
-- [x] Railway deployment configuration
-- [x] Comprehensive error handling guides
-- [x] API testing interfaces
+##### Completion Criteria (BYOK Productization)
+- [x] User can complete paid generation via BYOK with clear status messaging.
+- [x] Missing/invalid keys fail fast with actionable guidance.
+- [x] Dry-run preview remains available with no paid usage.
+- [x] Phase 4 walkthrough reaches operational acceptance for selected BYOK path.
 
 ## Legacy Reference Index
 
