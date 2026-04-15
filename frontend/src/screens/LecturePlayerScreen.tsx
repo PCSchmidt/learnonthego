@@ -17,6 +17,8 @@ const LecturePlayerScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const lectureId = (route.params as any)?.lectureId || 'unknown';
+  const citations = (route.params as any)?.citations || [];
+  const sourceContext = (route.params as any)?.sourceContext || null;
 
   return (
     <View style={styles.container}>
@@ -53,9 +55,41 @@ const LecturePlayerScreen: React.FC = () => {
             </View>
           </View>
 
+          {sourceContext || (Array.isArray(citations) && citations.length > 0) ? (
+            <View
+              style={styles.placeholder}
+              accessible
+              accessibilityLabel="Source context"
+              accessibilityHint="Shows source URI and citation references used for this lecture"
+            >
+              <Text style={styles.placeholderText}>Source Context</Text>
+              {sourceContext?.source_uri ? (
+                <Text style={styles.description}>Primary URI: {sourceContext.source_uri}</Text>
+              ) : null}
+              {sourceContext?.retrieval_method ? (
+                <Text style={styles.description}>Retrieval: {sourceContext.retrieval_method}</Text>
+              ) : null}
+              {sourceContext?.source_class ? (
+                <Text style={styles.description}>Class: {sourceContext.source_class}</Text>
+              ) : null}
+              {Array.isArray(citations)
+                ? citations.map((citation: any, index: number) => (
+                    <Text key={`${citation?.source_uri || 'source'}-${index}`} style={styles.description}>
+                      - {citation?.source_uri || citation?.label || 'source-uri-unavailable'}
+                    </Text>
+                  ))
+                : null}
+            </View>
+          ) : null}
+
           <TouchableOpacity
+            testID="player-back-home-button"
             style={styles.backButton}
-            onPress={() => navigation.goBack()}>
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
+            accessibilityHint="Returns to the lecture library"
+          >
             <Text style={styles.backButtonText}>Back to Home</Text>
           </TouchableOpacity>
         </View>

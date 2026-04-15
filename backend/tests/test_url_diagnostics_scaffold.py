@@ -70,6 +70,11 @@ def test_url_diagnostics_reports_no_transcript_for_video(auth_client, monkeypatc
         "_probe_url_availability",
         lambda uri: {"reachable": True, "status_code": 200},
     )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_fetch_youtube_transcript_text",
+        lambda uri, max_chars=8000: (_ for _ in ()).throw(ValueError("No captions")),
+    )
 
     response = auth_client.post(
         "/api/lectures/url-diagnostics-v1",
@@ -83,6 +88,32 @@ def test_url_diagnostics_reports_no_transcript_for_video(auth_client, monkeypatc
     assert body["source_class"] == "video"
     assert body["outcome"] == "no_transcript"
     assert body["diagnostics"]["code"] == "no_transcript"
+
+
+def test_url_diagnostics_reports_ready_for_youtube_with_transcript(auth_client, monkeypatch):
+    monkeypatch.setattr(
+        lecture_routes,
+        "_probe_url_availability",
+        lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_fetch_youtube_transcript_text",
+        lambda uri, max_chars=8000: "Transcript snippet",
+    )
+
+    response = auth_client.post(
+        "/api/lectures/url-diagnostics-v1",
+        data={"source_uri": "https://www.youtube.com/watch?v=abc"},
+        headers=_headers(),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["source_class"] == "video"
+    assert body["outcome"] == "ready"
+    assert body["diagnostics"]["code"] == "ready"
 
 
 def test_url_diagnostics_reports_unsupported_for_podcast(auth_client, monkeypatch):
@@ -104,6 +135,32 @@ def test_url_diagnostics_reports_unsupported_for_podcast(auth_client, monkeypatc
     assert body["source_class"] == "podcast"
     assert body["outcome"] == "unsupported"
     assert body["diagnostics"]["code"] == "unsupported"
+
+
+def test_url_diagnostics_reports_ready_for_podcast_feed_with_transcript(auth_client, monkeypatch):
+    monkeypatch.setattr(
+        lecture_routes,
+        "_probe_url_availability",
+        lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_fetch_podcast_transcript_text",
+        lambda uri, max_chars=8000: "Episode transcript",
+    )
+
+    response = auth_client.post(
+        "/api/lectures/url-diagnostics-v1",
+        data={"source_uri": "https://example.com/feed.xml"},
+        headers=_headers(),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["source_class"] == "podcast"
+    assert body["outcome"] == "ready"
+    assert body["diagnostics"]["code"] == "ready"
 
 
 def test_url_diagnostics_reports_ready_for_web_page(auth_client, monkeypatch):

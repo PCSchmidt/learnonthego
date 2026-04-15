@@ -36,7 +36,18 @@ import { StackNavigationProp } from '@react-navigation/stack';
 type RootStackParamList = {
   Home: undefined;
   CreateLecture: undefined;
-  LecturePlayer: { lectureId: string };
+  LecturePlayer: {
+    lectureId: string;
+    citations?: Array<{ label?: string; source_uri?: string; note?: string }>;
+    sourceContext?: {
+      source_uri?: string | null;
+      source_class?: string;
+      retrieval_method?: string;
+      retrieval_timestamp?: string;
+      excerpt?: string;
+      source_name?: string;
+    };
+  };
   Settings: undefined;
 };
 
@@ -104,9 +115,9 @@ const CreateLectureScreen: React.FC = () => {
       case 'unreachable':
         return 'The service could not reach this URL. Verify the link and try diagnostics again.';
       case 'unsupported':
-        return 'This URL type is recognized but not supported for generation in this slice.';
+        return 'This URL format is not supported yet. Use article URLs, YouTube links with public captions, or podcast RSS/feed URLs.';
       case 'no_transcript':
-        return 'Transcript extraction is required first. Video transcript ingestion is not yet enabled.';
+        return 'Transcript extraction is required first. For YouTube, ensure captions are available; for podcasts, provide an RSS/feed URL with transcript metadata.';
       case 'ready':
         return isUrlGenerationEnabled
           ? 'URL is ready. You can now generate a lecture from this source.'
@@ -325,7 +336,11 @@ const CreateLectureScreen: React.FC = () => {
               text: 'Play Now',
               onPress: () => {
                 // Navigate to lecture player
-                navigation.navigate('LecturePlayer', { lectureId: generatedLectureId });
+                navigation.navigate('LecturePlayer', {
+                  lectureId: generatedLectureId,
+                  citations: response.data?.citations,
+                  sourceContext: response.data?.source_metadata || response.data?.metadata?.source_context,
+                });
               },
             },
             {
@@ -386,7 +401,7 @@ const CreateLectureScreen: React.FC = () => {
             {[
               { id: 'text', label: 'Text' },
               { id: 'file', label: 'File' },
-              { id: 'url', label: 'URL (Next)' },
+              { id: 'url', label: 'URL' },
             ].map(option => (
               <TouchableOpacity
                 key={option.id}
@@ -395,6 +410,10 @@ const CreateLectureScreen: React.FC = () => {
                   styles.sourceSwitchButton,
                   sourceMode === option.id && styles.sourceSwitchButtonActive,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Source mode ${option.label}`}
+                accessibilityHint={`Switches source mode to ${option.label.toLowerCase()}`}
+                accessibilityState={{ selected: sourceMode === option.id }}
                 onPress={() => {
                   setSourceMode(option.id as 'text' | 'file' | 'url');
                   clearFieldError('source');
@@ -430,7 +449,7 @@ const CreateLectureScreen: React.FC = () => {
           ) : null}
           {sourceMode === 'url' ? (
             <Text style={styles.sourceHelperText}>
-              Run URL diagnostics first. URL generation is allowed only when diagnostics outcome is ready.
+              Run URL diagnostics first. Supported sources include web pages, YouTube URLs with captions, and podcast RSS/feed URLs with transcript metadata.
             </Text>
           ) : null}
           {fieldErrors.source ? <Text testID="source-error" style={styles.fieldError}>{fieldErrors.source}</Text> : null}
@@ -448,6 +467,8 @@ const CreateLectureScreen: React.FC = () => {
             clearFieldError('general');
             clearPreview();
           }}
+          accessibilityLabel="Lecture topic"
+          accessibilityHint="Describe the lecture topic or paste text content"
           placeholder="e.g., Machine Learning Basics, Quantum Physics, History of Rome"
           placeholderTextColor="#7f8492"
           multiline
@@ -463,7 +484,14 @@ const CreateLectureScreen: React.FC = () => {
             <View style={styles.fileCard}>
               <Text style={styles.fileLabel}>Upload Source File</Text>
               <Text style={styles.fileSubtle}>Accepted formats: .txt, .md, .pdf</Text>
-              <TouchableOpacity testID="pick-file-button" style={styles.filePickButton} onPress={pickFileForSource}>
+              <TouchableOpacity
+                testID="pick-file-button"
+                style={styles.filePickButton}
+                onPress={pickFileForSource}
+                accessibilityRole="button"
+                accessibilityLabel={selectedFile ? 'Change source file' : 'Choose source file'}
+                accessibilityHint="Opens file picker for txt, markdown, or PDF sources"
+              >
                 <Text style={styles.filePickButtonText}>
                   {selectedFile ? 'Change File' : 'Choose File'}
                 </Text>
@@ -474,7 +502,14 @@ const CreateLectureScreen: React.FC = () => {
                   : 'No file selected'}
               </Text>
               {selectedFile ? (
-                <TouchableOpacity testID="clear-file-button" onPress={resetFileSelection} style={styles.fileResetButton}>
+                <TouchableOpacity
+                  testID="clear-file-button"
+                  onPress={resetFileSelection}
+                  style={styles.fileResetButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear selected file"
+                  accessibilityHint="Removes the currently selected file from this lecture"
+                >
                   <Text style={styles.fileResetButtonText}>Clear Selected File</Text>
                 </TouchableOpacity>
               ) : null}
@@ -525,6 +560,9 @@ const CreateLectureScreen: React.FC = () => {
               <TouchableOpacity
                 testID="provider-cost-guidance-link"
                 style={styles.modeTooltipLink}
+                accessibilityRole="button"
+                accessibilityLabel="Open provider cost guidance"
+                accessibilityHint="Navigates to settings with provider pricing guidance"
                 onPress={() => navigation.navigate('Settings')}
               >
                 <Text style={styles.modeTooltipLinkText}>
@@ -535,6 +573,10 @@ const CreateLectureScreen: React.FC = () => {
                 <TouchableOpacity
                   testID="generation-mode-byok"
                   style={[styles.modeButton, useByok && styles.modeButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Generation mode BYOK"
+                  accessibilityHint="Use your own provider keys for generation"
+                  accessibilityState={{ selected: useByok, disabled: !keyStatus?.setup_complete }}
                   onPress={() => {
                     setUseByok(true);
                     clearPreview();
@@ -548,6 +590,10 @@ const CreateLectureScreen: React.FC = () => {
                 <TouchableOpacity
                   testID="generation-mode-environment"
                   style={[styles.modeButton, !useByok && styles.modeButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Generation mode environment"
+                  accessibilityHint="Use environment-managed providers for generation"
+                  accessibilityState={{ selected: !useByok }}
                   onPress={() => {
                     setUseByok(false);
                     clearPreview();
@@ -576,6 +622,9 @@ const CreateLectureScreen: React.FC = () => {
                 key={preset.id}
                 testID={`model-preset-${preset.id}`}
                 style={[styles.modeButton, modelPreset === preset.id && styles.modeButtonActive]}
+                accessibilityRole="button"
+                accessibilityLabel={`Model preset ${preset.label}`}
+                accessibilityState={{ selected: modelPreset === preset.id }}
                 onPress={() => {
                   setModelPreset(preset.id);
                   clearFieldError('model');
@@ -595,6 +644,10 @@ const CreateLectureScreen: React.FC = () => {
           <TouchableOpacity
             testID="model-advanced-toggle"
             style={[styles.modeButton, isAdvancedModelMode && styles.modeButtonActive, { marginTop: 10 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Advanced model mode"
+            accessibilityHint="Toggle custom raw model ID input"
+            accessibilityState={{ selected: isAdvancedModelMode }}
             onPress={() => {
               setIsAdvancedModelMode((prev) => !prev);
               clearFieldError('model');
@@ -616,6 +669,8 @@ const CreateLectureScreen: React.FC = () => {
                 clearFieldError('model');
                 clearPreview();
               }}
+              accessibilityLabel="Custom model ID"
+              accessibilityHint="Enter a raw provider model ID"
               placeholder="e.g., anthropic/claude-3.5-sonnet"
               placeholderTextColor="#7f8492"
               autoCapitalize="none"
@@ -710,6 +765,16 @@ const CreateLectureScreen: React.FC = () => {
             <Text testID="script-preview-text" style={styles.infoText}>
               {scriptPreview.preview_script?.content || scriptPreview.script || 'No preview script returned.'}
             </Text>
+            {scriptPreview.citations && scriptPreview.citations.length > 0 ? (
+              <View testID="script-preview-citations" style={{ marginTop: 10 }}>
+                <Text style={styles.infoTitle}>Sources</Text>
+                {scriptPreview.citations.map((citation, index) => (
+                  <Text key={`${citation.source_uri || 'citation'}-${index}`} style={styles.modeSubtle}>
+                    - {citation.source_uri || citation.label || 'source-uri-unavailable'}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
             <Text testID="confirm-mode-cost-indicator" style={styles.modeSubtle}>
               {useByok && !hasMissingByokKeys
                 ? 'Confirm mode: BYOK (OpenRouter + ElevenLabs). Cost profile: premium path on your provider billing.'
@@ -730,6 +795,12 @@ const CreateLectureScreen: React.FC = () => {
           testID="create-lecture-button"
           style={[styles.createButton, isLoading && styles.createButtonDisabled]}
           onPress={handleCreateLecture}
+          accessibilityRole="button"
+          accessibilityLabel={scriptPreview?.dry_run ? 'Confirm and generate audio' : 'Preview script'}
+          accessibilityHint="Generates a script preview first, then confirms audio generation"
+          accessibilityState={{
+            disabled: isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready')),
+          }}
           disabled={isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready'))}>
           {isLoading ? (
             <View style={styles.loadingContainer}>

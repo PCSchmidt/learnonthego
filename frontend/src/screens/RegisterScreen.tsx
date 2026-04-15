@@ -27,38 +27,45 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useAuth();
 
   const validateForm = () => {
     if (!fullName.trim()) {
+      setErrorMessage('Please enter your full name.');
       Alert.alert('Error', 'Please enter your full name');
       return false;
     }
 
     if (!email.trim()) {
+      setErrorMessage('Please enter your email.');
       Alert.alert('Error', 'Please enter your email');
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
+      setErrorMessage('Please enter a valid email address.');
       Alert.alert('Error', 'Please enter a valid email address');
       return false;
     }
 
     if (!password.trim()) {
+      setErrorMessage('Please enter a password.');
       Alert.alert('Error', 'Please enter a password');
       return false;
     }
 
     if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
       Alert.alert('Error', 'Password must be at least 8 characters long');
       return false;
     }
 
     if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
       Alert.alert('Error', 'Passwords do not match');
       return false;
     }
@@ -67,6 +74,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
+    setErrorMessage(null);
     if (!validateForm()) {
       return;
     }
@@ -80,9 +88,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         Alert.alert('Success', 'Account created successfully! Welcome to LearnOnTheGo!');
         // Navigation will be handled by App.tsx when auth state changes
       } else {
-        Alert.alert('Registration Failed', result.error || 'Please try again');
+        const message = result.error || 'Please try again';
+        setErrorMessage(message);
+        Alert.alert('Registration Failed', message);
       }
     } catch (error) {
+      setErrorMessage('Something went wrong. Please try again.');
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -134,9 +145,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Full Name</Text>
                 <TextInput
+                  testID="register-full-name-input"
                   style={styles.input}
                   value={fullName}
-                  onChangeText={setFullName}
+                  onChangeText={(value) => {
+                    setFullName(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Full name"
+                  accessibilityHint="Enter your full name for account setup"
                   placeholder="Your full name"
                   placeholderTextColor="#7f8492"
                   autoCapitalize="words"
@@ -147,9 +166,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
+                  testID="register-email-input"
                   style={styles.input}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Email address"
+                  accessibilityHint="Enter the email you want to use for this account"
                   placeholder="name@company.com"
                   placeholderTextColor="#7f8492"
                   keyboardType="email-address"
@@ -162,9 +189,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
+                  testID="register-password-input"
                   style={styles.input}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Password"
+                  accessibilityHint="Enter a password with at least 8 characters"
                   placeholder="Minimum 8 characters"
                   placeholderTextColor="#7f8492"
                   secureTextEntry
@@ -175,9 +210,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Confirm Password</Text>
                 <TextInput
+                  testID="register-confirm-password-input"
                   style={styles.input}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(value) => {
+                    setConfirmPassword(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Confirm password"
+                  accessibilityHint="Re-enter the same password to confirm"
                   placeholder="Re-enter password"
                   placeholderTextColor="#7f8492"
                   secureTextEntry
@@ -185,9 +228,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 />
               </View>
 
+              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
               <TouchableOpacity
+                testID="register-submit-button"
                 style={[styles.registerButton, isLoading && styles.buttonDisabled]}
                 onPress={handleRegister}
+                accessibilityRole="button"
+                accessibilityLabel="Create membership"
+                accessibilityHint="Submits your details and creates a new account"
+                accessibilityState={{ disabled: isLoading }}
                 disabled={isLoading}>
                 {isLoading ? (
                   <ActivityIndicator color="#0a0a0a" />
@@ -200,7 +250,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have access?</Text>
               <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
-                <Text style={styles.footerLink}>Sign In</Text>
+                <Text accessibilityRole="link" style={styles.footerLink}>Sign In</Text>
               </TouchableOpacity>
             </View>
 
@@ -380,6 +430,12 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontSize: 16,
     color: '#0d1119',
+  },
+  errorText: {
+    color: '#8f1d1d',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 14,
   },
   registerButton: {
     backgroundColor: '#d7bf89',

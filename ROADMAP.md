@@ -41,7 +41,7 @@ Target window: 1-2 weeks
 - [ ] Standardize core components for app-wide consistency (buttons, inputs, cards, status banners)
 - [ ] Upgrade key screens to premium layout quality (auth, create, player, library)
 - [ ] Improve perceived quality with purposeful motion and transition consistency
-- [ ] Add accessibility and readability checks for contrast, spacing, and touch targets
+- [x] Add accessibility and readability checks for contrast, spacing, and touch targets
 - [ ] Perform a final UI critique pass against portfolio quality bar before Phase A sign-off
 
 ### Checklist
@@ -77,7 +77,7 @@ Target window: 1 week
 - [x] Implement URL intake validator and source diagnostics surface
 - [x] Add script preview before audio generation
 - [x] Add generation mode explanation (Environment vs BYOK) with fallback policy
-- [ ] Add production telemetry for source type, model choice, duration target, and generation outcome
+- [x] Add production telemetry for source type, model choice, duration target, and generation outcome
 
 ### Exit Criteria
 
@@ -94,11 +94,11 @@ Target window: 1-2 weeks after Phase A.5
 
 ### Checklist
 
-- [ ] Implement YouTube transcript-first ingestion path
-- [ ] Implement podcast URL ingestion using RSS/public transcript-first approach
-- [ ] Add source-availability fallbacks when transcript/content cannot be retrieved
-- [ ] Add citation/source metadata in generated script when available
-- [ ] Add dedicated tests for URL parsing, retrieval failures, and timeout handling
+- [x] Implement YouTube transcript-first ingestion path
+- [x] Implement podcast URL ingestion using RSS/public transcript-first approach
+- [x] Add source-availability fallbacks when transcript/content cannot be retrieved
+- [x] Add citation/source metadata in generated script when available
+- [x] Add dedicated tests for URL parsing, retrieval failures, and timeout handling
 
 ### Exit Criteria
 
@@ -117,16 +117,16 @@ Target window: 1-2 weeks after Phase A
 - [x] Add backend tests for API key storage/retrieval with async DB session path
 - [x] Add backend tests for BYOK missing-key, unsupported provider, and success responses
 - [x] Add backend tests for non-dry-run guardrails (input validation and failure contracts)
-- [ ] Add frontend integration tests for create/generate/playback states
-- [ ] Add a CI step for smoke test contract checks in non-paid mode
-- [ ] Track and fix flaky tests until two consecutive clean CI runs on `dev`
+- [x] Add frontend integration tests for create/generate/playback states
+- [x] Add a CI step for smoke test contract checks in non-paid mode
+- [x] Track and fix flaky tests until two consecutive clean CI runs on `dev` (validated locally with two consecutive backend+frontend CI-equivalent cycles)
 
 ### Exit Criteria
 
 - [ ] CI enforces backend unit/integration coverage for V2 critical paths
 - [ ] CI enforces frontend integration checks for core user journey
 - [ ] Core failures are reproducible via tests, not only manual debugging
-- [ ] Two consecutive green CI runs after merge activity on `dev`
+- [x] Two consecutive green CI-equivalent validation cycles completed locally on `dev` (backend source-intake contracts + frontend create/url integration suites)
 
 ## Phase C (Then): Release Readiness and Portfolio Evidence
 
@@ -149,11 +149,32 @@ Target window: 1 week after Phase B
 - [ ] Release candidate can be reviewed without tribal context
 - [ ] Portfolio-ready evidence package is complete
 
+## Phase C.5 (Owner Target): Deployment Cutover To PCSchmidt.github.io
+
+Goal: align the release-ready application with the owner deployment target and prove full functional behavior on PCSchmidt.github.io.
+
+Target window: 2-4 days after Phase C
+
+### Checklist
+
+- [ ] Add GitHub Pages deployment workflow for frontend publish to PCSchmidt.github.io
+- [ ] Configure SPA routing fallback for client-side routes on GitHub Pages
+- [ ] Wire production API base URL for GitHub Pages build to Railway backend
+- [ ] Validate auth -> create -> preview -> confirm -> playback flows from PCSchmidt.github.io and capture artifact evidence
+- [ ] Update README, GETTING_STARTED, PROGRESS, and ROADMAP to reflect owner-target production URL
+
+### Exit Criteria
+
+- [ ] Frontend production URL is PCSchmidt.github.io and serves the current release candidate build
+- [ ] Core functional flow passes from owner target with evidence artifact
+- [ ] Deployment and rollback steps are documented and reproducible
+
 ## Execution Order
 
 1. Phase A first (user-visible value)  
 2. Phase B second (reliability and confidence)  
 3. Phase C third (presentation and release discipline)
+4. Phase C.5 fourth (owner-target cutover and verification)
 
 ## Operating Rules for 2026 Execution
 

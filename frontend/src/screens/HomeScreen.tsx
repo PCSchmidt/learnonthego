@@ -145,20 +145,48 @@ const HomeScreen: React.FC = () => {
         </View>
 
         <View style={styles.actionPanel}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleCreateLecture}>
+          <TouchableOpacity
+            testID="home-create-lecture-button"
+            style={styles.primaryButton}
+            onPress={handleCreateLecture}
+            accessibilityRole="button"
+            accessibilityLabel="Create new lecture"
+            accessibilityHint="Opens lecture composer"
+          >
             <Text style={styles.primaryButtonText}>Create New Lecture</Text>
           </TouchableOpacity>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleTestAPI}>
+            <TouchableOpacity
+              testID="home-system-check-button"
+              style={styles.secondaryButton}
+              onPress={handleTestAPI}
+              accessibilityRole="button"
+              accessibilityLabel="System check"
+              accessibilityHint="Tests backend health and service readiness"
+            >
               <Text style={styles.secondaryButtonText}>System Check</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleSettings}>
+            <TouchableOpacity
+              testID="home-settings-button"
+              style={styles.secondaryButton}
+              onPress={handleSettings}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              accessibilityHint="Opens account and provider settings"
+            >
               <Text style={styles.secondaryButtonText}>Settings</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <TouchableOpacity
+              testID="home-signout-button"
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              accessibilityRole="button"
+              accessibilityLabel="Sign out"
+              accessibilityHint="Signs out of the current account"
+            >
               <Text style={styles.logoutButtonText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
@@ -173,16 +201,26 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.loadingText}>Loading your lectures...</Text>
             </View>
           ) : lectures.length > 0 ? (
-            lectures.map((lecture) => (
+            lectures.map((lecture, index) => (
               <TouchableOpacity
-                key={lecture.id}
+                key={lecture.id || `lecture-${index}`}
+                testID={`lecture-card-${index}`}
                 style={styles.lectureCard}
-                onPress={() => handleLecturePress(lecture.id)}
+                onPress={() => {
+                  if (lecture.id) {
+                    handleLecturePress(lecture.id);
+                  }
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={lecture.title ? `Open lecture ${lecture.title}` : 'Open lecture'}
+                accessibilityHint="Navigates to lecture playback details"
+                accessibilityState={{ disabled: !lecture.id }}
+                disabled={!lecture.id}
               >
                 <Text style={styles.lectureTitle}>{lecture.title}</Text>
                 <Text style={styles.lectureDuration}>{lecture.duration} minutes</Text>
                 <Text style={styles.lectureDate}>
-                  {new Date(lecture.created_at).toLocaleDateString()}
+                  {lecture.created_at ? new Date(lecture.created_at).toLocaleDateString() : 'Date unavailable'}
                 </Text>
               </TouchableOpacity>
             ))

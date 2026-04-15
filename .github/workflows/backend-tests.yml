@@ -67,6 +67,33 @@ jobs:
       run: |
         python -m pytest tests/test_api_key_lifecycle_contract.py -q
 
+    - name: Run non-paid V2 smoke contract gate
+      run: |
+        export JWT_SECRET_KEY=ci-smoke-secret
+        export ENABLE_V2_PIPELINE=true
+        export ENABLE_URL_INGESTION_V1=true
+        python -m uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/lotg-backend.log 2>&1 &
+        BACKEND_PID=$!
+
+        for i in {1..30}; do
+          if curl -fsS http://127.0.0.1:8000/health >/dev/null; then
+            break
+          fi
+          sleep 1
+        done
+
+        export LOTG_BASE_URL=http://127.0.0.1:8000
+        export LOTG_EMAIL=ci_smoke_user@example.com
+        export LOTG_PASSWORD=Phase4Pass123!
+        export LOTG_AUTO_REGISTER=true
+        export LOTG_STRICT_BYOK=false
+        export LOTG_URL_READY_SOURCE=http://127.0.0.1:8000/health
+        export LOTG_URL_NON_READY_SOURCE=nota-valid-url
+
+        python ../scripts/v2_endpoint_smoke.py
+
+        kill "$BACKEND_PID" || true
+
   # Comment out problematic jobs for now
   # test:
   #   runs-on: ubuntu-latest

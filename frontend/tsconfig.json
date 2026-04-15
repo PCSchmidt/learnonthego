@@ -14,7 +14,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-native"
+    "jsx": "react-native",
+    "types": ["jest", "node", "react", "react-native"]
   },
   "extends": "@tsconfig/react-native/tsconfig.json",
   "include": [

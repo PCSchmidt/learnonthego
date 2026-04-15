@@ -25,6 +25,7 @@ interface LoginScreenProps {
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const isWeb = Platform.OS === 'web';
 
@@ -32,10 +33,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
+      setErrorMessage('Please enter both email and password.');
       Alert.alert('Error', 'Please enter both email and password');
       return;
     }
 
+    setErrorMessage(null);
     setIsLoading(true);
 
     try {
@@ -45,9 +48,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         // Navigation will be handled by App.tsx when auth state changes
         Alert.alert('Success', 'Welcome back!');
       } else {
-        Alert.alert('Login Failed', result.error || 'Please check your credentials');
+        const message = result.error || 'Please check your credentials';
+        setErrorMessage(message);
+        Alert.alert('Login Failed', message);
       }
     } catch (error) {
+      setErrorMessage('Something went wrong. Please try again.');
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -107,9 +113,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
+                  testID="login-email-input"
                   style={styles.input}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Email address"
+                  accessibilityHint="Enter the email for your LearnOnTheGo account"
                   placeholder="name@company.com"
                   placeholderTextColor="#7f8492"
                   keyboardType="email-address"
@@ -122,9 +136,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
+                  testID="login-password-input"
                   style={styles.input}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Password"
+                  accessibilityHint="Enter your account password"
                   placeholder="Enter your password"
                   placeholderTextColor="#7f8492"
                   secureTextEntry
@@ -132,16 +154,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 />
               </View>
 
+              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
               <TouchableOpacity
                 style={styles.forgotPassword}
                 onPress={handleForgotPassword}
+                accessibilityRole="button"
+                accessibilityLabel="Forgot password"
+                accessibilityHint="Opens password recovery guidance"
                 disabled={isLoading}>
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
+                testID="login-submit-button"
                 style={[styles.loginButton, isLoading && styles.buttonDisabled]}
                 onPress={handleLogin}
+                accessibilityRole="button"
+                accessibilityLabel="Enter workspace"
+                accessibilityHint="Submits your credentials and signs you in"
+                accessibilityState={{ disabled: isLoading }}
                 disabled={isLoading}>
                 {isLoading ? (
                   <ActivityIndicator color="#0a0a0a" />
@@ -154,7 +186,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <View style={styles.footer}>
               <Text style={styles.footerText}>No account yet?</Text>
               <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
-                <Text style={styles.footerLink}>Request Access</Text>
+                <Text accessibilityRole="link" style={styles.footerLink}>Request Access</Text>
               </TouchableOpacity>
             </View>
 
@@ -342,6 +374,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.2,
+  },
+  errorText: {
+    color: '#8f1d1d',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 14,
   },
   loginButton: {
     backgroundColor: '#d7bf89',

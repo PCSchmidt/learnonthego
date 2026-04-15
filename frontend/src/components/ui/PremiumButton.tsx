@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
 import { colors, spacing, typography } from '../../theme/tokens';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -12,7 +12,7 @@ interface PremiumButtonProps {
   style?: ViewStyle;
 }
 
-const variantStyles: Record<ButtonVariant, { container: ViewStyle; text: ViewStyle }> = {
+const variantStyles: Record<ButtonVariant, { container: ViewStyle; text: TextStyle }> = {
   primary: {
     container: {
       backgroundColor: colors.accent.brass,

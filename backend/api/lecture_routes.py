@@ -19,6 +19,8 @@ from urllib.parse import urlparse
 from urllib.request import Request as UrlRequest, urlopen
 from urllib.error import HTTPError, URLError
 from pathlib import Path
+from html import unescape
+from xml.etree import ElementTree
 
 from models.database import get_async_db
 from models.user_orm import User
@@ -41,6 +43,7 @@ SUPPORTED_UPLOAD_EXTENSIONS_V1A = {".txt", ".md", ".pdf"}
 MAX_TEXT_FILE_BYTES = 2 * 1024 * 1024
 MAX_PDF_FILE_BYTES = 50 * 1024 * 1024
 MAX_URL_TEXT_CHARS = 60_000
+MAX_URL_TRANSCRIPT_PREVIEW_CHARS = 8_000
 SOURCE_INTAKE_ERROR_SCHEMA = "source-intake-error-v1"
 URL_DIAGNOSTICS_SCHEMA = "url-diagnostics-v1"
 DURATION_POLICY_SCHEMA = "duration-best-effort-v1"
@@ -54,6 +57,45 @@ DURATION_WPM_BY_DIFFICULTY = {
     "intermediate": 145.0,
     "advanced": 160.0,
 }
+
+
+def _emit_generation_telemetry(
+    *,
+    user_id: int,
+    route: str,
+    execution_mode: str,
+    source_type: str,
+    source_class: Optional[str],
+    duration: int,
+    difficulty: str,
+    llm_provider: str,
+    llm_model: Optional[str],
+    tts_provider: str,
+    outcome: str,
+    error_code: Optional[str] = None,
+    error_stage: Optional[str] = None,
+) -> None:
+    payload: Dict[str, Any] = {
+        "event": "generation_telemetry_v1",
+        "timestamp": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "user_id": user_id,
+        "route": route,
+        "execution_mode": execution_mode,
+        "source_type": source_type,
+        "source_class": source_class,
+        "duration": duration,
+        "difficulty": difficulty,
+        "llm_provider": llm_provider,
+        "llm_model": llm_model,
+        "tts_provider": tts_provider,
+        "outcome": outcome,
+    }
+    if error_code:
+        payload["error_code"] = error_code
+    if error_stage:
+        payload["error_stage"] = error_stage
+
+    logger.info("TELEMETRY %s", json.dumps(payload, default=str, sort_keys=True))
 
 
 def _url_ingestion_v1_enabled() -> bool:
@@ -75,11 +117,11 @@ def _validation_hint_v1a() -> str:
     if _url_ingestion_v1_enabled():
         return (
             "Supported source_type values for v1a are: text, txt, md, pdf, url. "
-            "URL source intake currently supports web pages that pass URL diagnostics as ready."
+            "URL source intake supports ready web pages plus transcript-first YouTube/podcast sources."
         )
     return (
         "Supported source_type values for v1a are: text, txt, md, pdf. "
-        "YouTube/podcast/url ingestion is intentionally deferred to the next slice."
+        "Enable ENABLE_URL_INGESTION_V1=true to use URL source intake."
     )
 
 
@@ -133,16 +175,201 @@ def _extract_text_from_html(content: str) -> str:
     return text
 
 
-def _fetch_url_source_text(source_uri: str, max_chars: int = MAX_URL_TEXT_CHARS) -> str:
-    request = Request(source_uri, method="GET", headers={"User-Agent": "LearnOnTheGo/url-intake"})
-    with urlopen(request, timeout=8) as response:
+def _request_url_text(source_uri: str, timeout: int, user_agent: str) -> Dict[str, str]:
+    request = UrlRequest(source_uri, method="GET", headers={"User-Agent": user_agent})
+    with urlopen(request, timeout=timeout) as response:
         raw_bytes = response.read()
         content_type = (response.headers.get("Content-Type") or "").lower()
+    return {
+        "content": raw_bytes.decode("utf-8", errors="ignore"),
+        "content_type": content_type,
+    }
+
+
+def _looks_like_feed_url(source_uri: str) -> bool:
+    parsed = urlparse(source_uri)
+    path = (parsed.path or "").lower()
+    query = (parsed.query or "").lower()
+    return any(token in path for token in [".xml", ".rss", "/feed"]) or any(
+        token in query for token in ["rss", "feed"]
+    )
+
+
+def _extract_youtube_video_id(source_uri: str) -> Optional[str]:
+    parsed = urlparse(source_uri)
+    host = (parsed.netloc or "").lower()
+    path = (parsed.path or "").strip("/")
+
+    if "youtu.be" in host and path:
+        return path.split("/")[0]
+
+    if "youtube.com" in host:
+        if path == "watch":
+            query = parsed.query or ""
+            match = re.search(r"(?:^|&)v=([A-Za-z0-9_-]{6,})", query)
+            if match:
+                return match.group(1)
+        for prefix in ["embed/", "shorts/"]:
+            if path.startswith(prefix):
+                candidate = path.split("/")[1] if len(path.split("/")) > 1 else ""
+                if candidate:
+                    return candidate
+    return None
+
+
+def _extract_text_from_caption_xml(content: str) -> str:
+    try:
+        root = ElementTree.fromstring(content)
+    except ElementTree.ParseError:
+        return ""
+
+    chunks: List[str] = []
+    for node in root.findall(".//text"):
+        text = "".join(node.itertext()).strip()
+        if text:
+            chunks.append(unescape(text))
+    return " ".join(chunks).strip()
+
+
+def _extract_podcast_transcript_link(feed_xml: str) -> Optional[str]:
+    try:
+        root = ElementTree.fromstring(feed_xml)
+    except ElementTree.ParseError:
+        return None
+
+    # RFC-agnostic tag scan for transcript URL attributes in RSS/Podcast feeds.
+    for node in root.iter():
+        tag_name = (node.tag or "").lower()
+        if tag_name.endswith("transcript"):
+            url_value = node.attrib.get("url") or (node.text or "").strip()
+            if url_value:
+                return url_value
+    return None
+
+
+def _fetch_youtube_transcript_text(source_uri: str, max_chars: int = MAX_URL_TEXT_CHARS) -> str:
+    video_id = _extract_youtube_video_id(source_uri)
+    if not video_id:
+        raise ValueError("Could not parse YouTube video ID from URL.")
+
+    watch_url = f"https://www.youtube.com/watch?v={video_id}"
+    watch_page = _request_url_text(watch_url, timeout=8, user_agent="LearnOnTheGo/youtube-transcript")
+    watch_html = watch_page["content"]
+
+    caption_match = re.search(r'"captionTracks":\s*(\[.*?\])', watch_html, flags=re.DOTALL)
+    if not caption_match:
+        raise ValueError("No public captions/transcript found for this YouTube video.")
+
+    tracks_blob = caption_match.group(1).replace("\\u0026", "&")
+    try:
+        tracks = json.loads(tracks_blob)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Could not parse YouTube caption metadata.") from exc
+
+    base_url = None
+    for track in tracks:
+        candidate = track.get("baseUrl")
+        if candidate:
+            base_url = candidate
+            if track.get("kind") != "asr":
+                break
+
+    if not base_url:
+        raise ValueError("No caption track URL found for this YouTube video.")
+
+    transcript_payload = _request_url_text(base_url, timeout=8, user_agent="LearnOnTheGo/youtube-caption")
+    transcript_text = _extract_text_from_caption_xml(transcript_payload["content"])
+    if not transcript_text:
+        raise ValueError("Caption track was available but transcript content was empty.")
+
+    return transcript_text[:max_chars]
+
+
+def _fetch_podcast_transcript_text(source_uri: str, max_chars: int = MAX_URL_TEXT_CHARS) -> str:
+    if not _looks_like_feed_url(source_uri):
+        raise ValueError("Podcast transcript-first ingestion currently requires an RSS/feed URL.")
+
+    feed_payload = _request_url_text(source_uri, timeout=8, user_agent="LearnOnTheGo/podcast-feed")
+    transcript_link = _extract_podcast_transcript_link(feed_payload["content"])
+    if not transcript_link:
+        raise ValueError("No public podcast transcript link found in RSS feed metadata.")
+
+    transcript_payload = _request_url_text(transcript_link, timeout=8, user_agent="LearnOnTheGo/podcast-transcript")
+    transcript_text = _extract_text_from_html(transcript_payload["content"])
+    if not transcript_text:
+        raise ValueError("Podcast transcript content was empty.")
+
+    return transcript_text[:max_chars]
+
+
+def _resolve_url_source_text_v1(source_uri: str, source_class: str, max_chars: int = MAX_URL_TEXT_CHARS) -> str:
+    if source_class == "video":
+        return _fetch_youtube_transcript_text(source_uri, max_chars=max_chars)
+    if source_class in {"podcast", "audio"}:
+        return _fetch_podcast_transcript_text(source_uri, max_chars=max_chars)
+    return _fetch_url_source_text(source_uri, max_chars=max_chars)
+
+
+def _source_retrieval_method(source_type: str, source_class: Optional[str] = None) -> str:
+    if source_type == "url":
+        if source_class == "video":
+            return "youtube_transcript"
+        if source_class in {"podcast", "audio"}:
+            return "podcast_feed_transcript"
+        return "web_fetch"
+    if source_type == "text":
+        return "pasted_text"
+    return "file_upload"
+
+
+def _build_source_metadata(
+    *,
+    source_name: str,
+    source_type: str,
+    source_text: str,
+    source_uri: Optional[str] = None,
+    source_class: Optional[str] = None,
+) -> Dict[str, Any]:
+    return {
+        "source_uri": source_uri,
+        "source_class": source_class or ("web" if source_type == "url" else source_type),
+        "retrieval_method": _source_retrieval_method(source_type, source_class),
+        "retrieval_timestamp": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "excerpt": (source_text or "").strip()[:280],
+        "source_name": source_name,
+    }
+
+
+def _build_citations(source_metadata: Dict[str, Any]) -> list:
+    source_uri = source_metadata.get("source_uri")
+    source_class = source_metadata.get("source_class")
+    retrieval_method = source_metadata.get("retrieval_method")
+    excerpt = source_metadata.get("excerpt") or ""
+
+    note_parts = [
+        f"class={source_class}",
+        f"retrieval={retrieval_method}",
+    ]
+    if excerpt:
+        note_parts.append(f"excerpt={excerpt[:140]}")
+
+    return [
+        {
+            "label": "Primary Source",
+            "source_uri": source_uri,
+            "note": "; ".join(note_parts),
+        }
+    ]
+
+
+def _fetch_url_source_text(source_uri: str, max_chars: int = MAX_URL_TEXT_CHARS) -> str:
+    payload = _request_url_text(source_uri, timeout=8, user_agent="LearnOnTheGo/url-intake")
+    content_type = payload["content_type"]
 
     if "text" not in content_type and "html" not in content_type and "json" not in content_type:
         raise ValueError("URL content type is not text-based and cannot be ingested.")
 
-    decoded = raw_bytes.decode("utf-8", errors="ignore")
+    decoded = payload["content"]
     extracted = _extract_text_from_html(decoded)
     if not extracted:
         raise ValueError("URL content extraction returned empty text.")
@@ -186,32 +413,84 @@ async def _diagnose_url_readiness_v1(source_uri: str) -> Dict[str, Any]:
 
     source_class = _classify_url_source(source_uri)
     if source_class == "video":
+        try:
+            await asyncio.to_thread(_fetch_youtube_transcript_text, source_uri, MAX_URL_TRANSCRIPT_PREVIEW_CHARS)
+        except Exception as exc:
+            return {
+                "success": False,
+                "schema": URL_DIAGNOSTICS_SCHEMA,
+                "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+                "source_uri": source_uri,
+                "source_class": source_class,
+                "outcome": "no_transcript",
+                "diagnostics": {
+                    "code": "no_transcript",
+                    "message": f"YouTube transcript not available: {str(exc)}",
+                    "retryable": False,
+                    "status_code": availability.get("status_code"),
+                },
+            }
+
         return {
-            "success": False,
+            "success": True,
             "schema": URL_DIAGNOSTICS_SCHEMA,
             "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
             "source_uri": source_uri,
             "source_class": source_class,
-            "outcome": "no_transcript",
+            "outcome": "ready",
             "diagnostics": {
-                "code": "no_transcript",
-                "message": "Video transcript ingestion is not enabled in this slice yet.",
+                "code": "ready",
+                "message": "YouTube transcript is available and ready for ingestion.",
                 "retryable": False,
                 "status_code": availability.get("status_code"),
             },
         }
 
     if source_class in {"podcast", "audio"}:
+        if not _looks_like_feed_url(source_uri):
+            return {
+                "success": False,
+                "schema": URL_DIAGNOSTICS_SCHEMA,
+                "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+                "source_uri": source_uri,
+                "source_class": source_class,
+                "outcome": "unsupported",
+                "diagnostics": {
+                    "code": "unsupported",
+                    "message": "Podcast ingestion requires an RSS/feed URL with public transcript metadata.",
+                    "retryable": False,
+                    "status_code": availability.get("status_code"),
+                },
+            }
+
+        try:
+            await asyncio.to_thread(_fetch_podcast_transcript_text, source_uri, MAX_URL_TRANSCRIPT_PREVIEW_CHARS)
+        except Exception as exc:
+            return {
+                "success": False,
+                "schema": URL_DIAGNOSTICS_SCHEMA,
+                "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
+                "source_uri": source_uri,
+                "source_class": source_class,
+                "outcome": "no_transcript",
+                "diagnostics": {
+                    "code": "no_transcript",
+                    "message": f"Podcast transcript not available: {str(exc)}",
+                    "retryable": False,
+                    "status_code": availability.get("status_code"),
+                },
+            }
+
         return {
-            "success": False,
+            "success": True,
             "schema": URL_DIAGNOSTICS_SCHEMA,
             "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
             "source_uri": source_uri,
             "source_class": source_class,
-            "outcome": "unsupported",
+            "outcome": "ready",
             "diagnostics": {
-                "code": "unsupported",
-                "message": "Podcast/audio URL ingestion is deferred to the next slice.",
+                "code": "ready",
+                "message": "Podcast transcript feed is available and ready for ingestion.",
                 "retryable": False,
                 "status_code": availability.get("status_code"),
             },
@@ -239,7 +518,7 @@ async def _resolve_source_text_v1a(
     file: Optional[UploadFile],
     source_uri: Optional[str],
     source_type: Optional[str],
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     normalized_source_type = _normalize_source_type_v1a(source_type)
 
     has_text = bool(document_text and document_text.strip())
@@ -265,6 +544,12 @@ async def _resolve_source_text_v1a(
             "source_text": text_value,
             "source_name": "pasted_text",
             "source_type": "text",
+            "source_metadata": _build_source_metadata(
+                source_name="pasted_text",
+                source_type="text",
+                source_text=text_value,
+                source_class="text",
+            ),
         }
 
     upload_file = file
@@ -294,7 +579,11 @@ async def _resolve_source_text_v1a(
             )
 
         try:
-            fetched_text = await asyncio.to_thread(_fetch_url_source_text, cleaned_uri)
+            fetched_text = await asyncio.to_thread(
+                _resolve_url_source_text_v1,
+                cleaned_uri,
+                diagnostics.get("source_class", "web"),
+            )
         except Exception as exc:
             _raise_source_intake_error(
                 code="url_fetch_failed",
@@ -315,6 +604,13 @@ async def _resolve_source_text_v1a(
             "source_text": fetched_text,
             "source_name": cleaned_uri,
             "source_type": "url",
+            "source_metadata": _build_source_metadata(
+                source_name=cleaned_uri,
+                source_type="url",
+                source_text=fetched_text,
+                source_uri=cleaned_uri,
+                source_class=diagnostics.get("source_class"),
+            ),
         }
 
     if upload_file is None:
@@ -332,7 +628,7 @@ async def _resolve_source_text_v1a(
             field="file",
             message=(
                 "Unsupported file type. v1a supports uploads: .txt, .md, .pdf. "
-                "YouTube/podcast/url ingestion is deferred to the next slice."
+                "For URLs, use source_type=url and run diagnostics first."
             ),
         )
 
@@ -374,6 +670,12 @@ async def _resolve_source_text_v1a(
             "source_text": decoded.strip(),
             "source_name": file_name,
             "source_type": inferred_type,
+            "source_metadata": _build_source_metadata(
+                source_name=file_name,
+                source_type=inferred_type,
+                source_text=decoded.strip(),
+                source_class=inferred_type,
+            ),
         }
 
     if len(raw_bytes) > MAX_PDF_FILE_BYTES:
@@ -409,6 +711,12 @@ async def _resolve_source_text_v1a(
             "source_text": processed_content,
             "source_name": file_name,
             "source_type": inferred_type,
+            "source_metadata": _build_source_metadata(
+                source_name=file_name,
+                source_type=inferred_type,
+                source_text=processed_content,
+                source_class=inferred_type,
+            ),
         }
     finally:
         try:
@@ -428,6 +736,7 @@ def _build_v2_dry_run_response(
     tts_provider: str,
     key_source: str,
     execution_mode: str,
+    source_metadata: Dict[str, Any],
 ) -> Dict[str, Any]:
     """Return a stable response contract without invoking paid generation."""
     preview_script = {
@@ -441,7 +750,9 @@ def _build_v2_dry_run_response(
         target_duration_minutes=duration,
         difficulty=difficulty,
         credential_source=execution_mode,
+        source_metadata=source_metadata,
     )
+    citations = _build_citations(source_metadata)
     return {
         "success": True,
         "dry_run": True,
@@ -461,14 +772,9 @@ def _build_v2_dry_run_response(
             "model": llm_model or "dry-run",
             "usage": {},
         },
-        "script_sections": [
-            {
-                "id": "preview-main",
-                "heading": "Preview Script",
-                "content": preview_script["content"],
-            }
-        ],
-        "citations": [],
+        "script_sections": _build_script_sections(preview_script["content"], citations),
+        "citations": citations,
+        "source_metadata": source_metadata,
         "metadata": metadata,
         "audio": {
             "provider": tts_provider,
@@ -480,17 +786,34 @@ def _build_v2_dry_run_response(
     }
 
 
-def _build_script_sections(script: str) -> list:
+def _build_script_sections(script: str, citations: Optional[list] = None) -> list:
     cleaned = (script or "").strip()
     if not cleaned:
         return []
-    return [
+    sections = [
         {
             "id": "main",
             "heading": "Main Script",
             "content": cleaned,
         }
     ]
+
+    citation_items = citations or []
+    if citation_items:
+        lines = []
+        for citation in citation_items:
+            uri = citation.get("source_uri") or "source-uri-unavailable"
+            note = citation.get("note") or ""
+            lines.append(f"- {uri}{f' ({note})' if note else ''}")
+        sections.append(
+            {
+                "id": "sources",
+                "heading": "Sources",
+                "content": "\n".join(lines),
+            }
+        )
+
+    return sections
 
 
 def _build_script_summary(script: str) -> str:
@@ -537,6 +860,7 @@ def _build_response_metadata(
     target_duration_minutes: int,
     difficulty: str,
     credential_source: str,
+    source_metadata: Optional[Dict[str, Any]] = None,
     existing: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     metadata: Dict[str, Any] = dict(existing) if isinstance(existing, dict) else {}
@@ -546,6 +870,8 @@ def _build_response_metadata(
         difficulty=difficulty,
     )
     metadata["credential_source"] = credential_source
+    if source_metadata:
+        metadata["source_context"] = source_metadata
     return metadata
 
 
@@ -606,6 +932,65 @@ def _resolve_v2_audio_url(result: Dict[str, Any], request: Request) -> Optional[
     return f"{str(request.base_url).rstrip('/')}/api/lectures/audio/v2/{filename}"
 
 
+def _storage_source_type(source_type: str) -> LectureSourceType:
+    normalized = (source_type or "").lower()
+    if normalized == "pdf":
+        return LectureSourceType.PDF
+    return LectureSourceType.TEXT
+
+
+async def _persist_v2_lecture_metadata(
+    *,
+    db,
+    user_id: int,
+    source_name: str,
+    source_type: str,
+    source_metadata: Dict[str, Any],
+    context: Optional[str],
+    duration: int,
+    difficulty: str,
+    script: str,
+    audio_url: Optional[str],
+    llm_usage: Optional[Dict[str, Any]] = None,
+) -> Optional[int]:
+    if db is None:
+        return None
+
+    context_payload = {
+        "user_context": context,
+        "source_metadata": source_metadata,
+    }
+    lecture = Lecture(
+        user_id=user_id,
+        title="V2 Generated Lecture",
+        topic=source_name,
+        difficulty=difficulty,
+        duration_requested=duration,
+        duration_actual=duration,
+        source_type=_storage_source_type(source_type),
+        source_file_name=source_name[:255] if source_name else None,
+        custom_context=json.dumps(context_payload),
+        status=LectureStatus.COMPLETED,
+        lecture_script=script,
+        audio_file_url=audio_url,
+        llm_tokens_used=(llm_usage or {}).get("total_tokens"),
+    )
+
+    try:
+        db.add(lecture)
+        await db.commit()
+        await db.refresh(lecture)
+        lecture_id = getattr(lecture, "id", None)
+        return lecture_id if isinstance(lecture_id, int) else None
+    except Exception as exc:
+        logger.warning("V2 lecture metadata persistence skipped due to DB error: %s", str(exc))
+        try:
+            await db.rollback()
+        except Exception:
+            pass
+        return None
+
+
 def _classify_url_source(source_uri: str) -> str:
     parsed = urlparse(source_uri)
     host = (parsed.netloc or "").lower()
@@ -613,6 +998,8 @@ def _classify_url_source(source_uri: str) -> str:
 
     if any(domain in host for domain in ["youtube.com", "youtu.be", "vimeo.com"]):
         return "video"
+    if _looks_like_feed_url(source_uri):
+        return "podcast"
     if any(domain in host for domain in ["spotify.com", "soundcloud.com", "podcasts.apple.com"]):
         return "podcast"
     if any(path.endswith(ext) for ext in [".mp3", ".wav", ".m4a", ".aac"]):
@@ -685,8 +1072,23 @@ async def generate_document_audio_v2(
     source_text = source_input["source_text"]
     source_name = source_input["source_name"]
     normalized_source_type = source_input["source_type"]
+    source_metadata = source_input.get("source_metadata") or {}
+    citations = _build_citations(source_metadata)
 
     if dry_run:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2",
+            execution_mode="environment",
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="dry_run_success",
+        )
         return _build_v2_dry_run_response(
             source=source_name,
             source_type=normalized_source_type,
@@ -697,6 +1099,7 @@ async def generate_document_audio_v2(
             tts_provider=tts_provider,
             key_source="environment",
             execution_mode="environment",
+            source_metadata=source_metadata,
         )
 
     execution_mode = "environment"
@@ -740,8 +1143,38 @@ async def generate_document_audio_v2(
             tts_provider,
             source_name,
         )
+        resolved_audio_url = _resolve_v2_audio_url(result, request)
+        lecture_id = await _persist_v2_lecture_metadata(
+            db=db,
+            user_id=current_user.id,
+            source_name=source_name,
+            source_type=normalized_source_type,
+            source_metadata=source_metadata,
+            context=context,
+            duration=duration,
+            difficulty=difficulty,
+            script=result.get("script", ""),
+            audio_url=resolved_audio_url,
+            llm_usage=result.get("llm", {}).get("usage") if isinstance(result.get("llm"), dict) else None,
+        )
+        llm_result = result.get("llm") if isinstance(result.get("llm"), dict) else {}
+        resolved_llm_model = llm_result.get("model") if isinstance(llm_result, dict) else None
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2",
+            execution_mode=execution_mode,
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=resolved_llm_model or llm_model,
+            tts_provider=tts_provider,
+            outcome="success",
+        )
         return {
             "success": True,
+            "id": str(lecture_id) if lecture_id is not None else None,
             "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
             "source": source_name,
             "source_type": normalized_source_type,
@@ -750,19 +1183,36 @@ async def generate_document_audio_v2(
             "key_source": key_source,
             "execution_mode": execution_mode,
             "summary": _build_script_summary(result.get("script", "")),
-            "script_sections": _build_script_sections(result.get("script", "")),
-            "citations": [],
+            "script_sections": _build_script_sections(result.get("script", ""), citations),
+            "citations": citations,
+            "source_metadata": source_metadata,
             **result,
-            "audio_url": _resolve_v2_audio_url(result, request),
+            "audio_url": resolved_audio_url,
             "metadata": _build_response_metadata(
                 script=result.get("script", ""),
                 target_duration_minutes=duration,
                 difficulty=difficulty,
                 credential_source=execution_mode,
+                source_metadata=source_metadata,
                 existing=result.get("metadata"),
             ),
         }
     except PipelineExecutionError as e:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2",
+            execution_mode=execution_mode,
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="failure",
+            error_code="provider_execution_failed",
+            error_stage=e.stage,
+        )
         logger.error(
             "V2 generation provider failure for user %s stage=%s provider=%s status=%s cause=%s",
             current_user.id,
@@ -773,10 +1223,38 @@ async def generate_document_audio_v2(
         )
         raise HTTPException(status_code=502, detail=_v2_provider_error_detail(e, execution_mode=execution_mode))
     except ValueError as e:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2",
+            execution_mode=execution_mode,
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="failure",
+            error_code="validation_error",
+        )
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2",
+            execution_mode=execution_mode,
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="failure",
+            error_code="unexpected_error",
+        )
         logger.error("V2 generation failed for user %s: %s", current_user.id, str(e))
         raise HTTPException(status_code=500, detail="V2 generation failed")
 
@@ -1328,8 +1806,23 @@ async def generate_document_audio_v2_byok(
     source_text = source_input["source_text"]
     source_name = source_input["source_name"]
     normalized_source_type = source_input["source_type"]
+    source_metadata = source_input.get("source_metadata") or {}
+    citations = _build_citations(source_metadata)
 
     if dry_run:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2-byok",
+            execution_mode="byok",
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="dry_run_success",
+        )
         return _build_v2_dry_run_response(
             source=source_name,
             source_type=normalized_source_type,
@@ -1340,6 +1833,7 @@ async def generate_document_audio_v2_byok(
             tts_provider=tts_provider,
             key_source="user-encrypted-storage",
             execution_mode="byok",
+            source_metadata=source_metadata,
         )
 
     try:
@@ -1364,8 +1858,38 @@ async def generate_document_audio_v2_byok(
             tts_provider,
             source_name,
         )
+        resolved_audio_url = _resolve_v2_audio_url(result, request)
+        lecture_id = await _persist_v2_lecture_metadata(
+            db=db,
+            user_id=current_user.id,
+            source_name=source_name,
+            source_type=normalized_source_type,
+            source_metadata=source_metadata,
+            context=context,
+            duration=duration,
+            difficulty=difficulty,
+            script=result.get("script", ""),
+            audio_url=resolved_audio_url,
+            llm_usage=result.get("llm", {}).get("usage") if isinstance(result.get("llm"), dict) else None,
+        )
+        llm_result = result.get("llm") if isinstance(result.get("llm"), dict) else {}
+        resolved_llm_model = llm_result.get("model") if isinstance(llm_result, dict) else None
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2-byok",
+            execution_mode="byok",
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=resolved_llm_model or llm_model,
+            tts_provider=tts_provider,
+            outcome="success",
+        )
         return {
             "success": True,
+            "id": str(lecture_id) if lecture_id is not None else None,
             "contract_version": SOURCE_INTAKE_CONTRACT_VERSION,
             "source": source_name,
             "source_type": normalized_source_type,
@@ -1374,19 +1898,36 @@ async def generate_document_audio_v2_byok(
             "key_source": "user-encrypted-storage",
             "execution_mode": "byok",
             "summary": _build_script_summary(result.get("script", "")),
-            "script_sections": _build_script_sections(result.get("script", "")),
-            "citations": [],
+            "script_sections": _build_script_sections(result.get("script", ""), citations),
+            "citations": citations,
+            "source_metadata": source_metadata,
             **result,
-            "audio_url": _resolve_v2_audio_url(result, request),
+            "audio_url": resolved_audio_url,
             "metadata": _build_response_metadata(
                 script=result.get("script", ""),
                 target_duration_minutes=duration,
                 difficulty=difficulty,
                 credential_source="byok",
+                source_metadata=source_metadata,
                 existing=result.get("metadata"),
             ),
         }
     except PipelineExecutionError as e:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2-byok",
+            execution_mode="byok",
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="failure",
+            error_code="provider_execution_failed",
+            error_stage=e.stage,
+        )
         logger.error(
             "V2 BYOK generation provider failure for user %s stage=%s provider=%s status=%s cause=%s",
             current_user.id,
@@ -1397,9 +1938,37 @@ async def generate_document_audio_v2_byok(
         )
         raise HTTPException(status_code=502, detail=_v2_provider_error_detail(e, execution_mode="byok"))
     except ValueError as e:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2-byok",
+            execution_mode="byok",
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="failure",
+            error_code="validation_error",
+        )
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
+        _emit_generation_telemetry(
+            user_id=current_user.id,
+            route="generate-document-v2-byok",
+            execution_mode="byok",
+            source_type=normalized_source_type,
+            source_class=source_metadata.get("source_class"),
+            duration=duration,
+            difficulty=difficulty,
+            llm_provider=llm_provider,
+            llm_model=llm_model,
+            tts_provider=tts_provider,
+            outcome="failure",
+            error_code="unexpected_error",
+        )
         logger.error("V2 BYOK generation failed for user %s: %s", current_user.id, str(e))
         raise HTTPException(status_code=500, detail="V2 BYOK generation failed")

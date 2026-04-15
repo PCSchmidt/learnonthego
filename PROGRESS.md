@@ -9,6 +9,16 @@
 
 ## April 2026 Snapshot (Current Source of Truth)
 
+### Owner Objective Scorecard (PCSchmidt.github.io)
+
+Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by PCSchmidt with reliable auth -> create -> preview -> confirm -> playback behavior.
+
+- [x] Functional auth and create-preview journeys verified in production (`phase4_frontend_auth_e2e_verification_2026-04-15.json`, `phase4_nocost_post_cleanup_2026-04-15.json`).
+- [x] Paid BYOK generation and authenticated playback probe verified (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`, `phase4_single_paid_byok_closure_2026-04-15.json`).
+- [x] URL ingestion A.6 capability expanded for web + YouTube transcript-ready + podcast feed transcript-ready with citation/source metadata contracts and tests.
+- [ ] Deployment target alignment to `PCSchmidt.github.io` is not yet configured; current frontend production target remains Vercel (`https://learnonthego-bice.vercel.app`) while backend is Railway (`https://learnonthego-production.up.railway.app`).
+- [ ] Add and verify GitHub Pages deployment path (build, publish, routing, API base URL, smoke evidence artifact) before declaring owner-target release complete.
+
 ### Recently Completed
 - [x] V2 document-to-audio endpoints added and stabilized
 - [x] BYOK route validated with encrypted user key retrieval
@@ -106,13 +116,27 @@
   - `tests/test_url_diagnostics_scaffold.py` -> pass
   - `tests/test_v2_feature_flag_and_auth_smoke.py` -> pass
   - Result: short-form cadence gate green (warnings only)
+- [x] Added create->confirm->playback frontend integration coverage for v2 response handoff:
+  - `CreateLectureScreen.error-mapping.test.tsx` now asserts `Play Now` navigation forwards `lectureId`, `citations`, and `sourceContext`.
+- [x] Added non-paid smoke contract CI gate in backend workflow:
+  - Launches local backend in CI and runs `scripts/v2_endpoint_smoke.py` in dry-run mode.
+  - Smoke script now supports CI auto-register (`LOTG_AUTO_REGISTER=true`) to avoid pre-provisioned test users.
+- [x] Added structured generation telemetry in V2 routes (`/generate-document-v2` and `/generate-document-v2-byok`):
+  - Emits source type/class, model/provider choice, duration, difficulty, execution mode, and outcome.
+  - Covers dry-run success, full success, provider failures, validation failures, and unexpected failures.
+- [x] Completed accessibility polish across core screens and source diagnostics controls:
+  - Added explicit button/input labels, hints, roles, and disabled/selected states for Auth, Create, Home, Player, and URL diagnostics controls.
+  - Added accessibility assertions in `UrlIngestionPreviewStep.test.tsx` and `CreateLectureScreen.error-mapping.test.tsx`.
+- [x] Completed two consecutive green CI-equivalent local validation cycles after telemetry and accessibility updates:
+  - Backend: `tests/test_v2_source_intake_v1a.py` + `tests/test_url_diagnostics_scaffold.py` (Python 3.12).
+  - Frontend: `src/components/url/UrlIngestionPreviewStep.test.tsx` + `src/screens/CreateLectureScreen.error-mapping.test.tsx`.
 
 ### Current Risks / Follow-ups
-- [ ] Frontend authenticated flows still need full end-to-end polish
-- [ ] Broader backend test coverage is needed beyond the current V2 regression set
+- [x] Frontend authenticated flow polish verified in production for auth/register-temp -> login -> me -> create-preview, plus deployed UI marker checks across auth/create/player/settings/library (`phase4_frontend_auth_e2e_verification_2026-04-15.json`) and paid-path closure evidence (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`)
+- [x] Backend coverage expanded beyond the prior V2 set with transcript-first URL diagnostics and source-intake tests (YouTube ready/no-transcript, podcast feed ready, url_fetch_failed, empty_url_content)
 - [x] Key governance: production BYOK paid validation now uses real user-level provider keys (no placeholder test keys in paid-path checks)
 - [x] BYOK Settings key-entry controls are production-deployed and verified for end-user self-service (artifact: `phase4_settings_byok_deploy_verification_2026-04-15.json`)
-- [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
+- [x] URL ingestion now includes citation/source metadata in generation contracts and persisted lecture metadata (`source_uri`, `source_class`, `retrieval_method`, `retrieval_timestamp`, `excerpt`), with regression coverage for web, YouTube-transcript, and podcast-feed paths
 - [x] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
 - [x] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
 - [x] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
@@ -214,6 +238,10 @@ Release checkpoint status:
 BYOK paid closure validation (April 15, 2026):
 - Artifact: `phase4_single_paid_byok_closure_2026-04-15.json`.
 - Result: `5/5` passed (`health`, `auth_login`, `auth_me`, `create_preview_dry_run`, `single_non_dry_run_generation_byok`).
+
+Frontend authenticated paid-flow closure validation (April 15, 2026):
+- Artifact: `phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`.
+- Result: paid flow operationally passed with explicit model selection and authenticated playback probe (`status_code_auth=200`), while direct unauthenticated playback probe remained access-controlled (`403`).
 
 Final no-cost cleanup sanity validation (April 15, 2026):
 - Artifact: `phase4_nocost_post_cleanup_2026-04-15.json`.
