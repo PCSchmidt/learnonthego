@@ -156,9 +156,9 @@ Goal: make BYOK a first-class user path without derailing current release work.
 - [x] Verify dry-run remains no-cost and unchanged.
 
 #### Day 2 - API Contract Hardening
-- [ ] Add explicit response metadata field for provider credential source used at execution time (`byok` vs `environment`).
-- [ ] Add structured error shape for BYOK key-missing/invalid-provider-key states (non-sensitive, actionable).
-- [ ] Add regression tests for BYOK key-required contracts.
+- [x] Add explicit response metadata field for provider credential source used at execution time (`byok` vs `environment`).
+- [x] Add structured error shape for BYOK key-missing/invalid-provider-key states (non-sensitive, actionable).
+- [x] Add regression tests for BYOK key-required contracts.
 
 #### Day 3 - Settings UX Completion
 - [ ] Ensure Settings shows key status per provider with last validation outcome.

@@ -180,6 +180,7 @@ def test_v2_env_route_prefers_byok_for_paid_when_toggle_enabled(auth_client, mon
     body = response.json()
     assert body["execution_mode"] == "byok"
     assert body["key_source"] == "user-encrypted-storage"
+    assert body.get("metadata", {}).get("credential_source") == "byok"
     assert captured.get("llm_api_key") == "test-user-key"
     assert captured.get("tts_api_key") == "test-user-key"
 
@@ -295,6 +296,7 @@ def test_v2_final_generation_contract_includes_execution_mode(
     assert {"id", "heading", "content"}.issubset(body["script_sections"][0].keys())
     assert isinstance(body.get("citations"), list)
     assert isinstance(body.get("metadata"), dict)
+    assert body["metadata"].get("credential_source") == expected_execution_mode
     policy = body["metadata"].get("duration_policy")
     assert isinstance(policy, dict)
     assert policy.get("schema") == "duration-best-effort-v1"
@@ -379,7 +381,28 @@ def test_v2_byok_missing_keys_contract(auth_client, monkeypatch):
     )
 
     assert response.status_code == 400
-    detail = response.json().get("detail", "")
-    assert "Missing valid API keys for:" in detail
-    assert "openrouter" in detail
-    assert "elevenlabs" in detail
+    detail = response.json().get("detail", {})
+    assert detail.get("schema") == "byok-key-error-v1"
+    assert detail.get("code") == "missing_or_invalid_provider_key"
+    assert detail.get("execution_mode") == "byok"
+    assert set(detail.get("providers", [])) == {"openrouter", "elevenlabs"}
+
+
+def test_v2_byok_unsupported_provider_contract(auth_client, monkeypatch):
+    monkeypatch.setenv("ENABLE_V2_PIPELINE", "true")
+
+    bad_payload = _v2_payload()
+    bad_payload["llm_provider"] = "openai"
+
+    response = auth_client.post(
+        "/api/lectures/generate-document-v2-byok",
+        data=bad_payload,
+        headers={"Authorization": "Bearer smoke-token"},
+    )
+
+    assert response.status_code == 400
+    detail = response.json().get("detail", {})
+    assert detail.get("schema") == "byok-key-error-v1"
+    assert detail.get("code") == "unsupported_provider"
+    assert detail.get("execution_mode") == "byok"
+    assert detail.get("providers") == ["openai"]

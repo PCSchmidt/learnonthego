@@ -45,6 +45,7 @@ SOURCE_INTAKE_ERROR_SCHEMA = "source-intake-error-v1"
 URL_DIAGNOSTICS_SCHEMA = "url-diagnostics-v1"
 DURATION_POLICY_SCHEMA = "duration-best-effort-v1"
 V2_GENERATION_ERROR_SCHEMA = "v2-generation-error-v1"
+BYOK_KEY_ERROR_SCHEMA = "byok-key-error-v1"
 BYOK_PRIORITY_PAID_ENV_FLAG = "ENABLE_BYOK_PRIORITY_FOR_PAID"
 DURATION_TOLERANCE_RATIO = 0.15
 DURATION_MIN_TOLERANCE_MINUTES = 1.0
@@ -439,6 +440,7 @@ def _build_v2_dry_run_response(
         script=preview_script["content"],
         target_duration_minutes=duration,
         difficulty=difficulty,
+        credential_source=execution_mode,
     )
     return {
         "success": True,
@@ -534,6 +536,7 @@ def _build_response_metadata(
     script: str,
     target_duration_minutes: int,
     difficulty: str,
+    credential_source: str,
     existing: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     metadata: Dict[str, Any] = dict(existing) if isinstance(existing, dict) else {}
@@ -542,7 +545,28 @@ def _build_response_metadata(
         target_duration_minutes=target_duration_minutes,
         difficulty=difficulty,
     )
+    metadata["credential_source"] = credential_source
     return metadata
+
+
+def _byok_key_error_detail(
+    *,
+    code: str,
+    message: str,
+    providers: Optional[List[str]] = None,
+    hint: Optional[str] = None,
+) -> Dict[str, Any]:
+    detail: Dict[str, Any] = {
+        "schema": BYOK_KEY_ERROR_SCHEMA,
+        "code": code,
+        "message": message,
+        "execution_mode": "byok",
+    }
+    if providers:
+        detail["providers"] = providers
+    if hint:
+        detail["hint"] = hint
+    return detail
 
 
 def _v2_provider_error_detail(exc: PipelineExecutionError, *, execution_mode: str) -> Dict[str, Any]:
@@ -712,6 +736,7 @@ async def generate_document_audio_v2(
                 script=result.get("script", ""),
                 target_duration_minutes=duration,
                 difficulty=difficulty,
+                credential_source=execution_mode,
                 existing=result.get("metadata"),
             ),
         }
@@ -1210,12 +1235,22 @@ async def generate_document_audio_v2_byok(
     if not llm_enum:
         raise HTTPException(
             status_code=400,
-            detail="BYOK endpoint currently supports LLM provider: openrouter",
+            detail=_byok_key_error_detail(
+                code="unsupported_provider",
+                message="Unsupported BYOK LLM provider.",
+                providers=[llm_provider],
+                hint="BYOK endpoint currently supports LLM provider: openrouter",
+            ),
         )
     if not tts_enum:
         raise HTTPException(
             status_code=400,
-            detail="BYOK endpoint currently supports TTS provider: elevenlabs",
+            detail=_byok_key_error_detail(
+                code="unsupported_provider",
+                message="Unsupported BYOK TTS provider.",
+                providers=[tts_provider],
+                hint="BYOK endpoint currently supports TTS provider: elevenlabs",
+            ),
         )
 
     llm_key = await _get_user_api_key(db, current_user.id, llm_enum)
@@ -1229,7 +1264,12 @@ async def generate_document_audio_v2_byok(
     if missing:
         raise HTTPException(
             status_code=400,
-            detail=f"Missing valid API keys for: {', '.join(missing)}. Add keys in settings first.",
+            detail=_byok_key_error_detail(
+                code="missing_or_invalid_provider_key",
+                message="Missing or invalid BYOK provider keys.",
+                providers=missing,
+                hint="Add and validate the missing provider keys in Settings, then retry.",
+            ),
         )
 
     if difficulty not in ["beginner", "intermediate", "advanced"]:
@@ -1301,6 +1341,7 @@ async def generate_document_audio_v2_byok(
                 script=result.get("script", ""),
                 target_duration_minutes=duration,
                 difficulty=difficulty,
+                credential_source="byok",
                 existing=result.get("metadata"),
             ),
         }
