@@ -1,0 +1,54 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776351239,
+  "email": "phase4_1776351239@example.com",
+  "paid_mode": true,
+  "guard_env": "LOTG_ALLOW_PAID_CHECKS",
+  "results": [
+    {
+      "step": "health",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_register",
+      "status_code": 201,
+      "pass": true
+    },
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_me",
+      "status_code": 200,
+      "pass": true,
+      "email": "phase4_1776351239@example.com"
+    },
+    {
+      "step": "create_preview_dry_run",
+      "status_code": 200,
+      "pass": true,
+      "detail": null
+    },
+    {
+      "step": "single_non_dry_run_generation_byok",
+      "status_code": 400,
+      "pass": false,
+      "detail": {
+        "schema": "byok-key-error-v1",
+        "code": "missing_or_invalid_provider_key",
+        "message": "Missing or invalid BYOK provider keys.",
+        "execution_mode": "byok",
+        "providers": [
+          "openrouter",
+          "elevenlabs"
+        ],
+        "hint": "Add and validate the missing provider keys in Settings, then retry."
+      }
+    }
+  ],
+  "passed_steps": 5,
+  "total_steps": 6
+}

@@ -1,17 +1,17 @@
 # LearnOnTheGo - Getting Started Guide
 
-## 🚀 Quick Access to Live Deployments
+## Live Deployments
 
-**Current Status: Phase C.5 — Portfolio-Ready MVP with Audio Player, Design System, and BYOK**
+**Release: v1.0.0 GA (April 16, 2026)**
 
-### Live Applications
-- **🌐 Frontend (React Native)**: https://learnonthego-bice.vercel.app
-- **⚡ Backend API**: https://learnonthego-production.up.railway.app
-- **📚 API Documentation**: https://learnonthego-production.up.railway.app/docs
-- **🔍 Health Check**: https://learnonthego-production.up.railway.app/health
-- **🔐 Authentication Endpoints**: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
+### Production URLs
+- **Frontend**: https://learnonthego-bice.vercel.app
+- **Backend API**: https://learnonthego-production.up.railway.app
+- **API Documentation**: https://learnonthego-production.up.railway.app/docs
+- **Health Check**: https://learnonthego-production.up.railway.app/health
+- **Auth Endpoints**: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
 
-### Development Environment (Docker-based)
+### Local Development
 - **Backend**: http://localhost:8000 (FastAPI with auto-reload)
 - **Frontend**: http://localhost:3000 (React Native web)
 - **Database**: PostgreSQL on localhost:5432
@@ -19,22 +19,22 @@
 
 ---
 
-## Current System Capabilities
+## System Capabilities
 
-### ✅ Fully Operational Features
-- **AI-Powered Lecture Generation**: Text, PDF, and URL input → Structured audio lectures
-- **Functional Audio Player**: Play/pause, seek bar, progress display via expo-av
-- **Premium Design System**: Tokenized UI (colors, typography, spacing) with PremiumButton/PremiumField/PremiumPanel components across all screens
-- **Multi-Provider LLM Support**: OpenRouter (Claude 3.5, GPT-4o, Llama 3.1), OpenAI
-- **High-Quality TTS**: ElevenLabs with OpenAI TTS fallback
-- **BYOK (Bring Your Own Key)**: Self-service key management in Settings with encrypted AES-256 storage
-- **URL Ingestion**: Web page, YouTube transcript, and podcast feed support with citation metadata
-- **Secure User Authentication**: JWT tokens with bcrypt password hashing
-- **Protected API Routes**: Full authentication middleware
-- **Database Operations**: PostgreSQL with async SQLAlchemy
-- **CI/CD**: Backend + frontend GitHub Actions workflows, Railway + Vercel deploy pipeline
+### Operational Features
+- **AI-Powered Lecture Generation** — Text, PDF, and URL input to structured audio lectures
+- **Audio Player** — Play/pause, seek bar, progress display via expo-av
+- **Design System** — Tokenized UI with PremiumButton/PremiumField/PremiumPanel
+- **Multi-Provider LLM** — OpenRouter (Claude 3.5, GPT-4o, Llama 3.1), OpenAI
+- **Text-to-Speech** — ElevenLabs with OpenAI TTS fallback
+- **BYOK** — Self-service key management in Settings with AES-256 encrypted storage
+- **URL Ingestion** — Web page, YouTube transcript, and podcast feed with citation metadata
+- **Authentication** — JWT tokens with bcrypt password hashing
+- **Protected Routes** — Full authentication middleware
+- **Database** — PostgreSQL with async SQLAlchemy
+- **CI/CD** — Backend + frontend GitHub Actions workflows, Railway + Vercel deploy pipeline
 
-### 🔄 Future Enhancements
+### Planned Enhancements
 - Offline download and caching
 - Playback speed control (1x/1.5x/2x)
 - Library/history persistence and browsing
@@ -42,7 +42,7 @@
 
 ---
 
-## Phase 2b Development Environment Setup
+## Development Environment Setup
 
 ### Prerequisites
 - Docker Desktop installed and running
@@ -205,28 +205,16 @@ python test_authentication.py
 
 ---
 
-## Current Features & Capabilities
+## Current Features
 
-### ✅ Phase 2b Complete - Authentication System
-- **User Registration**: Email/password with bcrypt hashing
-- **Secure Login**: JWT token generation with 30-minute expiry
-- **Protected Routes**: Middleware for authenticated endpoints
-- **Token Refresh**: Seamless token renewal
-- **Password Security**: Bcrypt with salt rounds for protection
-- **Session Management**: Proper logout and token invalidation
-
-### ✅ Phase 2a Complete - Database Foundation
-- **PostgreSQL Integration**: Async SQLAlchemy 2.0.23
-- **User Model**: Email, hashed passwords, timestamps
-- **Database Migrations**: Automated table creation
-- **Connection Pooling**: Efficient database connections
-
-### ✅ Phase 0-1 Complete - Core Features
-- **AI Lecture Generation**: Text and PDF → structured audio
-- **Multi-LLM Support**: Claude 3.5, GPT-4o, Llama 3.1
-- **Professional TTS**: ElevenLabs with Google fallback
-- **PDF Processing**: Text extraction with validation
-- **API Documentation**: Interactive Swagger UI
+### v1.0.0 GA (April 2026)
+- **User Registration and Login** — Email/password with bcrypt hashing, JWT tokens
+- **BYOK Key Management** — Self-service encrypted key storage via Settings screen
+- **Lecture Generation** — Text, PDF, and URL to structured audio content
+- **Audio Player** — Play/pause, seek, progress with expo-av
+- **Design System** — Premium tokenized UI across all screens
+- **URL Ingestion** — Web page, YouTube transcript, podcast feed with citations
+- **CI/CD** — Automated backend and frontend pipelines
 
 ---
 
@@ -283,39 +271,26 @@ docker exec -it learnonthego-backend-1 python test_authentication.py
 
 ## Production Deployment Status
 
-### Backend (Railway) - ✅ Deployed
+### Backend (Railway) - Deployed
 - **URL**: https://learnonthego-production.up.railway.app
 - **Health Check**: https://learnonthego-production.up.railway.app/health
 - **API Docs**: https://learnonthego-production.up.railway.app/docs
-- **Database**: PostgreSQL on Railway with persistent storage
-- **Features**: Full authentication system, lecture generation, PDF processing
+- **Database**: PostgreSQL on Railway
 
-### Frontend (Vercel) - ✅ Deployed
+### Frontend (Vercel) - Deployed
 - **URL**: https://learnonthego-bice.vercel.app
-- **Status**: React Native web build deployed
-- **Ready for**: Mobile app deployment to stores
 
 ---
 
 ## Next Development Phases
 
-### Phase 2c - Social Authentication (Next)
-- Google OAuth integration
-- Apple Sign-In for iOS
-- GitHub authentication option
-- Social profile synchronization
+## Next Development Priorities
 
-### Phase 2d - Mobile Enhancement
-- Biometric authentication (Face ID, Touch ID)
-- Offline lecture storage
-- Background audio playback
-- Push notifications
-
-### Phase 3 - Production Polish
-- App store submission
-- Performance optimization
-- Advanced analytics
-- User feedback system
+1. Demo mode for zero-friction portfolio review
+2. Mobile-responsive polish for small viewports
+3. Login rate limiting
+4. Offline download and caching
+5. Playback speed control
 
 ---
 
@@ -328,8 +303,7 @@ docker exec -it learnonthego-backend-1 python test_authentication.py
 3. **Authentication test failures**: Check JWT secret key configuration
 4. **Missing environment variables**: Copy from `.env.example` and configure
 
-### Performance Verification
-- **Authentication**: All 10 tests passing (100% success rate)
+### Performance
 - **Database**: Async operations with connection pooling
 - **API Response**: <200ms for most endpoints
 - **Security**: AES-256 encryption, bcrypt hashing, JWT validation
@@ -342,13 +316,8 @@ docker exec -it learnonthego-backend-1 python test_authentication.py
 
 ---
 
-## Project Status: 75% Complete
+## Project Status
 
-**Phase 0**: ✅ Core lecture generation system
-**Phase 1**: ✅ PDF processing and basic infrastructure  
-**Phase 2a**: ✅ Database foundation with PostgreSQL
-**Phase 2b**: ✅ Authentication system with JWT security
-**Phase 2c**: 🔄 Social authentication (next milestone)
-**Phase 3**: 🔄 Mobile polish and app store deployment
+**v1.0.0 GA** — Released April 16, 2026.
 
-The system is **production-ready** with enterprise-grade authentication and can generate high-quality audio lectures from text or PDF input.
+All core features are production-verified. See [PROGRESS.md](PROGRESS.md) for detailed development history and [ROADMAP.md](ROADMAP.md) for planned enhancements.
