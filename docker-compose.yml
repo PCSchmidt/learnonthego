@@ -13,11 +13,11 @@ services:
       - PORT=8000
       - MOCK_MODE=true
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/learnonthego
-      - JWT_SECRET_KEY=dev-jwt-secret-key-for-docker-development
-      - ENCRYPTION_MASTER_KEY=dev-encryption-master-key-32-chars-min-123456789
-      - CLOUDINARY_CLOUD_NAME=demo
-      - CLOUDINARY_API_KEY=demo
-      - CLOUDINARY_API_SECRET=demo
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-only-jwt-secret}
+      - ENCRYPTION_MASTER_KEY=${ENCRYPTION_MASTER_KEY:-dev-only-encryption-key-32chars}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-demo}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-demo}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-demo}
       - AI_SERVICES_ENABLED=true
       - PDF_PROCESSING_ENABLED=true
       - TTS_ENABLED=true
@@ -85,4 +85,4 @@ volumes:
 
 networks:
   default:
-    name: learnonthego_network_phase1
+    name: learnonthego_network
