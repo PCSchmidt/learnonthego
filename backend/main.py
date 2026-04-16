@@ -6,7 +6,7 @@ sys.path.insert(0, current_dir)
 sys.path.insert(0, os.path.join(current_dir, 'auth'))
 
 """
-LearnOnTheGo Backend - Phase 1 AI Integration
+LearnOnTheGo Backend
 FastAPI application with OpenRouter LLM integration for lecture generation
 """
 
@@ -32,7 +32,7 @@ from models import create_tables_async, check_database_health
 app = FastAPI(
     title="LearnOnTheGo API",
     description="Backend API for generating personalized audio lectures from text topics and PDF documents",
-    version="1.0.0 - Phase 1",
+    version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -42,8 +42,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://learnonthego-bice.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:19006"
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -108,12 +106,11 @@ class StatusResponse(BaseModel):
 async def root():
     """Root endpoint - API health check"""
     return {
-        "message": "LearnOnTheGo API - Phase 1 AI Integration",
+        "message": "LearnOnTheGo API",
         "version": "1.0.0",
         "status": "running",
         "timestamp": datetime.utcnow().isoformat(),
         "docs": "/docs",
-        "phase": "Phase 1 - AI Integration",
         "features": {
             "openrouter_integration": True,
             "pdf_processing": True,
@@ -127,7 +124,7 @@ async def health_check():
     """Health check endpoint for monitoring"""
     return HealthResponse(
         status="healthy",
-        message="Phase 1 AI services operational",
+        message="All services operational",
         version="1.0.0"
     )
 
@@ -143,7 +140,7 @@ async def api_health():
 @app.get("/api/config")
 async def get_api_config():
     """
-    Get API configuration and available features for Phase 1
+    Get API configuration and available features
     
     Returns:
         API configuration for frontend integration
@@ -179,7 +176,7 @@ async def get_api_config():
                 "meta-llama/llama-3.1-405b-instruct"
             ]
         },
-        "phase": "Phase 1 - AI Integration Active"
+        "version": "1.0.0"
     }
 
 @app.get("/api/audio/{lecture_id}")
@@ -245,7 +242,7 @@ async def get_development_status():
     """Development status and progress tracking endpoint"""
     return StatusResponse(
         status="operational",
-        phase="Phase 1 - AI Integration Complete",
+        phase="1.0.0 GA",
         features_implemented=[
             "✅ FastAPI backend with Railway deployment",
             "✅ React Native frontend with Vercel deployment", 
@@ -275,7 +272,7 @@ async def get_development_status():
             "frontend_url": "https://learnonthego-bice.vercel.app",
             "docs_url": "https://learnonthego-production.up.railway.app/docs",
             "last_updated": "2025-01-14",
-            "build_status": "phase_1_ai_integration_complete",
+            "build_status": "v1.0.0_ga",
             "ai_services": "integrated"
         }
     )
