@@ -1,11 +1,11 @@
 {
   "schema": "phase-c-release-evidence-v1",
-  "generated_at_utc": "2026-04-15T23:55:00Z",
+  "generated_at_utc": "2026-04-16T00:09:00Z",
   "branch": "dev",
   "objective": "Pre-cutover Phase C packaging and CI parity validation",
   "latest_commit": {
-    "sha": "8b1711cbc0487016138bab02ee5c7fe6ba870ebe",
-    "message": "Finalize telemetry, a11y polish, and CI parity prep"
+    "sha": "67fbcd7a4782ba7c441cf82ed1ed302bc1551806",
+    "message": "Pin frontend CI parity lane to Node 20"
   },
   "local_validation": {
     "backend_contract_cycles": 2,
@@ -15,21 +15,39 @@
     "status": "pass"
   },
   "remote_ci_runs": {
-    "backend": {
-      "run_id": 24483542205,
-      "status": "completed",
-      "conclusion": "failure",
-      "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24483542205",
-      "failure_step": "Run non-paid V2 smoke contract gate",
-      "failure_reason": "BYOK missing key error signature mismatch in smoke script (fixed locally in subsequent commit)."
+    "initial_parity_attempt": {
+      "backend": {
+        "run_id": 24483542205,
+        "status": "completed",
+        "conclusion": "failure",
+        "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24483542205",
+        "failure_step": "Run non-paid V2 smoke contract gate",
+        "failure_reason": "BYOK missing key error signature mismatch in smoke script"
+      },
+      "frontend": {
+        "run_id": 24483542206,
+        "status": "completed",
+        "conclusion": "failure",
+        "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24483542206",
+        "failure_step": "Run linting",
+        "failure_reason": "ESLint preset/runtime mismatch"
+      }
     },
-    "frontend": {
-      "run_id": 24483542206,
-      "status": "completed",
-      "conclusion": "failure",
-      "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24483542206",
-      "failure_step": "Run linting",
-      "failure_reason": "Missing ESLint config preset and legacy lint debt (mitigated by config/dependency updates and non-blocking lint posture)."
+    "final_parity_confirmation": {
+      "backend": {
+        "run_id": 24484643353,
+        "head_sha": "b847ea900edd52fa7c17d54c7c1b39b845ab0dc1",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24484643353"
+      },
+      "frontend": {
+        "run_id": 24484677417,
+        "head_sha": "67fbcd7a4782ba7c441cf82ed1ed302bc1551806",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/PCSchmidt/learnonthego/actions/runs/24484677417"
+      }
     }
   },
   "artifacts": [
@@ -48,5 +66,5 @@
     "checklist_doc": "docs/release-readiness/phase-c-release-checklist.md",
     "evidence_bundle": "phase_c_release_evidence_2026-04-15.json"
   },
-  "next_required_action": "Push parity-fix commit and re-run remote workflows on dev; update this bundle with green run IDs."
+  "next_required_action": "Proceed with Phase C.5 owner-target deployment cutover planning and GitHub Pages implementation evidence capture."
 }

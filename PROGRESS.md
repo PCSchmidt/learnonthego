@@ -136,6 +136,9 @@ Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by 
 - [x] Started Phase C release-readiness packaging before owner-target cutover:
   - Checklist artifact: `docs/release-readiness/phase-c-release-checklist.md`
   - Evidence bundle artifact: `phase_c_release_evidence_2026-04-15.json`
+- [x] Confirmed remote CI parity after reruns on `dev`:
+  - Backend workflow green: `24484643353` (`https://github.com/PCSchmidt/learnonthego/actions/runs/24484643353`)
+  - Frontend workflow green: `24484677417` (`https://github.com/PCSchmidt/learnonthego/actions/runs/24484677417`)
 
 ### Current Risks / Follow-ups
 - [x] Frontend authenticated flow polish verified in production for auth/register-temp -> login -> me -> create-preview, plus deployed UI marker checks across auth/create/player/settings/library (`phase4_frontend_auth_e2e_verification_2026-04-15.json`) and paid-path closure evidence (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`)
