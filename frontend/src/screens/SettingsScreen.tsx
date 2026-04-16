@@ -12,9 +12,12 @@ import {
   ScrollView,
   Alert,
   Platform,
-  TextInput,
 } from 'react-native';
 import lectureService, { ApiKeyStatus } from '../services/lecture';
+import { colors, spacing, typography } from '../theme/tokens';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumField from '../components/ui/PremiumField';
+import PremiumPanel from '../components/ui/PremiumPanel';
 
 type ProviderStatusItem = {
   provider: string;
@@ -239,13 +242,12 @@ const SettingsScreen: React.FC = () => {
                       </View>
                     ))}
                   </View>
-                  <TouchableOpacity
+                  <PremiumButton
                     testID="settings-refresh-key-status"
-                    style={styles.refreshButton}
+                    title="Refresh provider status"
+                    variant="secondary"
                     onPress={loadKeyStatus}
-                  >
-                    <Text style={styles.refreshButtonText}>Refresh provider status</Text>
-                  </TouchableOpacity>
+                  />
                 </>
               )}
             </View>
@@ -260,70 +262,66 @@ const SettingsScreen: React.FC = () => {
               </Text>
 
               <View style={styles.keyFormSection}>
-                <Text style={styles.providerTitle}>OpenRouter API Key</Text>
-                <TextInput
+                <PremiumField
+                  label="OpenRouter API Key"
                   testID="settings-openrouter-key-input"
                   value={openRouterKey}
                   onChangeText={setOpenRouterKey}
                   placeholder="sk-or-v1-..."
-                  placeholderTextColor="#7f8492"
-                  style={styles.keyInput}
                   autoCapitalize="none"
                   autoCorrect={false}
                   secureTextEntry
                   editable={!isSavingKey}
                 />
                 <View style={styles.keyButtonRow}>
-                  <TouchableOpacity
+                  <PremiumButton
                     testID="settings-openrouter-save-validate"
-                    style={[styles.keyActionButton, isSavingKey && styles.buttonDisabled]}
+                    title="Save + Validate"
                     onPress={() => handleSaveKey('openrouter')}
                     disabled={isSavingKey}
-                  >
-                    <Text style={styles.keyActionButtonText}>Save + Validate</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                    loading={isSavingKey}
+                    style={styles.keyButton}
+                  />
+                  <PremiumButton
                     testID="settings-openrouter-delete"
-                    style={[styles.keyDangerButton, isSavingKey && styles.buttonDisabled]}
+                    title="Delete"
+                    variant="danger"
                     onPress={() => handleDeleteKey('openrouter')}
                     disabled={isSavingKey}
-                  >
-                    <Text style={styles.keyDangerButtonText}>Delete</Text>
-                  </TouchableOpacity>
+                    style={styles.keyButton}
+                  />
                 </View>
               </View>
 
               <View style={styles.keyFormSection}>
-                <Text style={styles.providerTitle}>ElevenLabs API Key</Text>
-                <TextInput
+                <PremiumField
+                  label="ElevenLabs API Key"
                   testID="settings-elevenlabs-key-input"
                   value={elevenLabsKey}
                   onChangeText={setElevenLabsKey}
                   placeholder="sk-..."
-                  placeholderTextColor="#7f8492"
-                  style={styles.keyInput}
                   autoCapitalize="none"
                   autoCorrect={false}
                   secureTextEntry
                   editable={!isSavingKey}
                 />
                 <View style={styles.keyButtonRow}>
-                  <TouchableOpacity
+                  <PremiumButton
                     testID="settings-elevenlabs-save-validate"
-                    style={[styles.keyActionButton, isSavingKey && styles.buttonDisabled]}
+                    title="Save + Validate"
                     onPress={() => handleSaveKey('elevenlabs')}
                     disabled={isSavingKey}
-                  >
-                    <Text style={styles.keyActionButtonText}>Save + Validate</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                    loading={isSavingKey}
+                    style={styles.keyButton}
+                  />
+                  <PremiumButton
                     testID="settings-elevenlabs-delete"
-                    style={[styles.keyDangerButton, isSavingKey && styles.buttonDisabled]}
+                    title="Delete"
+                    variant="danger"
                     onPress={() => handleDeleteKey('elevenlabs')}
                     disabled={isSavingKey}
-                  >
-                    <Text style={styles.keyDangerButtonText}>Delete</Text>
-                  </TouchableOpacity>
+                    style={styles.keyButton}
+                  />
                 </View>
               </View>
             </View>
@@ -393,11 +391,11 @@ const SettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#06070b',
+    backgroundColor: colors.bg.canvas,
   },
   contentContainer: {
     padding: 18,
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
   },
   backgroundGlowA: {
     position: 'absolute',
@@ -405,7 +403,7 @@ const styles = StyleSheet.create({
     left: -60,
     width: 240,
     height: 240,
-    backgroundColor: 'rgba(198, 168, 106, 0.08)',
+    backgroundColor: colors.effect.glowA,
   },
   backgroundGlowB: {
     position: 'absolute',
@@ -413,7 +411,7 @@ const styles = StyleSheet.create({
     right: -120,
     width: 290,
     height: 290,
-    backgroundColor: 'rgba(155, 166, 197, 0.08)',
+    backgroundColor: colors.effect.glowB,
   },
   shell: {
     width: '100%',
@@ -421,69 +419,69 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     borderWidth: 1,
-    borderColor: '#242a37',
+    borderColor: colors.border.dark,
     backgroundColor: '#0b0d12',
   },
   headerRail: {
     flex: 0.9,
     borderRightWidth: Platform.OS === 'web' ? 1 : 0,
     borderBottomWidth: Platform.OS === 'web' ? 0 : 1,
-    borderRightColor: '#242a37',
-    borderBottomColor: '#242a37',
-    backgroundColor: '#0f131b',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    borderRightColor: colors.border.dark,
+    borderBottomColor: colors.border.dark,
+    backgroundColor: colors.bg.rail,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
   },
   eyebrow: {
-    color: '#d7bf89',
-    fontSize: 12,
-    letterSpacing: 1.8,
+    color: colors.accent.brass,
+    fontSize: typography.size.label,
+    letterSpacing: typography.letterSpacing.wide,
     textTransform: 'uppercase',
     fontWeight: '700',
     marginBottom: 10,
   },
   pageTitle: {
-    color: '#f4efe4',
+    color: colors.text.primaryDark,
     fontSize: 44,
     lineHeight: 48,
     fontWeight: '600',
-    fontFamily: 'Cormorant Garamond',
+    fontFamily: typography.family.display,
     marginBottom: 10,
   },
   pageSubtitle: {
-    color: '#aeb6c7',
+    color: colors.text.secondaryDark,
     fontSize: 15,
     lineHeight: 22,
   },
   panel: {
     flex: 1.1,
-    backgroundColor: '#f2f0ea',
+    backgroundColor: colors.bg.panel,
     padding: 18,
   },
   section: {
     marginBottom: 18,
   },
   statusCard: {
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
+    borderColor: colors.border.light,
     padding: 14,
   },
   statusText: {
     color: '#243045',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: typography.size.body,
+    lineHeight: typography.lineHeight.body,
     fontWeight: '600',
   },
   statusSubtle: {
-    color: '#59667b',
+    color: colors.text.secondaryLight,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 6,
   },
   providerStatusList: {
     marginTop: 10,
-    gap: 8,
+    gap: spacing.xs,
   },
   providerStatusRow: {
     borderWidth: 1,
@@ -492,118 +490,64 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   providerTitle: {
-    color: '#1f2a3d',
+    color: colors.text.primaryLight,
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 4,
   },
   providerHint: {
-    color: '#4c5a73',
-    fontSize: 12,
+    color: colors.text.secondaryLight,
+    fontSize: typography.size.label,
     lineHeight: 17,
   },
   providerMeta: {
-    color: '#5f6a7f',
-    fontSize: 11,
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
     marginTop: 4,
   },
   providerError: {
     color: '#8b2f2f',
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 4,
   },
-  refreshButton: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#30384a',
-    backgroundColor: '#fdf8ec',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  refreshButtonText: {
-    color: '#30384a',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
   keyFormSection: {
-    marginTop: 12,
+    marginTop: spacing.sm,
     borderWidth: 1,
     borderColor: '#d4d8e1',
     backgroundColor: '#ffffff',
     padding: 10,
   },
-  keyInput: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#b7bcc8',
-    backgroundColor: '#f8f7f3',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    color: '#1f2a3d',
-    fontSize: 13,
-  },
   keyButtonRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.xs,
     marginTop: 10,
   },
-  keyActionButton: {
-    borderWidth: 1,
-    borderColor: '#30384a',
-    backgroundColor: '#fdf8ec',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  keyActionButtonText: {
-    color: '#30384a',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  keyDangerButton: {
-    borderWidth: 1,
-    borderColor: '#5f2525',
-    backgroundColor: '#fff4f4',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  keyDangerButtonText: {
-    color: '#5f2525',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
+  keyButton: {
+    flex: 1,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '700',
-    color: '#2b3240',
+    color: colors.border.medium,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
   settingItem: {
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginBottom: 8,
+    padding: spacing.md,
+    marginBottom: spacing.xs,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
+    borderColor: colors.border.light,
   },
   disabledItem: {
     opacity: 0.6,
   },
   settingIcon: {
     fontSize: 24,
-    marginRight: 16,
+    marginRight: spacing.md,
     width: 32,
     textAlign: 'center',
   },
@@ -611,39 +555,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
+    fontSize: typography.size.bodyLg,
     fontWeight: '700',
-    color: '#1e2431',
+    color: colors.text.primaryLight,
     marginBottom: 2,
   },
   settingDescription: {
-    fontSize: 14,
-    color: '#5a6272',
+    fontSize: typography.size.body,
+    color: colors.text.secondaryLight,
   },
   disabledText: {
-    color: '#8d95a4',
+    color: colors.text.muted,
   },
   arrow: {
     fontSize: 20,
-    color: '#4f5768',
-    marginLeft: 8,
+    color: colors.text.secondaryLight,
+    marginLeft: spacing.xs,
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#c9ccd4',
-    paddingTop: 12,
+    borderTopColor: colors.border.light,
+    paddingTop: spacing.sm,
   },
   footerText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#3f4758',
+    color: colors.text.secondaryLight,
     marginBottom: 4,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: typography.letterSpacing.normal,
   },
   footerSubtext: {
-    fontSize: 12,
-    color: '#636a78',
+    fontSize: typography.size.label,
+    color: colors.text.muted,
     lineHeight: 18,
   },
 });

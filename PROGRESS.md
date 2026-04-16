@@ -1,9 +1,9 @@
 # LearnOnTheGo Development Progress
 
-**Last Updated**: April 15, 2026  
+**Last Updated**: April 16, 2026  
 **Current Branch**: dev  
-**Phase**: Hardened MVP with V2 provider abstraction and BYOK validation - IN PROGRESS  
-**Previous**: Legacy phase notes (2025) preserved below for historical reference
+**Phase**: Phase C.5 — Portfolio-ready MVP, docs update + RC tagging in progress  
+**Previous**: Phase C (Audio Player + Premium UI) completed April 16, 2026
 
 ---
 
@@ -20,6 +20,32 @@ Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by 
 - [ ] Full owner-target functional flow (auth -> create -> preview -> confirm -> playback) remains blocked in production due provider/key constraints despite complete step coverage artifact capture.
 
 ### Recently Completed
+- [x] **Functional audio player** (Phase C, April 16, 2026):
+  - expo-av integration with play/pause, seek bar, progress display, buffering states
+  - LecturePlayerScreen rewritten with full design system (tokens.ts + PremiumButton/PremiumPanel)
+  - Navigation params wired from CreateLectureScreen (audioUrl, citations, sourceContext)
+  - 9 unit tests added for player controls, null audio handling, and citation display
+- [x] **UI premium pass across all 6 core screens** (Phase C, April 16, 2026):
+  - Design token system: tokens.ts (colors, spacing, typography, surfaces, radii)
+  - Shared components: PremiumButton (primary/secondary/danger + loading), PremiumField, PremiumPanel (dark/light)
+  - LoginScreen: PremiumField for inputs, PremiumButton with loading state, fully tokenized styles
+  - RegisterScreen: same premium pattern as LoginScreen
+  - HomeScreen: PremiumButton for all actions, PremiumPanel for lecture library and platform status sections
+  - SettingsScreen: PremiumField for BYOK key inputs, PremiumButton for save/validate/delete/refresh
+  - CreateLectureScreen: PremiumButton for CTA, fully tokenized styles (~430 lines)
+  - LecturePlayerScreen: built with design system during audio player phase
+- [x] **Dead code cleanup** (Phase C, April 16, 2026):
+  - Removed EnhancedCreateLectureScreen.tsx (empty file)
+  - Removed EnhancedLectureScreen.tsx (raw RN, outside design system)
+  - Removed MultiProviderDemoScreen.tsx (not in production nav)
+- [x] **Verification gate** (Phase C, April 16, 2026):
+  - 43/43 frontend tests passing, TypeScript clean (tsc --noEmit zero errors)
+  - Only pre-existing issue: App.simple.test.tsx empty suite warning (no actual test cases)
+- [x] **Documentation refresh** (Phase C.5, April 16, 2026):
+  - GETTING_STARTED.md: updated status to Phase C.5, capabilities reflect audio player + design system + URL ingestion
+  - README.md: current status, features, and roadmap sections rewritten to reflect Phase A-C.5
+  - ROADMAP.md: all Phase A/A.5/A.6/B exit criteria checked off, Phase C + C.5 sections added
+  - PROGRESS.md: audio player + UI premium pass + dead code cleanup entries added
 - [x] V2 document-to-audio endpoints added and stabilized
 - [x] BYOK route validated with encrypted user key retrieval
 - [x] Dry-run smoke script validates both env-key and BYOK contracts
