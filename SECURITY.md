@@ -4,7 +4,7 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 1.0.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
@@ -105,4 +105,4 @@ For security-related questions or concerns:
 - GitHub: Create a private security advisory
 - Response time: Within 48 hours for critical issues
 
-Thank you for helping keep LearnOnTheGo secure! 🔒
+Thank you for helping keep LearnOnTheGo secure!

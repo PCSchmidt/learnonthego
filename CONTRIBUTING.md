@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to LearnOnTheGo! This document provides guidelines and information for contributors.
 
-## 🚀 Getting Started
+## Getting Started
 
 1. **Fork the repository** and clone your fork
 2. **Read the documentation**:
@@ -14,7 +14,7 @@ Thank you for your interest in contributing to LearnOnTheGo! This document provi
 
 3. **Set up your development environment** following [GETTING_STARTED.md](GETTING_STARTED.md)
 
-## 📋 Development Guidelines
+## Development Guidelines
 
 ### Code Standards
 - **Backend**: Follow PEP 8, use Black for formatting, Flake8 for linting
@@ -38,7 +38,7 @@ refactor: optimize database queries
 - `docs/update-name` - Documentation updates
 - `refactor/component-name` - Code refactoring
 
-## 🛠️ Development Process
+## Development Process
 
 ### 1. Create a Feature Branch
 ```bash
@@ -83,7 +83,7 @@ npm test -- --coverage
 - Fill out the PR template completely
 - Ensure all CI checks pass
 
-## 🧪 Testing Requirements
+## Testing Requirements
 
 ### Backend Testing
 - **Unit tests**: Test individual functions and classes
@@ -102,7 +102,7 @@ npm test -- --coverage
 - **Overall coverage**: >80%
 - **Security functions**: 100%
 
-## 🔒 Security Guidelines
+## Security Guidelines
 
 ### API Key Handling
 - Never commit API keys or secrets
@@ -122,7 +122,7 @@ npm test -- --coverage
 - Add rate limiting for login attempts
 - Validate all JWT tokens server-side
 
-## 📚 Areas for Contribution
+## Areas for Contribution
 
 ### High Priority
 - **PDF processing improvements**: Better text extraction, OCR support
@@ -142,7 +142,7 @@ npm test -- --coverage
 - **Collaboration**: Team lecture sharing
 - **Analytics**: Usage insights and recommendations
 
-## 🐛 Bug Reports
+## Bug Reports
 
 When reporting bugs, please include:
 - **Environment**: OS, Python version, Node.js version
@@ -172,7 +172,7 @@ Use this template:
 [Include relevant logs here]
 ```
 
-## 💡 Feature Requests
+## Feature Requests
 
 For feature requests, please:
 1. Check existing issues and discussions first
@@ -180,7 +180,7 @@ For feature requests, please:
 3. Consider implementation complexity
 4. Align with project goals (cost-conscious, mobile-first)
 
-## 📖 Documentation
+## Documentation
 
 ### API Documentation
 - Use docstrings for all functions
@@ -194,7 +194,7 @@ For feature requests, please:
 - Document environment variables
 - Keep README.md updated
 
-## 🎯 Performance Guidelines
+## Performance Guidelines
 
 ### Backend Performance
 - **Lecture generation**: <30s (text), <45s (PDF)
@@ -208,7 +208,7 @@ For feature requests, please:
 - **Audio playback**: No buffering delays
 - **Bundle size**: Keep minimal for mobile
 
-## 🌍 Internationalization
+## Internationalization
 
 When adding new features:
 - Use translation keys, not hardcoded strings
@@ -216,7 +216,7 @@ When adding new features:
 - Test with different character sets
 - Follow Unicode best practices
 
-## 🤝 Code Review Process
+## Code Review Process
 
 ### For Reviewers
 - Check code quality and standards compliance
@@ -231,14 +231,14 @@ When adding new features:
 - Don't force-push after review starts
 - Update tests when changing functionality
 
-## 📞 Getting Help
+## Getting Help
 
 - **Development questions**: GitHub Discussions
 - **Bug reports**: GitHub Issues
 - **Security issues**: Email maintainer privately
 - **General chat**: Project Discord (if available)
 
-## 🙏 Recognition
+## Recognition
 
 Contributors will be:
 - Listed in README.md acknowledgments
@@ -246,4 +246,4 @@ Contributors will be:
 - Invited to beta testing programs
 - Considered for maintainer roles
 
-Thank you for contributing to LearnOnTheGo! 🎧📚
+Thank you for contributing to LearnOnTheGo!

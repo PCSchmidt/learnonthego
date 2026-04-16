@@ -1,6 +1,6 @@
 # LearnOnTheGo Testing Guide
 
-Last updated: April 13, 2026
+Last updated: April 16, 2026
 
 This guide reflects the current validated testing path for the V2 lecture pipeline and BYOK architecture.
 
