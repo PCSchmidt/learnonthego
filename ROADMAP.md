@@ -157,15 +157,15 @@ Target window: 2-4 days after Phase C
 
 ### Checklist
 
-- [ ] Add GitHub Pages deployment workflow for frontend publish to PCSchmidt.github.io
-- [ ] Configure SPA routing fallback for client-side routes on GitHub Pages
-- [ ] Wire production API base URL for GitHub Pages build to Railway backend
-- [ ] Validate auth -> create -> preview -> confirm -> playback flows from PCSchmidt.github.io and capture artifact evidence
+- [x] Add GitHub Pages deployment workflow for frontend publish to PCSchmidt.github.io
+- [x] Configure SPA routing fallback for client-side routes on GitHub Pages
+- [x] Wire production API base URL for GitHub Pages build to Railway backend
+- [ ] Validate auth -> create -> preview -> confirm -> playback flows from PCSchmidt.github.io and capture artifact evidence (full-coverage artifact captured, pass pending provider/key availability)
 - [ ] Update README, GETTING_STARTED, PROGRESS, and ROADMAP to reflect owner-target production URL
 
 ### Exit Criteria
 
-- [ ] Frontend production URL is PCSchmidt.github.io and serves the current release candidate build
+- [x] Frontend production URL is PCSchmidt.github.io and serves the current release candidate build shell (`/learnonthego` route)
 - [ ] Core functional flow passes from owner target with evidence artifact
 - [ ] Deployment and rollback steps are documented and reproducible
 

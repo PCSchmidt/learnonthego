@@ -16,8 +16,8 @@ Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by 
 - [x] Functional auth and create-preview journeys verified in production (`phase4_frontend_auth_e2e_verification_2026-04-15.json`, `phase4_nocost_post_cleanup_2026-04-15.json`).
 - [x] Paid BYOK generation and authenticated playback probe verified (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`, `phase4_single_paid_byok_closure_2026-04-15.json`).
 - [x] URL ingestion A.6 capability expanded for web + YouTube transcript-ready + podcast feed transcript-ready with citation/source metadata contracts and tests.
-- [ ] Deployment target alignment to `PCSchmidt.github.io` is not yet configured; current frontend production target remains Vercel (`https://learnonthego-bice.vercel.app`) while backend is Railway (`https://learnonthego-production.up.railway.app`).
-- [ ] Add and verify GitHub Pages deployment path (build, publish, routing, API base URL, smoke evidence artifact) before declaring owner-target release complete.
+- [x] Owner-target deployment path initialized on `PCSchmidt.github.io` with GitHub Pages workflow, `/learnonthego` route, SPA fallback, and runtime API config wiring to Railway backend.
+- [ ] Full owner-target functional flow (auth -> create -> preview -> confirm -> playback) remains blocked in production due provider/key constraints despite complete step coverage artifact capture.
 
 ### Recently Completed
 - [x] V2 document-to-audio endpoints added and stabilized
@@ -139,6 +139,13 @@ Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by 
 - [x] Confirmed remote CI parity after reruns on `dev`:
   - Backend workflow green: `24484643353` (`https://github.com/PCSchmidt/learnonthego/actions/runs/24484643353`)
   - Frontend workflow green: `24484677417` (`https://github.com/PCSchmidt/learnonthego/actions/runs/24484677417`)
+- [x] Phase C.5 owner-target implementation deployed in `PCSchmidt/PCSchmidt.github.io`:
+  - Deployment workflow run: `24485835356` (`https://github.com/PCSchmidt/PCSchmidt.github.io/actions/runs/24485835356`)
+  - Added `/learnonthego` owner route, SPA fallback (`404.html`), and runtime API injection.
+- [x] Captured second owner-target walkthrough artifact with full functional-step coverage:
+  - Artifact: `phase4_owner_target_full_walkthrough_2026-04-15.json`
+  - Coverage includes auth/login, profile check, preview, confirm generation, and playback probe from owner-target URL context.
+  - Current pass status: blocked at confirm/playback due provider constraints (`openrouter` 401 in env path, `openai` 429 in env path, and missing BYOK keys for test user bootstrap).
 
 ### Current Risks / Follow-ups
 - [x] Frontend authenticated flow polish verified in production for auth/register-temp -> login -> me -> create-preview, plus deployed UI marker checks across auth/create/player/settings/library (`phase4_frontend_auth_e2e_verification_2026-04-15.json`) and paid-path closure evidence (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`)
