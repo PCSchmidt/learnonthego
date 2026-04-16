@@ -1,0 +1,34 @@
+{
+  "schema": "owner-target-e2e-artifact-v1",
+  "captured_at_utc": "2026-04-16T00:49:07.232717Z",
+  "owner_target": "https://pcschmidt.github.io",
+  "workflow_run": {
+    "repo": "PCSchmidt/PCSchmidt.github.io",
+    "run_id": 24485835356,
+    "url": "https://github.com/PCSchmidt/PCSchmidt.github.io/actions/runs/24485835356",
+    "conclusion": "success"
+  },
+  "checks": [
+    {
+      "name": "owner_route_loads",
+      "url": "https://pcschmidt.github.io/learnonthego/",
+      "ok": true,
+      "status": 200,
+      "contains_owner_marker": true
+    },
+    {
+      "name": "runtime_config_exposed",
+      "url": "https://pcschmidt.github.io/learnonthego/runtime-config.js",
+      "ok": true,
+      "status": 200,
+      "contains_api_base": true
+    },
+    {
+      "name": "backend_health_from_owner_target",
+      "url": "https://learnonthego-production.up.railway.app/health",
+      "ok": true,
+      "status": 200
+    }
+  ],
+  "result": "pass"
+}
