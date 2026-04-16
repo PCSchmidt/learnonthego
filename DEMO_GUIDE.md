@@ -15,7 +15,7 @@ Demonstrate that the application provides:
 
 - Frontend: [learnonthego-bice.vercel.app](https://learnonthego-bice.vercel.app)
 - Backend API: [learnonthego-production.up.railway.app](https://learnonthego-production.up.railway.app)
-- API Docs: [learnonthego-production.up.railway.app/docs](https://learnonthogo-production.up.railway.app/docs)
+- API Docs: [learnonthego-production.up.railway.app/docs](https://learnonthego-production.up.railway.app/docs)
 
 ## Recommended Demo Duration
 
