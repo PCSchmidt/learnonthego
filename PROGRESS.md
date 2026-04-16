@@ -2,7 +2,7 @@
 
 **Last Updated**: April 16, 2026  
 **Current Branch**: dev  
-**Phase**: Phase C.5 — Portfolio-ready MVP, docs update + RC tagging in progress  
+**Phase**: Phase C.5 — RC tagged, CI green, production deploy verified  
 **Previous**: Phase C (Audio Player + Premium UI) completed April 16, 2026
 
 ---
@@ -20,6 +20,15 @@ Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by 
 - [ ] Full owner-target functional flow (auth -> create -> preview -> confirm -> playback) remains blocked in production due provider/key constraints despite complete step coverage artifact capture.
 
 ### Recently Completed
+- [x] **RC tag and CI verification** (Phase C.5, April 16, 2026):
+  - Webpack config fixed: added expo-av, expo-asset, expo-file-system, @expo, @react-native to babel whitelist + @babel/preset-flow for Flow type stripping
+  - Frontend CI green on dev (run 24514854935) and main
+  - Backend CI green on main
+  - Merged dev → main (commit fad9cee), tagged v1.0.0-rc.1
+  - Vercel deploy confirmed (learnonthego-bice.vercel.app serving login page)
+  - Railway backend healthy (learnonthego-production.up.railway.app/health → status: healthy)
+  - GitHub Pages landing shell live (pcschmidt.github.io/learnonthego → links to Vercel + Railway)
+  - Known issue: GH Actions "Deploy to Production" workflow fails (Railway token expired) — non-blocking since Railway auto-deploys from GitHub
 - [x] **Functional audio player** (Phase C, April 16, 2026):
   - expo-av integration with play/pause, seek bar, progress display, buffering states
   - LecturePlayerScreen rewritten with full design system (tokens.ts + PremiumButton/PremiumPanel)
