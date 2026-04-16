@@ -20,7 +20,7 @@ module.exports = {
     rules: [
       {
         test: /\.(js|jsx|ts|tsx)$/,
-        exclude: /node_modules/,
+        exclude: /node_modules\/(?!(expo-av|expo-asset|expo-file-system|expo-modules-core|@expo|@react-native|react-native)\/).*/,
         use: {
           loader: 'babel-loader',
           options: {
@@ -28,6 +28,7 @@ module.exports = {
               '@babel/preset-env',
               '@babel/preset-react',
               '@babel/preset-typescript',
+              '@babel/preset-flow',
             ],
           },
         },
