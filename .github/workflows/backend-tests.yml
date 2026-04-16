@@ -2,6 +2,7 @@ name: Backend CI/CD (Minimal for Railway Integration)
 
 # Temporarily simplified for Railway deployment integration
 # TODO: Re-enable full testing once deployment is working
+# Parity rerun marker: 2026-04-15
 
 on:
   push:
