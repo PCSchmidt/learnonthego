@@ -1,9 +1,9 @@
 @echo off
-REM LearnOnTheGo Development Script - Phase 1 AI Integration
-REM Ensures consistent Docker-based development environment
+REM LearnOnTheGo Development Script
+REM Docker-based development environment
 
-echo 🚀 LearnOnTheGo Phase 1 AI Integration Development
-echo ==================================================
+echo LearnOnTheGo Development Environment
+echo =====================================
 
 REM Check if Docker is running
 docker info >nul 2>&1

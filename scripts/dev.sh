@@ -1,11 +1,11 @@
 #!/bin/bash
-# LearnOnTheGo Development Script - Phase 1 AI Integration
-# Ensures consistent Docker-based development environment
+# LearnOnTheGo Development Script
+# Docker-based development environment
 
 set -e
 
-echo "🚀 LearnOnTheGo Phase 1 AI Integration Development"
-echo "=================================================="
+echo "LearnOnTheGo Development Environment"
+echo "====================================="
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
