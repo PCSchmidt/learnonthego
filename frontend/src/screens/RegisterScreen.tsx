@@ -192,7 +192,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 accessibilityLabel="Password"
                 accessibilityHint="Enter a password with at least 8 characters"
                 placeholder="Minimum 8 characters"
-                secureTextEntry
+                secureToggle
                 editable={!isLoading}
               />
 
@@ -209,7 +209,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 accessibilityLabel="Confirm password"
                 accessibilityHint="Re-enter the same password to confirm"
                 placeholder="Re-enter password"
-                secureTextEntry
+                secureToggle
                 editable={!isLoading}
               />
 

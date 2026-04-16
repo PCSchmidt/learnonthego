@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { ActivityIndicator, StatusBar, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StatusBar, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 import CreateLectureScreen from './src/screens/CreateLectureScreen';
@@ -44,12 +45,20 @@ const LoadingScreen: React.FC = () => (
   </View>
 );
 
+const HeaderButton: React.FC<{ icon: string; onPress: () => void; label: string }> = ({ icon, onPress, label }) => (
+  <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={{ paddingHorizontal: 10 }}>
+    <Ionicons name={icon as any} size={22} color="#F8FAFC" />
+  </Pressable>
+);
+
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, logout } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
   }
+
+  const handleLogout = () => { logout(); };
 
   return (
     <NavigationContainer>
@@ -63,10 +72,58 @@ const AppNavigator: React.FC = () => {
       >
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'LearnOnTheGo' }} />
-            <Stack.Screen name="CreateLecture" component={CreateLectureScreen} options={{ title: 'Create Lecture' }} />
-            <Stack.Screen name="LecturePlayer" component={LecturePlayerScreen} options={{ title: 'Lecture Player' }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={({ navigation }) => ({
+                title: 'LearnOnTheGo',
+                headerRight: () => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+                    <HeaderButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} label="Settings" />
+                    <HeaderButton icon="log-out-outline" onPress={handleLogout} label="Log out" />
+                  </View>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="CreateLecture"
+              component={CreateLectureScreen}
+              options={({ navigation }) => ({
+                title: 'Create Lecture',
+                headerRight: () => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+                    <HeaderButton icon="home-outline" onPress={() => navigation.navigate('Home')} label="Home" />
+                    <HeaderButton icon="log-out-outline" onPress={handleLogout} label="Log out" />
+                  </View>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="LecturePlayer"
+              component={LecturePlayerScreen}
+              options={({ navigation }) => ({
+                title: 'Lecture Player',
+                headerRight: () => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+                    <HeaderButton icon="home-outline" onPress={() => navigation.navigate('Home')} label="Home" />
+                    <HeaderButton icon="log-out-outline" onPress={handleLogout} label="Log out" />
+                  </View>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={({ navigation }) => ({
+                title: 'Settings',
+                headerRight: () => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+                    <HeaderButton icon="home-outline" onPress={() => navigation.navigate('Home')} label="Home" />
+                    <HeaderButton icon="log-out-outline" onPress={handleLogout} label="Log out" />
+                  </View>
+                ),
+              })}
+            />
           </>
         ) : (
           <>

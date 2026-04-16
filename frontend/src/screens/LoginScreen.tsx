@@ -143,7 +143,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 accessibilityLabel="Password"
                 accessibilityHint="Enter your account password"
                 placeholder="Enter your password"
-                secureTextEntry
+                secureToggle
                 editable={!isLoading}
               />
 
