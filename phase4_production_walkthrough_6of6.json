@@ -1,0 +1,43 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776354413,
+  "email": "wt_rc1_1776354413@example.com",
+  "paid_mode": true,
+  "results": [
+    {
+      "step": "health",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_register",
+      "status_code": 201,
+      "pass": true
+    },
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_me",
+      "status_code": 200,
+      "pass": true,
+      "email": "wt_rc1_1776354413@example.com"
+    },
+    {
+      "step": "create_preview_dry_run",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "paid_byok_generation",
+      "status_code": 200,
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "passed_steps": 6,
+  "total_steps": 6,
+  "audio_url": "http://learnonthego-production.up.railway.app/api/lectures/audio/v2/v2_elevenlabs_20260416_154722.mp3"
+}

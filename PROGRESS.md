@@ -2,7 +2,7 @@
 
 **Last Updated**: April 16, 2026  
 **Current Branch**: dev  
-**Phase**: Phase C.5 — RC tagged, CI green, production deploy verified  
+**Phase**: Phase C.5 — RC tagged, CI green, production walkthrough 6/6, all exit criteria met  
 **Previous**: Phase C (Audio Player + Premium UI) completed April 16, 2026
 
 ---
@@ -17,7 +17,7 @@ Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by 
 - [x] Paid BYOK generation and authenticated playback probe verified (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`, `phase4_single_paid_byok_closure_2026-04-15.json`).
 - [x] URL ingestion A.6 capability expanded for web + YouTube transcript-ready + podcast feed transcript-ready with citation/source metadata contracts and tests.
 - [x] Owner-target deployment path initialized on `PCSchmidt.github.io` with GitHub Pages workflow, `/learnonthego` route, SPA fallback, and runtime API config wiring to Railway backend.
-- [ ] Full owner-target functional flow (auth -> create -> preview -> confirm -> playback) remains blocked in production due provider/key constraints despite complete step coverage artifact capture.
+- [x] Full production walkthrough achieved 6/6 pass via BYOK (OpenRouter LLM + ElevenLabs TTS) — `phase4_production_walkthrough_6of6.json`, April 16 2026.
 
 ### Recently Completed
 - [x] **RC tag and CI verification** (Phase C.5, April 16, 2026):
