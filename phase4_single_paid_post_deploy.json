@@ -1,0 +1,54 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776214549,
+  "email": "phase4_1776214549@example.com",
+  "paid_mode": true,
+  "guard_env": "LOTG_ALLOW_PAID_CHECKS",
+  "results": [
+    {
+      "step": "health",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_register",
+      "status_code": 201,
+      "pass": true
+    },
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "auth_me",
+      "status_code": 200,
+      "pass": true,
+      "email": "phase4_1776214549@example.com"
+    },
+    {
+      "step": "create_preview_dry_run",
+      "status_code": 200,
+      "pass": true,
+      "detail": null
+    },
+    {
+      "step": "single_non_dry_run_generation",
+      "status_code": 502,
+      "pass": false,
+      "detail": {
+        "schema": "v2-generation-error-v1",
+        "code": "provider_execution_failed",
+        "message": "TTS provider request failed with HTTP 429",
+        "stage": "tts_synthesize",
+        "provider": "openai",
+        "execution_mode": "environment",
+        "retryable": true,
+        "provider_http_status": 429,
+        "cause_type": "HTTPStatusError"
+      }
+    }
+  ],
+  "passed_steps": 5,
+  "total_steps": 6
+}

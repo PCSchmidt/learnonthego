@@ -1,0 +1,63 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "email": "phase4r4_1776196540@example.com",
+  "timestamp": 1776196541,
+  "results": [
+    {
+      "step": "auth_register",
+      "status_code": 201,
+      "pass": true,
+      "evidence": {
+        "detail": null
+      }
+    },
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true,
+      "evidence": {
+        "has_token": true,
+        "detail": null
+      }
+    },
+    {
+      "step": "auth_me",
+      "status_code": 200,
+      "pass": true,
+      "evidence": {
+        "email": "phase4r4_1776196540@example.com",
+        "detail": null
+      }
+    },
+    {
+      "step": "create_preview",
+      "status_code": 200,
+      "pass": true,
+      "evidence": {
+        "dry_run": true,
+        "execution_mode": "environment",
+        "detail": null
+      }
+    },
+    {
+      "step": "confirm_generation",
+      "status_code": 400,
+      "pass": false,
+      "evidence": {
+        "success": null,
+        "detail": "OPENROUTER_API_KEY is required for OpenRouter adapter",
+        "has_audio": false
+      }
+    },
+    {
+      "step": "playback_probe",
+      "status_code": null,
+      "pass": false,
+      "evidence": {
+        "mode": "not-available"
+      }
+    }
+  ],
+  "passed_steps": 4,
+  "total_steps": 6
+}
