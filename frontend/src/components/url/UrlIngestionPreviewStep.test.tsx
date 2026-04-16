@@ -33,4 +33,19 @@ describe('UrlIngestionPreviewStep', () => {
     expect(getByText('This source type is not supported for generation in this slice.')).toBeTruthy();
     expect(getByText('Use text or file mode until URL ingestion is enabled.')).toBeTruthy();
   });
+
+  it('exposes accessible labels for URL input and diagnostics action', () => {
+    const { getByLabelText } = render(
+      <UrlIngestionPreviewStep
+        urlInput=""
+        onUrlChange={jest.fn()}
+        onRunDiagnostics={jest.fn()}
+        isDiagnosticsLoading={false}
+        diagnostics={null}
+      />
+    );
+
+    expect(getByLabelText('Source URL input')).toBeTruthy();
+    expect(getByLabelText('Run URL diagnostics')).toBeTruthy();
+  });
 });

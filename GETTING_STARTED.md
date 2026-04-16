@@ -2,7 +2,7 @@
 
 ## 🚀 Quick Access to Live Deployments
 
-**Current Status: Phase 2b Authentication Complete - Production Ready System**
+**Current Status: Phase C.5 — Portfolio-Ready MVP with Audio Player, Design System, and BYOK**
 
 ### Live Applications
 - **🌐 Frontend (React Native)**: https://learnonthego-bice.vercel.app
@@ -22,19 +22,23 @@
 ## Current System Capabilities
 
 ### ✅ Fully Operational Features
-- **AI-Powered Lecture Generation**: Text and PDF input → Structured audio lectures
-- **Multi-Provider LLM Support**: OpenRouter (Claude 3.5, GPT-4o, Llama 3.1)
-- **High-Quality TTS**: ElevenLabs with Google TTS fallback
+- **AI-Powered Lecture Generation**: Text, PDF, and URL input → Structured audio lectures
+- **Functional Audio Player**: Play/pause, seek bar, progress display via expo-av
+- **Premium Design System**: Tokenized UI (colors, typography, spacing) with PremiumButton/PremiumField/PremiumPanel components across all screens
+- **Multi-Provider LLM Support**: OpenRouter (Claude 3.5, GPT-4o, Llama 3.1), OpenAI
+- **High-Quality TTS**: ElevenLabs with OpenAI TTS fallback
+- **BYOK (Bring Your Own Key)**: Self-service key management in Settings with encrypted AES-256 storage
+- **URL Ingestion**: Web page, YouTube transcript, and podcast feed support with citation metadata
 - **Secure User Authentication**: JWT tokens with bcrypt password hashing
 - **Protected API Routes**: Full authentication middleware
 - **Database Operations**: PostgreSQL with async SQLAlchemy
-- **File Processing**: PDF text extraction and validation
-- **API Key Encryption**: AES-256 encrypted storage
+- **CI/CD**: Backend + frontend GitHub Actions workflows, Railway + Vercel deploy pipeline
 
-### 🔄 Ready for Development
-- **Social Authentication**: Infrastructure ready for Google, Apple, GitHub OAuth
-- **Mobile Enhancement**: Backend ready for biometric authentication
-- **Frontend Integration**: Authentication API ready for React Native implementation
+### 🔄 Future Enhancements
+- Offline download and caching
+- Playback speed control (1x/1.5x/2x)
+- Library/history persistence and browsing
+- Social authentication (Google, Apple, GitHub OAuth)
 
 ---
 

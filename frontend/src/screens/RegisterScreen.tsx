@@ -7,16 +7,17 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Alert,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { colors, spacing, typography } from '../theme/tokens';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumField from '../components/ui/PremiumField';
 
 interface RegisterScreenProps {
   navigation: any;
@@ -27,38 +28,45 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useAuth();
 
   const validateForm = () => {
     if (!fullName.trim()) {
+      setErrorMessage('Please enter your full name.');
       Alert.alert('Error', 'Please enter your full name');
       return false;
     }
 
     if (!email.trim()) {
+      setErrorMessage('Please enter your email.');
       Alert.alert('Error', 'Please enter your email');
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
+      setErrorMessage('Please enter a valid email address.');
       Alert.alert('Error', 'Please enter a valid email address');
       return false;
     }
 
     if (!password.trim()) {
+      setErrorMessage('Please enter a password.');
       Alert.alert('Error', 'Please enter a password');
       return false;
     }
 
     if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
       Alert.alert('Error', 'Password must be at least 8 characters long');
       return false;
     }
 
     if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
       Alert.alert('Error', 'Passwords do not match');
       return false;
     }
@@ -67,6 +75,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
+    setErrorMessage(null);
     if (!validateForm()) {
       return;
     }
@@ -80,9 +89,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
         Alert.alert('Success', 'Account created successfully! Welcome to LearnOnTheGo!');
         // Navigation will be handled by App.tsx when auth state changes
       } else {
-        Alert.alert('Registration Failed', result.error || 'Please try again');
+        const message = result.error || 'Please try again';
+        setErrorMessage(message);
+        Alert.alert('Registration Failed', message);
       }
     } catch (error) {
+      setErrorMessage('Something went wrong. Please try again.');
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -131,76 +143,92 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Full Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder="Your full name"
-                  placeholderTextColor="#7f8492"
-                  autoCapitalize="words"
-                  editable={!isLoading}
-                />
-              </View>
+              <PremiumField
+                label="Full Name"
+                testID="register-full-name-input"
+                value={fullName}
+                onChangeText={(value) => {
+                  setFullName(value);
+                  if (errorMessage) {
+                    setErrorMessage(null);
+                  }
+                }}
+                accessibilityLabel="Full name"
+                accessibilityHint="Enter your full name for account setup"
+                placeholder="Your full name"
+                autoCapitalize="words"
+                editable={!isLoading}
+              />
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="name@company.com"
-                  placeholderTextColor="#7f8492"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                />
-              </View>
+              <PremiumField
+                label="Email"
+                testID="register-email-input"
+                value={email}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (errorMessage) {
+                    setErrorMessage(null);
+                  }
+                }}
+                accessibilityLabel="Email address"
+                accessibilityHint="Enter the email you want to use for this account"
+                placeholder="name@company.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Minimum 8 characters"
-                  placeholderTextColor="#7f8492"
-                  secureTextEntry
-                  editable={!isLoading}
-                />
-              </View>
+              <PremiumField
+                label="Password"
+                testID="register-password-input"
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  if (errorMessage) {
+                    setErrorMessage(null);
+                  }
+                }}
+                accessibilityLabel="Password"
+                accessibilityHint="Enter a password with at least 8 characters"
+                placeholder="Minimum 8 characters"
+                secureTextEntry
+                editable={!isLoading}
+              />
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Re-enter password"
-                  placeholderTextColor="#7f8492"
-                  secureTextEntry
-                  editable={!isLoading}
-                />
-              </View>
+              <PremiumField
+                label="Confirm Password"
+                testID="register-confirm-password-input"
+                value={confirmPassword}
+                onChangeText={(value) => {
+                  setConfirmPassword(value);
+                  if (errorMessage) {
+                    setErrorMessage(null);
+                  }
+                }}
+                accessibilityLabel="Confirm password"
+                accessibilityHint="Re-enter the same password to confirm"
+                placeholder="Re-enter password"
+                secureTextEntry
+                editable={!isLoading}
+              />
 
-              <TouchableOpacity
-                style={[styles.registerButton, isLoading && styles.buttonDisabled]}
+              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+              <PremiumButton
+                testID="register-submit-button"
+                title="Create Membership"
                 onPress={handleRegister}
-                disabled={isLoading}>
-                {isLoading ? (
-                  <ActivityIndicator color="#0a0a0a" />
-                ) : (
-                  <Text style={styles.registerButtonText}>Create Membership</Text>
-                )}
-              </TouchableOpacity>
+                disabled={isLoading}
+                loading={isLoading}
+                accessibilityLabel="Create membership"
+              />
             </View>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have access?</Text>
               <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
-                <Text style={styles.footerLink}>Sign In</Text>
+                <Text accessibilityRole="link" style={styles.footerLink}>Sign In</Text>
               </TouchableOpacity>
             </View>
 
@@ -219,7 +247,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#06070b',
+    backgroundColor: colors.bg.canvas,
   },
   backgroundGlowA: {
     position: 'absolute',
@@ -227,7 +255,7 @@ const styles = StyleSheet.create({
     left: -60,
     width: 280,
     height: 280,
-    backgroundColor: 'rgba(198, 168, 106, 0.09)',
+    backgroundColor: colors.effect.glowA,
   },
   backgroundGlowB: {
     position: 'absolute',
@@ -235,7 +263,7 @@ const styles = StyleSheet.create({
     right: -90,
     width: 300,
     height: 300,
-    backgroundColor: 'rgba(157, 171, 203, 0.08)',
+    backgroundColor: colors.effect.glowB,
   },
   gridLineVertical: {
     position: 'absolute',
@@ -257,7 +285,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 18,
-    paddingVertical: 20,
+    paddingVertical: spacing.lg,
   },
   shell: {
     width: '100%',
@@ -266,21 +294,21 @@ const styles = StyleSheet.create({
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     backgroundColor: '#0b0d12',
     borderWidth: 1,
-    borderColor: '#242a37',
+    borderColor: colors.border.dark,
     minHeight: Platform.OS === 'web' ? 660 : undefined,
   },
   brandRail: {
     flex: 1,
-    paddingHorizontal: 34,
-    paddingVertical: 34,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.xxl,
     borderRightWidth: Platform.OS === 'web' ? 1 : 0,
     borderBottomWidth: Platform.OS === 'web' ? 0 : 1,
-    borderRightColor: '#242a37',
-    borderBottomColor: '#242a37',
-    backgroundColor: '#0f131b',
+    borderRightColor: colors.border.dark,
+    borderBottomColor: colors.border.dark,
+    backgroundColor: colors.bg.rail,
   },
   brand: {
-    color: '#d7bf89',
+    color: colors.accent.brass,
     fontSize: 13,
     letterSpacing: 2.1,
     textTransform: 'uppercase',
@@ -288,36 +316,36 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   brandSubhead: {
-    color: '#8d96a8',
-    fontSize: 12,
+    color: colors.text.muted,
+    fontSize: typography.size.label,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 38,
   },
   heroTitle: {
-    color: '#f5efe3',
+    color: colors.text.primaryDark,
     fontSize: 52,
     lineHeight: 56,
     fontWeight: '600',
-    fontFamily: 'Cormorant Garamond',
+    fontFamily: typography.family.display,
     marginBottom: 14,
   },
   heroCopy: {
-    color: '#b1b7c5',
-    fontSize: 16,
-    lineHeight: 24,
+    color: colors.text.secondaryDark,
+    fontSize: typography.size.bodyLg,
+    lineHeight: typography.lineHeight.bodyLg,
     maxWidth: 460,
-    marginBottom: 34,
+    marginBottom: spacing.xxl,
   },
   metricBlock: {
     borderTopWidth: 1,
-    borderTopColor: '#2a3140',
+    borderTopColor: colors.border.medium,
     paddingTop: 14,
     marginBottom: 14,
   },
   metricLabel: {
-    color: '#7e8798',
-    fontSize: 11,
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
     marginBottom: 7,
@@ -325,81 +353,47 @@ const styles = StyleSheet.create({
   metricValue: {
     color: '#d8dde8',
     fontSize: 15,
-    lineHeight: 20,
+    lineHeight: typography.lineHeight.body,
     fontWeight: '600',
   },
   formPanel: {
     flex: 1,
-    backgroundColor: '#f2f0ea',
-    paddingHorizontal: 34,
-    paddingVertical: 34,
+    backgroundColor: colors.bg.panel,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.xxl,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   eyebrow: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
     color: '#6f6450',
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   title: {
-    color: '#12151c',
+    color: colors.text.primaryLight,
     fontSize: 44,
     lineHeight: 48,
     fontWeight: '600',
-    fontFamily: 'Cormorant Garamond',
-    marginBottom: 8,
+    fontFamily: typography.family.display,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    color: '#4e5563',
-    fontSize: 16,
+    color: colors.text.secondaryLight,
+    fontSize: typography.size.bodyLg,
     lineHeight: 22,
   },
   form: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    color: '#2b3240',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#f8f7f3',
-    borderWidth: 1,
-    borderColor: '#b7bcc8',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: '#0d1119',
-  },
-  registerButton: {
-    backgroundColor: '#d7bf89',
-    borderWidth: 1,
-    borderColor: '#a9905d',
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 50,
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  registerButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#11151e',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  errorText: {
+    color: '#8f1d1d',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 14,
   },
   footer: {
     flexDirection: 'row',
@@ -407,30 +401,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
     borderTopWidth: 1,
-    borderTopColor: '#c5c9d2',
-    marginTop: 8,
+    borderTopColor: colors.border.light,
+    marginTop: spacing.xs,
   },
   footerText: {
-    color: '#4c5464',
-    fontSize: 14,
+    color: colors.text.secondaryLight,
+    fontSize: typography.size.body,
     paddingTop: 10,
   },
   footerLink: {
-    color: '#171e2a',
-    fontSize: 14,
+    color: colors.text.primaryLight,
+    fontSize: typography.size.body,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: typography.letterSpacing.normal,
     paddingTop: 10,
   },
   termsContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#d2d5dd',
+    borderTopColor: colors.border.light,
     paddingTop: 10,
   },
   termsText: {
-    color: '#636a78',
-    fontSize: 11,
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
     lineHeight: 16,
   },
 });

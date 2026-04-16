@@ -1,0 +1,53 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776200209,
+  "results": [
+    {
+      "step": "health",
+      "status": 200,
+      "pass": true,
+      "detail": {
+        "status": "healthy",
+        "message": "Phase 1 AI services operational",
+        "version": "1.0.0"
+      }
+    },
+    {
+      "step": "auth_register",
+      "status": 201,
+      "pass": true,
+      "detail": null
+    },
+    {
+      "step": "auth_login",
+      "status": 200,
+      "pass": true,
+      "has_token": true,
+      "detail": null
+    },
+    {
+      "step": "auth_me",
+      "status": 200,
+      "pass": true,
+      "email": "nocost_1776200208@example.com",
+      "detail": null
+    },
+    {
+      "step": "v2_preview_dry_run_env",
+      "status": 200,
+      "pass": true,
+      "dry_run": true,
+      "execution_mode": "environment",
+      "detail": null
+    },
+    {
+      "step": "v2_preview_dry_run_byok",
+      "status": 400,
+      "pass": true,
+      "dry_run": null,
+      "detail": "BYOK endpoint currently supports TTS provider: elevenlabs"
+    }
+  ],
+  "passed": 6,
+  "total": 6
+}

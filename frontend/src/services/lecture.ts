@@ -107,6 +107,14 @@ export interface LectureResponse {
     source_uri?: string;
     note?: string;
   }>;
+  source_metadata?: {
+    source_uri?: string | null;
+    source_class?: string;
+    retrieval_method?: string;
+    retrieval_timestamp?: string;
+    excerpt?: string;
+    source_name?: string;
+  };
   metadata?: {
     topic?: string;
     difficulty?: string;
@@ -123,6 +131,14 @@ export interface LectureResponse {
       status: 'within_tolerance' | 'under_target' | 'over_target';
       estimated_speech_rate_wpm: number;
       script_word_count: number;
+    };
+    source_context?: {
+      source_uri?: string | null;
+      source_class?: string;
+      retrieval_method?: string;
+      retrieval_timestamp?: string;
+      excerpt?: string;
+      source_name?: string;
     };
   };
 }

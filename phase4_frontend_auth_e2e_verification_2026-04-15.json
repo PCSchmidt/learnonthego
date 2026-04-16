@@ -1,0 +1,54 @@
+{
+  "timestamp": 1776275697,
+  "frontend_url": "https://learnonthego-bice.vercel.app",
+  "backend_url": "https://learnonthego-production.up.railway.app",
+  "user_email": "",
+  "frontend_verification": {
+    "status_code": 200,
+    "scripts_discovered": 1,
+    "found_markers": [
+      "Create Account",
+      "Create New Lecture",
+      "Create Premium Lecture",
+      "LearnOnTheGo",
+      "Lecture Composer",
+      "Lecture Library",
+      "Lecture Player",
+      "Settings"
+    ],
+    "missing_markers": [],
+    "pass": true
+  },
+  "backend_verification": {
+    "pass": true,
+    "paid": false,
+    "results": [
+      {
+        "step": "health",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "auth_register_temp",
+        "status_code": 201,
+        "pass": true
+      },
+      {
+        "step": "auth_login_temp",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "auth_me",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "create_preview_dry_run",
+        "status_code": 200,
+        "pass": true
+      }
+    ]
+  },
+  "overall_pass": true
+}

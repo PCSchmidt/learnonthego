@@ -1,0 +1,91 @@
+{
+  "timestamp": 1776301279,
+  "frontend_url": "https://pcschmidt.github.io/learnonthego/",
+  "backend_url": "https://learnonthego-production.up.railway.app",
+  "user_email": "p.christopher.schmidt@gmail.com",
+  "frontend_verification": {
+    "status_code": 200,
+    "scripts_discovered": 1,
+    "found_markers": [
+      "LearnOnTheGo"
+    ],
+    "missing_markers": [
+      "Create Account",
+      "Create Premium Lecture",
+      "Lecture Player",
+      "Settings",
+      "Lecture Library",
+      "Create New Lecture",
+      "Lecture Composer"
+    ],
+    "pass": false
+  },
+  "backend_verification": {
+    "pass": false,
+    "paid": true,
+    "results": [
+      {
+        "step": "health",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "auth_login",
+        "status_code": 401,
+        "pass": false
+      },
+      {
+        "step": "auth_register_temp",
+        "status_code": 201,
+        "pass": true
+      },
+      {
+        "step": "auth_login_temp",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "auth_me",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "byok_key_bootstrap",
+        "status_code": null,
+        "pass": false,
+        "detail": "Missing OPENROUTER_API_KEY or ELEVENLABS_API_KEY in env context."
+      },
+      {
+        "step": "create_preview_dry_run",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "confirm_generation",
+        "status_code": 400,
+        "pass": false,
+        "has_audio_url": false,
+        "detail": {
+          "detail": {
+            "schema": "byok-key-error-v1",
+            "code": "missing_or_invalid_provider_key",
+            "message": "Missing or invalid BYOK provider keys.",
+            "execution_mode": "byok",
+            "providers": [
+              "openrouter",
+              "elevenlabs"
+            ],
+            "hint": "Add and validate the missing provider keys in Settings, then retry."
+          }
+        }
+      },
+      {
+        "step": "playback_probe",
+        "status_code": null,
+        "status_code_auth": null,
+        "pass": false
+      }
+    ]
+  },
+  "overall_pass": false
+}

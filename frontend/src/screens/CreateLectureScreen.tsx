@@ -18,6 +18,8 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { UrlIngestionPreviewStep } from '../components';
+import { colors, spacing, typography } from '../theme/tokens';
+import PremiumButton from '../components/ui/PremiumButton';
 import lectureService, {
   ApiKeyStatus,
   AVAILABLE_VOICES,
@@ -36,7 +38,23 @@ import { StackNavigationProp } from '@react-navigation/stack';
 type RootStackParamList = {
   Home: undefined;
   CreateLecture: undefined;
-  LecturePlayer: { lectureId: string };
+  LecturePlayer: {
+    lectureId: string;
+    audioUrl?: string | null;
+    title?: string;
+    script?: string;
+    duration?: number;
+    difficulty?: string;
+    citations?: Array<{ label?: string; source_uri?: string; note?: string }>;
+    sourceContext?: {
+      source_uri?: string | null;
+      source_class?: string;
+      retrieval_method?: string;
+      retrieval_timestamp?: string;
+      excerpt?: string;
+      source_name?: string;
+    };
+  };
   Settings: undefined;
 };
 
@@ -104,9 +122,9 @@ const CreateLectureScreen: React.FC = () => {
       case 'unreachable':
         return 'The service could not reach this URL. Verify the link and try diagnostics again.';
       case 'unsupported':
-        return 'This URL type is recognized but not supported for generation in this slice.';
+        return 'This URL format is not supported yet. Use article URLs, YouTube links with public captions, or podcast RSS/feed URLs.';
       case 'no_transcript':
-        return 'Transcript extraction is required first. Video transcript ingestion is not yet enabled.';
+        return 'Transcript extraction is required first. For YouTube, ensure captions are available; for podcasts, provide an RSS/feed URL with transcript metadata.';
       case 'ready':
         return isUrlGenerationEnabled
           ? 'URL is ready. You can now generate a lecture from this source.'
@@ -325,7 +343,16 @@ const CreateLectureScreen: React.FC = () => {
               text: 'Play Now',
               onPress: () => {
                 // Navigate to lecture player
-                navigation.navigate('LecturePlayer', { lectureId: generatedLectureId });
+                navigation.navigate('LecturePlayer', {
+                  lectureId: generatedLectureId,
+                  audioUrl: response.data?.audio_url,
+                  title: response.data?.title,
+                  script: response.data?.script,
+                  citations: response.data?.citations,
+                  sourceContext: response.data?.source_metadata || response.data?.metadata?.source_context,
+                  duration: formData.duration,
+                  difficulty: formData.difficulty,
+                });
               },
             },
             {
@@ -386,7 +413,7 @@ const CreateLectureScreen: React.FC = () => {
             {[
               { id: 'text', label: 'Text' },
               { id: 'file', label: 'File' },
-              { id: 'url', label: 'URL (Next)' },
+              { id: 'url', label: 'URL' },
             ].map(option => (
               <TouchableOpacity
                 key={option.id}
@@ -395,6 +422,10 @@ const CreateLectureScreen: React.FC = () => {
                   styles.sourceSwitchButton,
                   sourceMode === option.id && styles.sourceSwitchButtonActive,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Source mode ${option.label}`}
+                accessibilityHint={`Switches source mode to ${option.label.toLowerCase()}`}
+                accessibilityState={{ selected: sourceMode === option.id }}
                 onPress={() => {
                   setSourceMode(option.id as 'text' | 'file' | 'url');
                   clearFieldError('source');
@@ -430,7 +461,7 @@ const CreateLectureScreen: React.FC = () => {
           ) : null}
           {sourceMode === 'url' ? (
             <Text style={styles.sourceHelperText}>
-              Run URL diagnostics first. URL generation is allowed only when diagnostics outcome is ready.
+              Run URL diagnostics first. Supported sources include web pages, YouTube URLs with captions, and podcast RSS/feed URLs with transcript metadata.
             </Text>
           ) : null}
           {fieldErrors.source ? <Text testID="source-error" style={styles.fieldError}>{fieldErrors.source}</Text> : null}
@@ -448,6 +479,8 @@ const CreateLectureScreen: React.FC = () => {
             clearFieldError('general');
             clearPreview();
           }}
+          accessibilityLabel="Lecture topic"
+          accessibilityHint="Describe the lecture topic or paste text content"
           placeholder="e.g., Machine Learning Basics, Quantum Physics, History of Rome"
           placeholderTextColor="#7f8492"
           multiline
@@ -463,7 +496,14 @@ const CreateLectureScreen: React.FC = () => {
             <View style={styles.fileCard}>
               <Text style={styles.fileLabel}>Upload Source File</Text>
               <Text style={styles.fileSubtle}>Accepted formats: .txt, .md, .pdf</Text>
-              <TouchableOpacity testID="pick-file-button" style={styles.filePickButton} onPress={pickFileForSource}>
+              <TouchableOpacity
+                testID="pick-file-button"
+                style={styles.filePickButton}
+                onPress={pickFileForSource}
+                accessibilityRole="button"
+                accessibilityLabel={selectedFile ? 'Change source file' : 'Choose source file'}
+                accessibilityHint="Opens file picker for txt, markdown, or PDF sources"
+              >
                 <Text style={styles.filePickButtonText}>
                   {selectedFile ? 'Change File' : 'Choose File'}
                 </Text>
@@ -474,7 +514,14 @@ const CreateLectureScreen: React.FC = () => {
                   : 'No file selected'}
               </Text>
               {selectedFile ? (
-                <TouchableOpacity testID="clear-file-button" onPress={resetFileSelection} style={styles.fileResetButton}>
+                <TouchableOpacity
+                  testID="clear-file-button"
+                  onPress={resetFileSelection}
+                  style={styles.fileResetButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear selected file"
+                  accessibilityHint="Removes the currently selected file from this lecture"
+                >
                   <Text style={styles.fileResetButtonText}>Clear Selected File</Text>
                 </TouchableOpacity>
               ) : null}
@@ -525,6 +572,9 @@ const CreateLectureScreen: React.FC = () => {
               <TouchableOpacity
                 testID="provider-cost-guidance-link"
                 style={styles.modeTooltipLink}
+                accessibilityRole="button"
+                accessibilityLabel="Open provider cost guidance"
+                accessibilityHint="Navigates to settings with provider pricing guidance"
                 onPress={() => navigation.navigate('Settings')}
               >
                 <Text style={styles.modeTooltipLinkText}>
@@ -535,6 +585,10 @@ const CreateLectureScreen: React.FC = () => {
                 <TouchableOpacity
                   testID="generation-mode-byok"
                   style={[styles.modeButton, useByok && styles.modeButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Generation mode BYOK"
+                  accessibilityHint="Use your own provider keys for generation"
+                  accessibilityState={{ selected: useByok, disabled: !keyStatus?.setup_complete }}
                   onPress={() => {
                     setUseByok(true);
                     clearPreview();
@@ -548,6 +602,10 @@ const CreateLectureScreen: React.FC = () => {
                 <TouchableOpacity
                   testID="generation-mode-environment"
                   style={[styles.modeButton, !useByok && styles.modeButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Generation mode environment"
+                  accessibilityHint="Use environment-managed providers for generation"
+                  accessibilityState={{ selected: !useByok }}
                   onPress={() => {
                     setUseByok(false);
                     clearPreview();
@@ -576,6 +634,9 @@ const CreateLectureScreen: React.FC = () => {
                 key={preset.id}
                 testID={`model-preset-${preset.id}`}
                 style={[styles.modeButton, modelPreset === preset.id && styles.modeButtonActive]}
+                accessibilityRole="button"
+                accessibilityLabel={`Model preset ${preset.label}`}
+                accessibilityState={{ selected: modelPreset === preset.id }}
                 onPress={() => {
                   setModelPreset(preset.id);
                   clearFieldError('model');
@@ -595,6 +656,10 @@ const CreateLectureScreen: React.FC = () => {
           <TouchableOpacity
             testID="model-advanced-toggle"
             style={[styles.modeButton, isAdvancedModelMode && styles.modeButtonActive, { marginTop: 10 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Advanced model mode"
+            accessibilityHint="Toggle custom raw model ID input"
+            accessibilityState={{ selected: isAdvancedModelMode }}
             onPress={() => {
               setIsAdvancedModelMode((prev) => !prev);
               clearFieldError('model');
@@ -616,6 +681,8 @@ const CreateLectureScreen: React.FC = () => {
                 clearFieldError('model');
                 clearPreview();
               }}
+              accessibilityLabel="Custom model ID"
+              accessibilityHint="Enter a raw provider model ID"
               placeholder="e.g., anthropic/claude-3.5-sonnet"
               placeholderTextColor="#7f8492"
               autoCapitalize="none"
@@ -710,6 +777,16 @@ const CreateLectureScreen: React.FC = () => {
             <Text testID="script-preview-text" style={styles.infoText}>
               {scriptPreview.preview_script?.content || scriptPreview.script || 'No preview script returned.'}
             </Text>
+            {scriptPreview.citations && scriptPreview.citations.length > 0 ? (
+              <View testID="script-preview-citations" style={{ marginTop: 10 }}>
+                <Text style={styles.infoTitle}>Sources</Text>
+                {scriptPreview.citations.map((citation, index) => (
+                  <Text key={`${citation.source_uri || 'citation'}-${index}`} style={styles.modeSubtle}>
+                    - {citation.source_uri || citation.label || 'source-uri-unavailable'}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
             <Text testID="confirm-mode-cost-indicator" style={styles.modeSubtle}>
               {useByok && !hasMissingByokKeys
                 ? 'Confirm mode: BYOK (OpenRouter + ElevenLabs). Cost profile: premium path on your provider billing.'
@@ -726,30 +803,27 @@ const CreateLectureScreen: React.FC = () => {
           </View>
         ) : null}
 
-        <TouchableOpacity
+        <PremiumButton
           testID="create-lecture-button"
-          style={[styles.createButton, isLoading && styles.createButtonDisabled]}
-          onPress={handleCreateLecture}
-          disabled={isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready'))}>
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator color="#ffffff" />
-              <Text style={styles.loadingText}>Generating your lecture...</Text>
-            </View>
-          ) : (
-            <Text style={styles.createButtonText}>
-              {sourceMode === 'url' && !isUrlGenerationEnabled
+          title={
+            isLoading
+              ? 'Generating your lecture...'
+              : sourceMode === 'url' && !isUrlGenerationEnabled
                 ? 'URL Generation Disabled By Feature Flag'
                 : sourceMode === 'url' && urlDiagnostics?.outcome !== 'ready'
                   ? 'Run Diagnostics Until URL Is Ready'
                   : scriptPreview?.dry_run
                     ? 'Confirm And Generate Audio'
-                  : sourceMode === 'url'
-                    ? 'Preview Script From URL'
-                    : 'Preview Script'}
-            </Text>
-          )}
-        </TouchableOpacity>
+                    : sourceMode === 'url'
+                      ? 'Preview Script From URL'
+                      : 'Preview Script'
+          }
+          onPress={handleCreateLecture}
+          disabled={isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready'))}
+          loading={isLoading}
+          accessibilityLabel={scriptPreview?.dry_run ? 'Confirm and generate audio' : 'Preview script'}
+          style={{ marginTop: spacing.xl }}
+        />
         </View>
       </View>
     </ScrollView>
@@ -759,11 +833,11 @@ const CreateLectureScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#06070b',
+    backgroundColor: colors.bg.canvas,
   },
   contentContainer: {
     padding: 18,
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
   },
   backgroundGlowA: {
     position: 'absolute',
@@ -771,7 +845,7 @@ const styles = StyleSheet.create({
     left: -70,
     width: 260,
     height: 260,
-    backgroundColor: 'rgba(198, 168, 106, 0.08)',
+    backgroundColor: colors.effect.glowA,
   },
   backgroundGlowB: {
     position: 'absolute',
@@ -779,7 +853,7 @@ const styles = StyleSheet.create({
     right: -100,
     width: 290,
     height: 290,
-    backgroundColor: 'rgba(155, 166, 197, 0.08)',
+    backgroundColor: colors.effect.glowB,
   },
   shell: {
     width: '100%',
@@ -787,157 +861,157 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     borderWidth: 1,
-    borderColor: '#242a37',
+    borderColor: colors.border.dark,
     backgroundColor: '#0b0d12',
   },
   headerRail: {
     flex: 0.9,
     borderRightWidth: Platform.OS === 'web' ? 1 : 0,
     borderBottomWidth: Platform.OS === 'web' ? 0 : 1,
-    borderRightColor: '#242a37',
-    borderBottomColor: '#242a37',
-    backgroundColor: '#0f131b',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    borderRightColor: colors.border.dark,
+    borderBottomColor: colors.border.dark,
+    backgroundColor: colors.bg.rail,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
   },
   eyebrow: {
-    color: '#d7bf89',
-    fontSize: 12,
-    letterSpacing: 1.8,
+    color: colors.accent.brass,
+    fontSize: typography.size.label,
+    letterSpacing: typography.letterSpacing.wide,
     textTransform: 'uppercase',
     fontWeight: '700',
     marginBottom: 10,
   },
   pageTitle: {
-    color: '#f4efe4',
-    fontSize: 46,
-    lineHeight: 50,
+    color: colors.text.primaryDark,
+    fontSize: typography.size.display,
+    lineHeight: typography.lineHeight.display,
     fontWeight: '600',
-    fontFamily: 'Cormorant Garamond',
+    fontFamily: typography.family.display,
     marginBottom: 10,
   },
   pageSubtitle: {
-    color: '#aeb6c7',
+    color: colors.text.secondaryDark,
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 22,
   },
   metaBlock: {
     borderTopWidth: 1,
-    borderTopColor: '#2a3140',
-    paddingTop: 12,
+    borderTopColor: colors.border.medium,
+    paddingTop: spacing.sm,
   },
   metaLabel: {
-    color: '#7e8798',
-    fontSize: 11,
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
   metaValue: {
-    color: '#d6dbe6',
-    fontSize: 14,
+    color: colors.text.secondaryDark,
+    fontSize: typography.size.body,
     fontWeight: '600',
   },
   formPanel: {
     flex: 1.1,
-    backgroundColor: '#f2f0ea',
-    padding: 20,
+    backgroundColor: colors.bg.panel,
+    padding: spacing.lg,
   },
   label: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '700',
-    color: '#2b3240',
-    letterSpacing: 0.8,
+    color: colors.border.medium,
+    letterSpacing: typography.letterSpacing.normal,
     textTransform: 'uppercase',
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: spacing.xs,
+    marginTop: spacing.md,
   },
   textInput: {
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    padding: 16,
-    fontSize: 16,
+    borderColor: colors.border.light,
+    padding: spacing.md,
+    fontSize: typography.size.bodyLg,
     color: '#0d1119',
     textAlignVertical: 'top',
     minHeight: 80,
   },
   sourceSwitchRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   sourceSwitchButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    backgroundColor: '#f8f7f3',
+    borderColor: colors.border.light,
+    backgroundColor: colors.bg.cardLight,
     paddingVertical: 11,
     alignItems: 'center',
   },
   sourceSwitchButtonActive: {
-    backgroundColor: '#111722',
-    borderColor: '#111722',
+    backgroundColor: colors.bg.cardDark,
+    borderColor: colors.bg.cardDark,
   },
   sourceSwitchButtonText: {
     color: '#2f3644',
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
   sourceSwitchButtonTextActive: {
-    color: '#f2efe8',
+    color: colors.text.primaryDark,
   },
   sourceHelperText: {
-    marginTop: 8,
+    marginTop: spacing.xs,
     color: '#5a6272',
-    fontSize: 12,
+    fontSize: typography.size.label,
     lineHeight: 16,
   },
   fileCard: {
-    marginTop: 12,
+    marginTop: spacing.sm,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    backgroundColor: '#f8f7f3',
+    borderColor: colors.border.light,
+    backgroundColor: colors.bg.cardLight,
   },
   fileLabel: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '700',
-    color: '#2b3240',
+    color: colors.border.medium,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: typography.letterSpacing.normal,
     marginBottom: 4,
   },
   fileSubtle: {
     color: '#616979',
-    fontSize: 12,
+    fontSize: typography.size.label,
     marginBottom: 10,
   },
   filePickButton: {
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#111722',
-    paddingVertical: 8,
+    borderColor: colors.bg.cardDark,
+    paddingVertical: spacing.xs,
     paddingHorizontal: 14,
-    backgroundColor: '#111722',
+    backgroundColor: colors.bg.cardDark,
   },
   filePickButtonText: {
-    color: '#f2efe8',
-    fontSize: 12,
+    color: colors.text.primaryDark,
+    fontSize: typography.size.label,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: typography.letterSpacing.normal,
   },
   fileMeta: {
-    marginTop: 8,
+    marginTop: spacing.xs,
     color: '#2f3644',
-    fontSize: 12,
+    fontSize: typography.size.label,
   },
   fileResetButton: {
-    marginTop: 8,
+    marginTop: spacing.xs,
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: '#939aa8',
@@ -947,59 +1021,59 @@ const styles = StyleSheet.create({
   },
   fileResetButtonText: {
     color: '#2f3644',
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   urlCard: {
-    marginTop: 12,
+    marginTop: spacing.sm,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    backgroundColor: '#f8f7f3',
+    borderColor: colors.border.light,
+    backgroundColor: colors.bg.cardLight,
   },
   urlLabel: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '700',
-    color: '#2b3240',
+    color: colors.border.medium,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
+    letterSpacing: typography.letterSpacing.normal,
+    marginBottom: spacing.xs,
   },
   urlInput: {
     borderWidth: 1,
-    borderColor: '#b7bcc8',
+    borderColor: colors.border.light,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 10,
-    color: '#111722',
-    fontSize: 14,
+    color: colors.bg.cardDark,
+    fontSize: typography.size.body,
   },
   urlDiagnosticsButton: {
     marginTop: 10,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#111722',
-    backgroundColor: '#111722',
-    paddingVertical: 8,
+    borderColor: colors.bg.cardDark,
+    backgroundColor: colors.bg.cardDark,
+    paddingVertical: spacing.xs,
     paddingHorizontal: 14,
   },
   urlDiagnosticsButtonText: {
-    color: '#f2efe8',
-    fontSize: 12,
+    color: colors.text.primaryDark,
+    fontSize: typography.size.label,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.7,
   },
   fieldError: {
     color: '#a93d2a',
-    fontSize: 12,
+    fontSize: typography.size.label,
     marginTop: 6,
     fontWeight: '600',
   },
   formError: {
-    marginTop: 12,
+    marginTop: spacing.sm,
     borderWidth: 1,
     borderColor: '#c06b5d',
     backgroundColor: '#f8e7e3',
@@ -1010,111 +1084,93 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   charCount: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     color: '#616979',
     textAlign: 'right',
     marginTop: 4,
   },
   durationScroll: {
-    marginTop: 8,
+    marginTop: spacing.xs,
   },
   durationButton: {
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 8,
+    borderColor: colors.border.light,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginRight: spacing.xs,
     minWidth: 60,
     alignItems: 'center',
   },
   durationButtonActive: {
-    backgroundColor: '#111722',
-    borderColor: '#111722',
+    backgroundColor: colors.bg.cardDark,
+    borderColor: colors.bg.cardDark,
   },
   durationButtonText: {
-    fontSize: 14,
+    fontSize: typography.size.body,
     fontWeight: '600',
     color: '#2f3644',
   },
   durationButtonTextActive: {
-    color: '#f2efe8',
+    color: colors.text.primaryDark,
   },
   difficultyContainer: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   difficultyButton: {
     flex: 1,
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    paddingVertical: 12,
+    borderColor: colors.border.light,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
   },
   difficultyButtonActive: {
-    backgroundColor: '#111722',
-    borderColor: '#111722',
+    backgroundColor: colors.bg.cardDark,
+    borderColor: colors.bg.cardDark,
   },
   difficultyButtonText: {
-    fontSize: 14,
+    fontSize: typography.size.body,
     fontWeight: '600',
     color: '#2f3644',
   },
   difficultyButtonTextActive: {
-    color: '#f2efe8',
+    color: colors.text.primaryDark,
   },
   infoCard: {
     backgroundColor: '#ece9df',
-    padding: 16,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: '#c3b188',
-    marginTop: 20,
+    marginTop: spacing.lg,
   },
   infoTitle: {
-    fontSize: 14,
+    fontSize: typography.size.body,
     fontWeight: '700',
     color: '#3e3525',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: typography.letterSpacing.normal,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: typography.size.body,
     color: '#4f4635',
-    lineHeight: 20,
-  },
-  createButton: {
-    backgroundColor: '#d7bf89',
-    borderWidth: 1,
-    borderColor: '#a9905d',
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  createButtonDisabled: {
-    opacity: 0.6,
-  },
-  createButtonText: {
-    color: '#11151e',
-    fontSize: 14,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    lineHeight: typography.lineHeight.body,
   },
   modeCard: {
-    marginTop: 16,
+    marginTop: spacing.md,
     padding: 14,
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
+    borderColor: colors.border.light,
   },
   modeTitle: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '700',
-    color: '#2b3240',
-    letterSpacing: 0.8,
+    color: colors.border.medium,
+    letterSpacing: typography.letterSpacing.normal,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
@@ -1128,19 +1184,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#b7bcc8',
+    borderColor: colors.border.light,
     backgroundColor: '#f1efe7',
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
   modeTooltipLinkText: {
     color: '#2f3644',
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '600',
   },
   modeActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.xs,
   },
   modeButton: {
     flex: 1,
@@ -1150,58 +1206,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modeButtonActive: {
-    backgroundColor: '#111722',
-    borderColor: '#111722',
+    backgroundColor: colors.bg.cardDark,
+    borderColor: colors.bg.cardDark,
   },
   modeButtonText: {
     color: '#2f3644',
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: typography.size.label,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   modeButtonTextActive: {
-    color: '#f2efe8',
+    color: colors.text.primaryDark,
   },
-  // Voice Selection Styles
   voiceScroll: {
-    marginTop: 8,
+    marginTop: spacing.xs,
   },
   voiceButton: {
-    backgroundColor: '#f8f7f3',
+    backgroundColor: colors.bg.cardLight,
     borderWidth: 1,
-    borderColor: '#b7bcc8',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 8,
+    borderColor: colors.border.light,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginRight: spacing.xs,
     minWidth: 140,
     alignItems: 'center',
   },
   voiceButtonActive: {
-    backgroundColor: '#111722',
-    borderColor: '#111722',
+    backgroundColor: colors.bg.cardDark,
+    borderColor: colors.bg.cardDark,
   },
   voiceButtonText: {
-    fontSize: 12,
+    fontSize: typography.size.label,
     fontWeight: '600',
     color: '#2f3644',
     textAlign: 'center',
   },
   voiceButtonTextActive: {
-    color: '#f2efe8',
+    color: colors.text.primaryDark,
   },
-  // Loading Styles
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.xs,
   },
   loadingText: {
-    color: '#11151e',
-    fontSize: 14,
+    color: colors.accent.brassText,
+    fontSize: typography.size.body,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: typography.letterSpacing.normal,
   },
 });
 

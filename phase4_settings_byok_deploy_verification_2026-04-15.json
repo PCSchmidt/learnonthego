@@ -1,0 +1,72 @@
+{
+  "timestamp": 1776271575,
+  "frontend_url": "https://learnonthego-bice.vercel.app",
+  "backend_url": "https://learnonthego-production.up.railway.app",
+  "user_email": "chris123@gmail.com",
+  "frontend_verification": {
+    "status_code": 200,
+    "pass": true,
+    "scripts_discovered": 1,
+    "found_markers": [
+      "BYOK Key Entry",
+      "ElevenLabs API Key",
+      "OpenRouter API Key",
+      "Refresh provider status",
+      "Save + Validate"
+    ],
+    "missing_markers": []
+  },
+  "backend_verification": {
+    "pass": true,
+    "results": [
+      {
+        "step": "health",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "auth_login",
+        "status_code": 401,
+        "pass": false
+      },
+      {
+        "step": "auth_register_temp",
+        "status_code": 201,
+        "pass": true
+      },
+      {
+        "step": "auth_login_temp",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "store_openrouter",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "validate_openrouter",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "store_elevenlabs",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "validate_elevenlabs",
+        "status_code": 200,
+        "pass": true
+      },
+      {
+        "step": "status",
+        "status_code": 200,
+        "pass": true
+      }
+    ],
+    "setup_complete": true,
+    "missing_keys": []
+  },
+  "overall_pass": true
+}

@@ -11,51 +11,45 @@ LearnOnTheGo converts text topics or PDF documents into personalized audio lectu
 
 ## 🎯 Current Status (Source of Truth)
 
-LearnOnTheGo is currently in a hardened MVP state with core backend capabilities in place and frontend integration partially complete.
+LearnOnTheGo is in a **portfolio-ready MVP** state with functional audio playback, a premium design system, and BYOK key management across all core screens.
 
 ### Latest Verified Updates (April 2026)
+- ✅ Functional audio player with play/pause, seek, and progress display (expo-av)
+- ✅ Premium design system applied across all 6 core screens (tokens.ts + PremiumButton/PremiumField/PremiumPanel)
+- ✅ Dead code cleanup: removed EnhancedCreateLectureScreen, EnhancedLectureScreen, MultiProviderDemoScreen
 - ✅ V2 endpoints stabilized for typed form handling (`duration`, `dry_run`, provider params)
-- ✅ BYOK user-key path validated end-to-end in dry-run mode
-- ✅ API key storage path fixed for async DB usage and encryption compatibility
-- ✅ Backend CI now runs a regression test for V2 form coercion on every push/PR
-- ✅ Cost-aware TTS default strategy in create flow: environment mode defaults to OpenAI TTS, BYOK mode keeps ElevenLabs optional premium
-- ✅ URL generation now supports ready web URLs behind feature flags (`ENABLE_URL_INGESTION_V1`, `EXPO_PUBLIC_ENABLE_URL_INGESTION_V1`)
-- ✅ Backend CI contract gates added and validated green for:
-    - `tests/test_v2_source_intake_v1a.py`
-    - `tests/test_url_diagnostics_scaffold.py`
-    - `tests/test_api_key_lifecycle_contract.py`
+- ✅ BYOK user-key path validated end-to-end with self-service Settings UI
+- ✅ URL ingestion supports web, YouTube transcript, and podcast feed sources with citation metadata
+- ✅ Cost-aware TTS: environment mode defaults to OpenAI TTS, BYOK mode keeps ElevenLabs as optional premium
+- ✅ 43/43 frontend tests passing, tsc clean
+- ✅ Backend + frontend CI workflows green on `dev`
 
 ### Completed
 - ✅ Backend API deployed on Railway: https://learnonthego-production.up.railway.app
-- ✅ Frontend deployed on Vercel
-- ✅ AI pipeline foundations: topic/PDF processing, LLM generation, TTS integration
-- ✅ Database foundation (SQLAlchemy + PostgreSQL support)
+- ✅ Frontend deployed on Vercel with premium editorial UI
+- ✅ Audio player: play/pause, seek bar, progress, buffering states
+- ✅ AI pipeline: topic/PDF/URL processing, LLM generation, TTS integration
 - ✅ JWT authentication backend and protected route dependencies
-- ✅ API key encryption and BYOK architecture
+- ✅ API key encryption and BYOK architecture with Settings self-service
+- ✅ CI gates: V2 contract tests, source intake, URL diagnostics, API key lifecycle
 
-### In Progress
-- 🔄 End-to-end lecture generation UX from authenticated frontend flows
-- 🔄 Lecture library/dashboard polish for production-ready user journeys
-- 🔄 CI/CD hardening to ensure test and build signals stay reliable
-
-### Next Execution Priorities
-1. Stabilize and validate authenticated lecture generation flows (text + PDF)
-2. Finalize frontend UX and state handling for create/playback/library
-3. Expand backend and frontend automated coverage beyond current V2 regression baseline
-4. Publish one evidence-oriented release package for portfolio review
-
-Historical progress notes remain in phase/session documents, but this section is the canonical project status.
+### Next
+- Production provider key configuration for non-dry-run generation
+- Full production walkthrough evidence (auth → create → preview → confirm → playback)
+- RC tag and deploy verification
 
 ## ✨ Features
 
 - **Text-to-Lecture**: Convert any topic into structured audio content
 - **PDF Processing**: Extract and summarize PDF documents into lectures
+- **URL Ingestion**: Generate from web pages, YouTube transcripts, and podcast feeds
+- **Audio Player**: Play/pause, seek bar, progress display with buffering states
+- **Premium Design System**: Tokenized editorial UI with brass/dark theme across all screens
 - **Customizable Parameters**: Duration (5-60 min), difficulty, voice selection
-- **Offline Playback**: Download lectures for offline listening
-- **Multi-Provider Support**: OpenRouter, OpenAI, Anthropic for LLM; ElevenLabs, Google TTS for audio
-- **Cost-Aware Routing**: Environment mode uses lower-cost default TTS, with BYOK premium provider path available
-- **Secure API Key Management**: AES-256 encrypted storage of your API keys
-- **Progressive Web App**: Works on mobile and desktop
+- **Multi-Provider Support**: OpenRouter, OpenAI for LLM; ElevenLabs, OpenAI TTS for audio
+- **BYOK (Bring Your Own Key)**: Self-service key management with AES-256 encrypted storage
+- **Cost-Aware Routing**: Environment mode uses lower-cost default TTS, BYOK enables premium providers
+- **Progressive Web App**: Works on mobile and desktop via Vercel
 
 ## 🏗️ Architecture
 
@@ -421,28 +415,35 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🗺️ Roadmap
 
-### Phase 1: MVP (Current - Phase 2b Authentication)
-- [x] Basic text-to-lecture generation
-- [x] PDF processing capabilities  
-- [x] PostgreSQL database with user management
-- [x] JWT authentication infrastructure
-- [ ] Complete authentication testing and integration
-- [ ] Social login implementation (Google, Apple, GitHub)
-- [ ] Mobile app authentication with biometrics
+### Phase A-B: V2 Integration + Reliability (Complete)
+- [x] V2 document generation endpoints (text, PDF, URL)
+- [x] BYOK key management with encrypted storage
+- [x] JWT authentication end-to-end
+- [x] URL ingestion (web, YouTube transcript, podcast feed)
+- [x] CI contract gates for V2 critical paths
+- [x] Frontend integration tests for core user journey
 
-### Phase 2: Enhancement (Phase 2c-2d)
-- [ ] Biometric authentication (Touch ID, Face ID)
+### Phase C: Release Readiness (Complete)
+- [x] Premium design system (tokens.ts + PremiumButton/PremiumField/PremiumPanel)
+- [x] Functional audio player (expo-av: play/pause, seek, progress)
+- [x] UI premium pass across all 6 core screens
+- [x] Dead code cleanup
+- [x] 43/43 frontend tests passing, tsc clean
+- [x] Backend + frontend CI green on dev
+
+### Phase C.5: Owner-Target + Release (In Progress)
+- [x] Owner-target deployment on PCSchmidt.github.io
+- [ ] Production provider keys configured for non-dry-run generation
+- [ ] Full production walkthrough evidence (6/6 steps)
+- [ ] RC tag (v1.0.0-rc.1) on main
+
+### Future
+- [ ] Offline download and caching
+- [ ] Playback speed control (1x/1.5x/2x)
+- [ ] Library/history persistence
 - [ ] Multiple language support
-- [ ] Quiz mode for comprehension
-- [ ] Cloud synchronization with user accounts
-- [ ] Advanced voice options
-- [ ] Lecture sharing between users
-
-### Phase 3: Scale
-- [ ] Team collaboration features
-- [ ] Analytics dashboard
-- [ ] API for third-party integrations
-- [ ] Enterprise features
+- [ ] Social login (Google, Apple, GitHub)
+- [ ] Team collaboration and sharing
 
 ---
 

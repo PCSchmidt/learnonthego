@@ -136,6 +136,13 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     expect(sourceError.props.children).toBe('Source type is not supported in v1a.');
   });
 
+  it('exposes accessible labels for topic input and preview action', () => {
+    const { getByLabelText } = render(<CreateLectureScreen />);
+
+    expect(getByLabelText('Lecture topic')).toBeTruthy();
+    expect(getByLabelText('Preview script')).toBeTruthy();
+  });
+
   it('maps invalid_source_input_combination to topic field when in text mode', async () => {
     (lectureService.createLecture as jest.Mock).mockResolvedValue({
       success: false,
@@ -358,6 +365,80 @@ describe('CreateLectureScreen deterministic error mapping', () => {
     });
     expect((lectureService.createLecture as jest.Mock).mock.calls[0][1].dryRun).toBe(true);
     expect((lectureService.createLecture as jest.Mock).mock.calls[1][1].dryRun).toBe(false);
+  });
+
+  it('navigates to player with citations and source context after confirm', async () => {
+    (lectureService.createLecture as jest.Mock)
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          title: 'Dry Run Lecture Contract',
+          script: 'Preview script content for playback handoff.',
+          preview_script: {
+            title: 'Dry Run Lecture Contract',
+            content: 'Preview script content for playback handoff.',
+            duration_minutes: 15,
+            difficulty: 'beginner',
+          },
+          dry_run: true,
+          key_source: 'environment',
+        },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: {
+          id: 'lecture-player-42',
+          title: 'Generated Lecture',
+          citations: [
+            {
+              label: 'Primary Source',
+              source_uri: 'https://example.com/article',
+              note: 'class=web; retrieval=web_fetch',
+            },
+          ],
+          source_metadata: {
+            source_uri: 'https://example.com/article',
+            source_class: 'web',
+            retrieval_method: 'web_fetch',
+          },
+        },
+      });
+
+    const { getByTestId, findByTestId } = render(<CreateLectureScreen />);
+
+    fireEvent.changeText(getByTestId('topic-input'), 'Playback handoff coverage');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await findByTestId('script-preview-card');
+    fireEvent.press(getByTestId('create-lecture-button'));
+
+    await waitFor(() => {
+      expect(mockAlert).toHaveBeenCalled();
+    });
+
+    const [, , buttons] = mockAlert.mock.calls[mockAlert.mock.calls.length - 1];
+    const playNow = (buttons as Array<{ text: string; onPress?: () => void }>).find(
+      (button) => button.text === 'Play Now'
+    );
+
+    expect(playNow).toBeTruthy();
+    playNow?.onPress?.();
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      'LecturePlayer',
+      expect.objectContaining({
+        lectureId: 'lecture-player-42',
+        citations: expect.arrayContaining([
+          expect.objectContaining({
+            source_uri: 'https://example.com/article',
+          }),
+        ]),
+        sourceContext: expect.objectContaining({
+          source_uri: 'https://example.com/article',
+          retrieval_method: 'web_fetch',
+        }),
+      })
+    );
   });
 
   it('shows clear BYOK mode and cost indicator before confirm', async () => {

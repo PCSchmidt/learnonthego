@@ -21,6 +21,7 @@ EMAIL = os.getenv("LOTG_EMAIL")
 PASSWORD = os.getenv("LOTG_PASSWORD")
 TOKEN = os.getenv("LOTG_TOKEN")
 STRICT_BYOK = os.getenv("LOTG_STRICT_BYOK", "false").lower() == "true"
+AUTO_REGISTER = os.getenv("LOTG_AUTO_REGISTER", "false").lower() == "true"
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOTG_TIMEOUT_SECONDS", "8"))
 URL_READY_SOURCE = os.getenv("LOTG_URL_READY_SOURCE", "https://example.com")
 URL_NON_READY_SOURCE = os.getenv("LOTG_URL_NON_READY_SOURCE", "nota-valid-url")
@@ -95,6 +96,21 @@ def get_access_token() -> str:
 
     login_payload = {"email": EMAIL, "password": PASSWORD}
     response = post_json("/api/auth/login", login_payload)
+
+    if not response["ok"] and AUTO_REGISTER:
+        register_payload = {
+            "email": EMAIL,
+            "password": PASSWORD,
+            "confirm_password": PASSWORD,
+            "full_name": "CI Smoke User",
+        }
+        register_response = post_json("/api/auth/register", register_payload)
+        if not register_response["ok"] and register_response["status"] != 409:
+            raise SmokeError(
+                f"Auto-register failed ({register_response['status']}): {register_response['data']}"
+            )
+        response = post_json("/api/auth/login", login_payload)
+
     if not response["ok"]:
         raise SmokeError(f"Login failed ({response['status']}): {response['data']}")
 
@@ -327,8 +343,20 @@ def main() -> int:
         validate_success_contract("byok endpoint", byok_result["data"], "user-encrypted-storage")
         print("PASS: /api/lectures/generate-document-v2-byok contract validated")
     else:
-        detail = str(byok_result["data"].get("detail", ""))
-        missing_keys_error = byok_result["status"] == 400 and "Missing valid API keys" in detail
+        detail_payload = byok_result["data"].get("detail", {})
+        detail = str(detail_payload)
+        missing_keys_error = (
+            byok_result["status"] == 400
+            and (
+                "Missing valid API keys" in detail
+                or "Missing or invalid BYOK provider keys" in detail
+                or (
+                    isinstance(detail_payload, dict)
+                    and detail_payload.get("schema") == "byok-key-error-v1"
+                    and detail_payload.get("code") == "missing_or_invalid_provider_key"
+                )
+            )
+        )
         if missing_keys_error and not STRICT_BYOK:
             print("WARN: BYOK endpoint reachable but user keys missing; contract test skipped.")
         else:

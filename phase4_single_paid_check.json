@@ -1,0 +1,31 @@
+{
+  "base_url": "https://learnonthego-production.up.railway.app",
+  "timestamp": 1776200516,
+  "email": "paidcheck_1776200508@example.com",
+  "single_paid_request_sent": true,
+  "results": [
+    {
+      "step": "auth_login",
+      "status_code": 200,
+      "pass": true
+    },
+    {
+      "step": "single_non_dry_run_generation",
+      "status_code": 500,
+      "pass": false,
+      "detail": "V2 generation failed"
+    },
+    {
+      "step": "playback_availability_probe",
+      "pass": false,
+      "evidence": {
+        "available": false
+      }
+    }
+  ],
+  "generation_excerpt": {
+    "title": null,
+    "execution_mode": null,
+    "source_type": null
+  }
+}

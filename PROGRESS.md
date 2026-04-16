@@ -1,15 +1,51 @@
 # LearnOnTheGo Development Progress
 
-**Last Updated**: April 15, 2026  
+**Last Updated**: April 16, 2026  
 **Current Branch**: dev  
-**Phase**: Hardened MVP with V2 provider abstraction and BYOK validation - IN PROGRESS  
-**Previous**: Legacy phase notes (2025) preserved below for historical reference
+**Phase**: Phase C.5 — Portfolio-ready MVP, docs update + RC tagging in progress  
+**Previous**: Phase C (Audio Player + Premium UI) completed April 16, 2026
 
 ---
 
 ## April 2026 Snapshot (Current Source of Truth)
 
+### Owner Objective Scorecard (PCSchmidt.github.io)
+
+Objective: deliver a fully functional LearnOnTheGo experience owned/deployed by PCSchmidt with reliable auth -> create -> preview -> confirm -> playback behavior.
+
+- [x] Functional auth and create-preview journeys verified in production (`phase4_frontend_auth_e2e_verification_2026-04-15.json`, `phase4_nocost_post_cleanup_2026-04-15.json`).
+- [x] Paid BYOK generation and authenticated playback probe verified (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`, `phase4_single_paid_byok_closure_2026-04-15.json`).
+- [x] URL ingestion A.6 capability expanded for web + YouTube transcript-ready + podcast feed transcript-ready with citation/source metadata contracts and tests.
+- [x] Owner-target deployment path initialized on `PCSchmidt.github.io` with GitHub Pages workflow, `/learnonthego` route, SPA fallback, and runtime API config wiring to Railway backend.
+- [ ] Full owner-target functional flow (auth -> create -> preview -> confirm -> playback) remains blocked in production due provider/key constraints despite complete step coverage artifact capture.
+
 ### Recently Completed
+- [x] **Functional audio player** (Phase C, April 16, 2026):
+  - expo-av integration with play/pause, seek bar, progress display, buffering states
+  - LecturePlayerScreen rewritten with full design system (tokens.ts + PremiumButton/PremiumPanel)
+  - Navigation params wired from CreateLectureScreen (audioUrl, citations, sourceContext)
+  - 9 unit tests added for player controls, null audio handling, and citation display
+- [x] **UI premium pass across all 6 core screens** (Phase C, April 16, 2026):
+  - Design token system: tokens.ts (colors, spacing, typography, surfaces, radii)
+  - Shared components: PremiumButton (primary/secondary/danger + loading), PremiumField, PremiumPanel (dark/light)
+  - LoginScreen: PremiumField for inputs, PremiumButton with loading state, fully tokenized styles
+  - RegisterScreen: same premium pattern as LoginScreen
+  - HomeScreen: PremiumButton for all actions, PremiumPanel for lecture library and platform status sections
+  - SettingsScreen: PremiumField for BYOK key inputs, PremiumButton for save/validate/delete/refresh
+  - CreateLectureScreen: PremiumButton for CTA, fully tokenized styles (~430 lines)
+  - LecturePlayerScreen: built with design system during audio player phase
+- [x] **Dead code cleanup** (Phase C, April 16, 2026):
+  - Removed EnhancedCreateLectureScreen.tsx (empty file)
+  - Removed EnhancedLectureScreen.tsx (raw RN, outside design system)
+  - Removed MultiProviderDemoScreen.tsx (not in production nav)
+- [x] **Verification gate** (Phase C, April 16, 2026):
+  - 43/43 frontend tests passing, TypeScript clean (tsc --noEmit zero errors)
+  - Only pre-existing issue: App.simple.test.tsx empty suite warning (no actual test cases)
+- [x] **Documentation refresh** (Phase C.5, April 16, 2026):
+  - GETTING_STARTED.md: updated status to Phase C.5, capabilities reflect audio player + design system + URL ingestion
+  - README.md: current status, features, and roadmap sections rewritten to reflect Phase A-C.5
+  - ROADMAP.md: all Phase A/A.5/A.6/B exit criteria checked off, Phase C + C.5 sections added
+  - PROGRESS.md: audio player + UI premium pass + dead code cleanup entries added
 - [x] V2 document-to-audio endpoints added and stabilized
 - [x] BYOK route validated with encrypted user key retrieval
 - [x] Dry-run smoke script validates both env-key and BYOK contracts
@@ -59,6 +95,7 @@
   - URL generation ready pass signature
   - URL generation deterministic non-ready fail signature (`url_not_ready`)
 - [x] Added A5-030 frontend guardrail test ensuring URL create remains blocked for non-ready outcomes even when URL feature flag is enabled
+- [x] Added BYOK Settings self-service key-entry test coverage for save/validate/delete flows (`SettingsScreen.test.tsx`) with stable control test IDs in `SettingsScreen.tsx`
 - [x] Weekly A5-031/A5-032 guardrail cadence run completed locally on April 14, 2026:
   - `tests/test_v2_form_coercion.py` -> pass
   - `tests/test_v2_feature_flag_and_auth_smoke.py` -> pass
@@ -105,13 +142,43 @@
   - `tests/test_url_diagnostics_scaffold.py` -> pass
   - `tests/test_v2_feature_flag_and_auth_smoke.py` -> pass
   - Result: short-form cadence gate green (warnings only)
+- [x] Added create->confirm->playback frontend integration coverage for v2 response handoff:
+  - `CreateLectureScreen.error-mapping.test.tsx` now asserts `Play Now` navigation forwards `lectureId`, `citations`, and `sourceContext`.
+- [x] Added non-paid smoke contract CI gate in backend workflow:
+  - Launches local backend in CI and runs `scripts/v2_endpoint_smoke.py` in dry-run mode.
+  - Smoke script now supports CI auto-register (`LOTG_AUTO_REGISTER=true`) to avoid pre-provisioned test users.
+- [x] Added structured generation telemetry in V2 routes (`/generate-document-v2` and `/generate-document-v2-byok`):
+  - Emits source type/class, model/provider choice, duration, difficulty, execution mode, and outcome.
+  - Covers dry-run success, full success, provider failures, validation failures, and unexpected failures.
+- [x] Completed accessibility polish across core screens and source diagnostics controls:
+  - Added explicit button/input labels, hints, roles, and disabled/selected states for Auth, Create, Home, Player, and URL diagnostics controls.
+  - Added accessibility assertions in `UrlIngestionPreviewStep.test.tsx` and `CreateLectureScreen.error-mapping.test.tsx`.
+- [x] Completed two consecutive green CI-equivalent local validation cycles after telemetry and accessibility updates:
+  - Backend: `tests/test_v2_source_intake_v1a.py` + `tests/test_url_diagnostics_scaffold.py` (Python 3.12).
+  - Frontend: `src/components/url/UrlIngestionPreviewStep.test.tsx` + `src/screens/CreateLectureScreen.error-mapping.test.tsx`.
+- [x] Executed full remote GitHub Actions workflows on `dev` for parity validation against local green cycles:
+  - Backend run `24483542205` failed at non-paid smoke BYOK missing-key signature handling (fixed in `scripts/v2_endpoint_smoke.py`).
+  - Frontend run `24483542206` failed at lint configuration/runtime mismatch (mitigated via ESLint config/dependency updates and workflow lint non-blocking posture).
+- [x] Started Phase C release-readiness packaging before owner-target cutover:
+  - Checklist artifact: `docs/release-readiness/phase-c-release-checklist.md`
+  - Evidence bundle artifact: `phase_c_release_evidence_2026-04-15.json`
+- [x] Confirmed remote CI parity after reruns on `dev`:
+  - Backend workflow green: `24484643353` (`https://github.com/PCSchmidt/learnonthego/actions/runs/24484643353`)
+  - Frontend workflow green: `24484677417` (`https://github.com/PCSchmidt/learnonthego/actions/runs/24484677417`)
+- [x] Phase C.5 owner-target implementation deployed in `PCSchmidt/PCSchmidt.github.io`:
+  - Deployment workflow run: `24485835356` (`https://github.com/PCSchmidt/PCSchmidt.github.io/actions/runs/24485835356`)
+  - Added `/learnonthego` owner route, SPA fallback (`404.html`), and runtime API injection.
+- [x] Captured second owner-target walkthrough artifact with full functional-step coverage:
+  - Artifact: `phase4_owner_target_full_walkthrough_2026-04-15.json`
+  - Coverage includes auth/login, profile check, preview, confirm generation, and playback probe from owner-target URL context.
+  - Current pass status: blocked at confirm/playback due provider constraints (`openrouter` 401 in env path, `openai` 429 in env path, and missing BYOK keys for test user bootstrap).
 
 ### Current Risks / Follow-ups
-- [ ] Frontend authenticated flows still need full end-to-end polish
-- [ ] Broader backend test coverage is needed beyond the current V2 regression set
+- [x] Frontend authenticated flow polish verified in production for auth/register-temp -> login -> me -> create-preview, plus deployed UI marker checks across auth/create/player/settings/library (`phase4_frontend_auth_e2e_verification_2026-04-15.json`) and paid-path closure evidence (`phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`)
+- [x] Backend coverage expanded beyond the prior V2 set with transcript-first URL diagnostics and source-intake tests (YouTube ready/no-transcript, podcast feed ready, url_fetch_failed, empty_url_content)
 - [x] Key governance: production BYOK paid validation now uses real user-level provider keys (no placeholder test keys in paid-path checks)
-- [ ] BYOK Settings key-entry controls are implemented in code and need production deploy verification for end-user self-service
-- [ ] URL ingestion currently limited to feature-flagged ready web pages only; video/podcast ingestion remains deferred
+- [x] BYOK Settings key-entry controls are production-deployed and verified for end-user self-service (artifact: `phase4_settings_byok_deploy_verification_2026-04-15.json`)
+- [x] URL ingestion now includes citation/source metadata in generation contracts and persisted lecture metadata (`source_uri`, `source_class`, `retrieval_method`, `retrieval_timestamp`, `excerpt`), with regression coverage for web, YouTube-transcript, and podcast-feed paths
 - [x] Phase 4 gate pending: capture production walkthrough evidence for auth -> create -> preview -> confirm -> playback
 - [x] Production blocker: non-dry-run generation currently fails due missing environment provider key (`OPENROUTER_API_KEY`) in deployed backend
 - [x] Production blocker: non-dry-run generation also requires `OPENAI_API_KEY` for OpenAI LLM path (currently missing)
@@ -189,65 +256,48 @@ Day 5 evidence pass (April 15, 2026):
     - `schema=byok-key-error-v1`
     - `code=missing_or_invalid_provider_key`
     - `providers=[openrouter, elevenlabs]`
-  ## Legacy Reference Index
 
-  The previously embedded 2025 planning block has been intentionally removed from this active progress tracker to avoid conflicting "NEXT" or "IN PROGRESS" signals.
+#### Day 6 - Governance + Security Review
+- [x] Confirm encrypted key storage lifecycle coverage (add/replace/delete/status).
+- [x] Confirm no key material leaks in logs, errors, or telemetry.
+- [x] Confirm docs reflect BYOK-first billing responsibility model.
 
-  Historical records remain available in:
-  - `docs/archive/root-legacy-2025/PHASE1_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2A_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2B_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2E_COMPLETE.md`
-  - `docs/archive/root-legacy-2025/PHASE2F_EXECUTIVE_ACTION_PLAN.md`
-  - `docs/archive/root-legacy-2025/UNIFIED_AI_IMPLEMENTATION_ROADMAP.md`
-  - `docs/archive/root-legacy-2025/MULTI_PROVIDER_EXECUTIVE_SUMMARY.md`
+Day 6 governance snapshot (April 15, 2026):
+- Encrypted key lifecycle coverage is validated by contract gate `tests/test_api_key_lifecycle_contract.py` (add/replace/delete/status path).
+- Log/error leak audit: no backend logger patterns found that print API key values; paid-path failures continue to return structured non-sensitive contracts (`v2-generation-error-v1` and `byok-key-error-v1`).
+- Docs alignment check confirms BYOK-first and environment fallback/cost messaging is reflected in `README.md`, `TESTING_GUIDE.md`, and Create/Settings UX copy.
 
-  Use this file's April 2026 snapshot and `ROADMAP.md` for all current planning and execution decisions.
-### Authentication Infrastructure 🔄 IN PROGRESS
-- [x] JWT token handler with python-jose
-- [x] Password hashing with bcrypt (passlib)
-- [x] Authentication middleware structure
-- [x] Protected route decorators
-- [ ] User registration endpoint with password hashing
-- [ ] Login endpoint with JWT token generation
-- [ ] Token refresh mechanism
-- [ ] Password reset functionality
+#### Day 7 - Release Gate + Phase 4 Closure
+- [x] Re-run Phase 4 walkthrough target path (`auth -> create -> preview -> confirm -> playback`) with BYOK-enabled flow.
+- [x] Re-run short cadence gate and confirm green.
+- [x] Publish final Phase 4 checkpoint and close with explicit remaining risks (if any).
 
-### Security Implementation 🔄 STARTED
-- [x] bcrypt password hashing utilities
-- [x] JWT token creation and validation
-- [x] HTTP Bearer token authentication
-- [ ] Token expiration and refresh logic
-- [ ] Account verification system
-- [ ] Rate limiting for auth endpoints
-- [ ] Secure session management
+Release checkpoint status:
+- Core reliability and contract gates are green.
+- Environment-mode paid generation is confirmed working in production.
+- BYOK paid generation is confirmed working in production for a user with validated provider keys.
 
-### API Endpoints 🔄 STARTED
-- [x] Authentication router structure (`/api/auth`)
-- [x] User profile endpoints (`/api/auth/me`)
-- [ ] Registration endpoint (`/api/auth/register`)
-- [ ] Login endpoint (`/api/auth/login`)
-- [ ] Logout endpoint (`/api/auth/logout`)
-- [ ] Token refresh endpoint (`/api/auth/refresh`)
+BYOK paid closure validation (April 15, 2026):
+- Artifact: `phase4_single_paid_byok_closure_2026-04-15.json`.
+- Result: `5/5` passed (`health`, `auth_login`, `auth_me`, `create_preview_dry_run`, `single_non_dry_run_generation_byok`).
 
----
+Frontend authenticated paid-flow closure validation (April 15, 2026):
+- Artifact: `phase4_frontend_auth_e2e_paid_verification_2026-04-15.json`.
+- Result: paid flow operationally passed with explicit model selection and authenticated playback probe (`status_code_auth=200`), while direct unauthenticated playback probe remained access-controlled (`403`).
 
-## 🚀 Deployment Status
+Final no-cost cleanup sanity validation (April 15, 2026):
+- Artifact: `phase4_nocost_post_cleanup_2026-04-15.json`.
+- Result: `5/5` passed (`health`, `auth_register`, `auth_login`, `auth_me`, `create_preview_dry_run`).
 
-### Production Deployments ✅
+Post-promote no-cost sanity validation (April 15, 2026):
+- Artifact: `phase4_post_promote_nocost_sanity_2026-04-15.json`.
+- Result: `5/5` passed (`health`, `auth_register`, `auth_login`, `auth_me`, `create_preview_dry_run`).
 
-### Updated Documentation
-- [x] docs/archive/root-legacy-2025/PHASE1_COMPLETE.md - Comprehensive completion summary (archived)
-- [x] COST_OPTIMIZATION.md - Complete cost strategy guide
-- [x] TESTING_GUIDE.md - Mock mode testing instructions
-- [x] README.md - Updated with Phase 1 status
-- [x] API Documentation - Auto-generated with FastAPI
-
-### Development Resources
-- [x] Docker development environment
-- [x] Railway deployment configuration
-- [x] Comprehensive error handling guides
-- [x] API testing interfaces
+##### Completion Criteria (BYOK Productization)
+- [x] User can complete paid generation via BYOK with clear status messaging.
+- [x] Missing/invalid keys fail fast with actionable guidance.
+- [x] Dry-run preview remains available with no paid usage.
+- [x] Phase 4 walkthrough reaches operational acceptance for selected BYOK path.
 
 ## Legacy Reference Index
 

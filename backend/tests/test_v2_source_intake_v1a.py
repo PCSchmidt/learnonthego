@@ -112,7 +112,7 @@ def test_v2_rejects_unsupported_source_type(client):
 
     response = client.post("/api/lectures/generate-document-v2", data=payload)
     detail = _assert_v1a_error(response, "unsupported_source_type")
-    assert "deferred to the next slice" in detail.get("hint", "")
+    assert "ENABLE_URL_INGESTION_V1=true" in detail.get("hint", "")
 
 
 def test_v2_accepts_ready_url_when_feature_flag_enabled(client, monkeypatch):
@@ -141,6 +141,10 @@ def test_v2_accepts_ready_url_when_feature_flag_enabled(client, monkeypatch):
     assert body["contract_version"] == "v1a"
     assert body["source_type"] == "url"
     assert body["source"] == "https://example.com/article"
+    assert isinstance(body.get("citations"), list)
+    assert len(body.get("citations") or []) >= 1
+    assert body["citations"][0].get("source_uri") == "https://example.com/article"
+    assert body.get("source_metadata", {}).get("retrieval_method") == "web_fetch"
 
 
 def test_v2_rejects_url_when_diagnostics_outcome_not_ready(client, monkeypatch):
@@ -149,6 +153,11 @@ def test_v2_rejects_url_when_diagnostics_outcome_not_ready(client, monkeypatch):
         lecture_routes,
         "_probe_url_availability",
         lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_fetch_youtube_transcript_text",
+        lambda uri, max_chars=8000: (_ for _ in ()).throw(ValueError("No captions")),
     )
 
     payload = {
@@ -159,7 +168,69 @@ def test_v2_rejects_url_when_diagnostics_outcome_not_ready(client, monkeypatch):
 
     response = client.post("/api/lectures/generate-document-v2", data=payload)
     detail = _assert_v1a_error(response, "url_not_ready")
-    assert "Video transcript ingestion" in detail.get("message", "")
+    assert "transcript" in detail.get("message", "").lower()
+
+
+def test_v2_accepts_youtube_url_when_transcript_available(client, monkeypatch):
+    monkeypatch.setenv("ENABLE_URL_INGESTION_V1", "true")
+    monkeypatch.setattr(
+        lecture_routes,
+        "_probe_url_availability",
+        lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_fetch_youtube_transcript_text",
+        lambda uri, max_chars=60000: "YouTube transcript text ready for generation.",
+    )
+
+    payload = {
+        **_base_form(),
+        "source_type": "url",
+        "source_uri": "https://www.youtube.com/watch?v=abc",
+    }
+
+    response = client.post("/api/lectures/generate-document-v2", data=payload)
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["contract_version"] == "v1a"
+    assert body["source_type"] == "url"
+    assert isinstance(body.get("citations"), list)
+    assert len(body.get("citations") or []) >= 1
+    assert body.get("source_metadata", {}).get("source_class") == "video"
+    assert body.get("source_metadata", {}).get("retrieval_method") == "youtube_transcript"
+
+
+def test_v2_accepts_podcast_feed_url_when_transcript_available(client, monkeypatch):
+    monkeypatch.setenv("ENABLE_URL_INGESTION_V1", "true")
+    monkeypatch.setattr(
+        lecture_routes,
+        "_probe_url_availability",
+        lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_fetch_podcast_transcript_text",
+        lambda uri, max_chars=60000: "Podcast transcript text ready for generation.",
+    )
+
+    payload = {
+        **_base_form(),
+        "source_type": "url",
+        "source_uri": "https://example.com/feed.xml",
+    }
+
+    response = client.post("/api/lectures/generate-document-v2", data=payload)
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["contract_version"] == "v1a"
+    assert body["source_type"] == "url"
+    assert isinstance(body.get("citations"), list)
+    assert len(body.get("citations") or []) >= 1
+    assert body.get("source_metadata", {}).get("source_class") == "podcast"
+    assert body.get("source_metadata", {}).get("retrieval_method") == "podcast_feed_transcript"
 
 
 def test_v2_rejects_unsupported_file_extension(client):
@@ -229,6 +300,54 @@ def test_v2_rejects_non_utf8_text_upload(client):
 
     response = client.post("/api/lectures/generate-document-v2", data=payload, files=files)
     _assert_v1a_error(response, "invalid_text_encoding")
+
+
+def test_v2_rejects_url_fetch_failed_for_web_source(client, monkeypatch):
+    monkeypatch.setenv("ENABLE_URL_INGESTION_V1", "true")
+    monkeypatch.setattr(
+        lecture_routes,
+        "_probe_url_availability",
+        lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_resolve_url_source_text_v1",
+        lambda uri, source_class, max_chars=60000: (_ for _ in ()).throw(ValueError("timeout")),
+    )
+
+    payload = {
+        **_base_form(),
+        "source_type": "url",
+        "source_uri": "https://example.com/article",
+    }
+
+    response = client.post("/api/lectures/generate-document-v2", data=payload)
+    detail = _assert_v1a_error(response, "url_fetch_failed")
+    assert "Failed to fetch URL content" in detail.get("message", "")
+
+
+def test_v2_rejects_empty_url_content_after_resolution(client, monkeypatch):
+    monkeypatch.setenv("ENABLE_URL_INGESTION_V1", "true")
+    monkeypatch.setattr(
+        lecture_routes,
+        "_probe_url_availability",
+        lambda uri: {"reachable": True, "status_code": 200},
+    )
+    monkeypatch.setattr(
+        lecture_routes,
+        "_resolve_url_source_text_v1",
+        lambda uri, source_class, max_chars=60000: "   ",
+    )
+
+    payload = {
+        **_base_form(),
+        "source_type": "url",
+        "source_uri": "https://example.com/article",
+    }
+
+    response = client.post("/api/lectures/generate-document-v2", data=payload)
+    detail = _assert_v1a_error(response, "empty_url_content")
+    assert "empty text" in detail.get("message", "").lower()
 
 
 def test_v2_byok_accepts_txt_upload_with_contract(client, monkeypatch):

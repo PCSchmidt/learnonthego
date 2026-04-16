@@ -8,7 +8,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -19,6 +18,9 @@ import {useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import lectureService, { LectureResponse } from '../services/lecture';
+import { colors, spacing, typography } from '../theme/tokens';
+import PremiumButton from '../components/ui/PremiumButton';
+import PremiumPanel from '../components/ui/PremiumPanel';
 
 // Types
 type RootStackParamList = {
@@ -145,46 +147,65 @@ const HomeScreen: React.FC = () => {
         </View>
 
         <View style={styles.actionPanel}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleCreateLecture}>
-            <Text style={styles.primaryButtonText}>Create New Lecture</Text>
-          </TouchableOpacity>
+          <PremiumButton
+            testID="home-create-lecture-button"
+            title="Create New Lecture"
+            onPress={handleCreateLecture}
+            accessibilityLabel="Create new lecture"
+          />
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleTestAPI}>
-              <Text style={styles.secondaryButtonText}>System Check</Text>
-            </TouchableOpacity>
+            <PremiumButton
+              testID="home-system-check-button"
+              title="System Check"
+              onPress={handleTestAPI}
+              variant="secondary"
+              style={styles.rowButton}
+              accessibilityLabel="System check"
+            />
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleSettings}>
-              <Text style={styles.secondaryButtonText}>Settings</Text>
-            </TouchableOpacity>
+            <PremiumButton
+              testID="home-settings-button"
+              title="Settings"
+              onPress={handleSettings}
+              variant="secondary"
+              style={styles.rowButton}
+              accessibilityLabel="Settings"
+            />
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutButtonText}>Sign Out</Text>
-            </TouchableOpacity>
+            <PremiumButton
+              testID="home-signout-button"
+              title="Sign Out"
+              onPress={handleLogout}
+              variant="danger"
+              style={styles.rowButton}
+              accessibilityLabel="Sign out"
+            />
           </View>
         </View>
 
-        <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Lecture Library</Text>
-        
+        <PremiumPanel dark eyebrow="Library" title="Lecture Library" style={styles.recentSection}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#d7bf89" />
+              <ActivityIndicator size="small" color={colors.accent.brass} />
               <Text style={styles.loadingText}>Loading your lectures...</Text>
             </View>
           ) : lectures.length > 0 ? (
-            lectures.map((lecture) => (
-              <TouchableOpacity
-                key={lecture.id}
+            lectures.map((lecture, index) => (
+              <PremiumButton
+                key={lecture.id || `lecture-${index}`}
+                testID={`lecture-card-${index}`}
+                title={lecture.title || 'Untitled Lecture'}
+                onPress={() => {
+                  if (lecture.id) {
+                    handleLecturePress(lecture.id);
+                  }
+                }}
+                variant="secondary"
+                disabled={!lecture.id}
                 style={styles.lectureCard}
-                onPress={() => handleLecturePress(lecture.id)}
-              >
-                <Text style={styles.lectureTitle}>{lecture.title}</Text>
-                <Text style={styles.lectureDuration}>{lecture.duration} minutes</Text>
-                <Text style={styles.lectureDate}>
-                  {new Date(lecture.created_at).toLocaleDateString()}
-                </Text>
-              </TouchableOpacity>
+                accessibilityLabel={lecture.title ? `Open lecture ${lecture.title}` : 'Open lecture'}
+              />
             ))
           ) : (
             <View style={styles.placeholderCard}>
@@ -193,10 +214,9 @@ const HomeScreen: React.FC = () => {
               </Text>
             </View>
           )}
-        </View>
+        </PremiumPanel>
 
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Platform Status</Text>
+        <PremiumPanel dark eyebrow="Infrastructure" title="Platform Status" style={styles.featuresSection}>
           <View style={styles.featureItem}>
             <Text style={styles.featureTag}>Live</Text>
             <Text style={styles.featureTitle}>Core Lecture Workflow</Text>
@@ -211,7 +231,7 @@ const HomeScreen: React.FC = () => {
               Advanced controls, download experience, and richer session analytics.
             </Text>
           </View>
-        </View>
+        </PremiumPanel>
       </View>
     </ScrollView>
   );
@@ -220,11 +240,11 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#06070b',
+    backgroundColor: colors.bg.canvas,
   },
   contentContainer: {
     padding: 18,
-    paddingBottom: 24,
+    paddingBottom: spacing.xl,
   },
   backgroundGlowA: {
     position: 'absolute',
@@ -232,7 +252,7 @@ const styles = StyleSheet.create({
     left: -60,
     width: 240,
     height: 240,
-    backgroundColor: 'rgba(198, 168, 106, 0.08)',
+    backgroundColor: colors.effect.glowA,
   },
   backgroundGlowB: {
     position: 'absolute',
@@ -240,7 +260,7 @@ const styles = StyleSheet.create({
     right: -100,
     width: 280,
     height: 280,
-    backgroundColor: 'rgba(155, 166, 197, 0.08)',
+    backgroundColor: colors.effect.glowB,
   },
   shell: {
     width: '100%',
@@ -249,31 +269,31 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     borderWidth: 1,
-    borderColor: '#242a37',
-    backgroundColor: '#0f131b',
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    borderColor: colors.border.dark,
+    backgroundColor: colors.bg.rail,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
     marginBottom: 14,
   },
   eyebrow: {
-    color: '#d7bf89',
-    fontSize: 12,
-    letterSpacing: 1.8,
+    color: colors.accent.brass,
+    fontSize: typography.size.label,
+    letterSpacing: typography.letterSpacing.wide,
     textTransform: 'uppercase',
     fontWeight: '700',
     marginBottom: 10,
   },
   title: {
-    color: '#f4efe4',
-    fontSize: 46,
-    lineHeight: 50,
+    color: colors.text.primaryDark,
+    fontSize: typography.size.display,
+    lineHeight: typography.lineHeight.display,
     fontWeight: '600',
-    fontFamily: 'Cormorant Garamond',
-    marginBottom: 8,
+    fontFamily: typography.family.display,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#aeb6c7',
+    fontSize: typography.size.bodyLg,
+    color: colors.text.secondaryDark,
     lineHeight: 22,
     marginBottom: 18,
   },
@@ -284,110 +304,87 @@ const styles = StyleSheet.create({
   userInfoBlock: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#2b3240',
-    backgroundColor: '#121824',
+    borderColor: colors.border.medium,
+    backgroundColor: colors.bg.cardDark,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm,
   },
   userInfoLabel: {
-    color: '#7e8798',
-    fontSize: 11,
+    color: colors.text.muted,
+    fontSize: typography.size.caption,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#d6dbe6',
+    fontSize: typography.size.body,
+    color: colors.text.secondaryDark,
     fontWeight: '500',
   },
   userTier: {
-    fontSize: 12,
-    color: '#d7bf89',
+    fontSize: typography.size.label,
+    color: colors.accent.brass,
     fontWeight: '700',
     letterSpacing: 0.7,
   },
   actionPanel: {
     borderWidth: 1,
-    borderColor: '#242a37',
+    borderColor: colors.border.dark,
     backgroundColor: '#0b0f16',
-    padding: 16,
+    padding: spacing.md,
     marginBottom: 14,
     gap: 10,
   },
-  primaryButton: {
-    backgroundColor: '#d7bf89',
-    borderWidth: 1,
-    borderColor: '#a9905d',
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    alignItems: 'center',
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
   },
-  primaryButtonText: {
-    color: '#11151e',
-    fontSize: 14,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  secondaryButton: {
-    backgroundColor: '#121824',
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2b3240',
+  rowButton: {
     flex: 1,
   },
-  secondaryButtonText: {
-    color: '#e0e4ed',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
   recentSection: {
-    borderWidth: 1,
-    borderColor: '#242a37',
-    backgroundColor: '#0f131b',
-    padding: 16,
     marginBottom: 14,
   },
-  sectionTitle: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#f2ecdf',
-    fontFamily: 'Cormorant Garamond',
-    marginBottom: 12,
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingVertical: spacing.lg,
+    gap: spacing.xs,
+  },
+  loadingText: {
+    fontSize: typography.size.body,
+    color: colors.text.secondaryDark,
+  },
+  lectureCard: {
+    marginBottom: spacing.sm,
   },
   placeholderCard: {
-    backgroundColor: '#111722',
-    padding: 16,
+    backgroundColor: colors.bg.cardDark,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#2b3240',
+    borderColor: colors.border.medium,
     borderStyle: 'dashed',
   },
   placeholderText: {
-    color: '#aeb6c7',
-    fontSize: 14,
-    lineHeight: 20,
+    color: colors.text.secondaryDark,
+    fontSize: typography.size.body,
+    lineHeight: typography.lineHeight.body,
   },
   featuresSection: {
-    borderWidth: 1,
-    borderColor: '#242a37',
-    backgroundColor: '#0f131b',
-    padding: 16,
+    marginBottom: 0,
   },
   featureItem: {
-    backgroundColor: '#111722',
-    padding: 16,
+    backgroundColor: colors.bg.cardDark,
+    padding: spacing.md,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#2b3240',
+    borderColor: colors.border.medium,
   },
   featureTag: {
-    color: '#d7bf89',
-    fontSize: 11,
+    color: colors.accent.brass,
+    fontSize: typography.size.caption,
     fontWeight: '700',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -396,68 +393,13 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#f0eadb',
+    color: colors.text.primaryDark,
     marginBottom: 4,
   },
   featureDescription: {
-    fontSize: 14,
-    color: '#a8b0c0',
-    lineHeight: 20,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  logoutButton: {
-    backgroundColor: '#2a1115',
-    borderWidth: 1,
-    borderColor: '#5f252f',
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    flex: 1,
-  },
-  logoutButtonText: {
-    color: '#f2c6cf',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: 20,
-    gap: 8,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#aeb6c7',
-  },
-  lectureCard: {
-    backgroundColor: '#111722',
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2b3240',
-  },
-  lectureTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f1ebdf',
-    marginBottom: 4,
-  },
-  lectureDuration: {
-    fontSize: 14,
-    color: '#d7bf89',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  lectureDate: {
-    fontSize: 12,
-    color: '#8f99ad',
+    fontSize: typography.size.body,
+    color: colors.text.secondaryDark,
+    lineHeight: typography.lineHeight.body,
   },
 });
 
