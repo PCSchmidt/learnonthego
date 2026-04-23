@@ -11,7 +11,6 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
@@ -74,15 +73,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.backgroundGlowA} />
-      <View style={styles.backgroundGlowB} />
-      <View style={styles.gridLineVertical} />
-      <View style={styles.gridLineHorizontal} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.shell}>
+    (Platform.OS === 'web' ? (
+      <View style={styles.container}>
+        <View style={styles.backgroundGlowA} />
+        <View style={styles.backgroundGlowB} />
+        <View style={styles.gridLineVertical} />
+        <View style={styles.gridLineHorizontal} />
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.shell}>
+  ) : (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.backgroundGlowA} />
+        <View style={styles.backgroundGlowB} />
+        <View style={styles.gridLineVertical} />
+        <View style={styles.gridLineHorizontal} />
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.shell}>
+  ))
           <View style={styles.brandRail}>
             <Text style={styles.brand}>LearnOnTheGo</Text>
             <Text style={styles.brandSubhead}>Private Learning Intelligence</Text>
@@ -191,6 +200,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg.canvas,
     overflow: 'hidden',
+    ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}),
   },
   backgroundGlowA: {
     position: 'absolute',
