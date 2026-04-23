@@ -18,8 +18,6 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { UrlIngestionPreviewStep } from '../components';
-import { colors, spacing, typography } from '../theme/tokens';
-import PremiumButton from '../components/ui/PremiumButton';
 import lectureService, {
   ApiKeyStatus,
   AVAILABLE_VOICES,
@@ -40,11 +38,6 @@ type RootStackParamList = {
   CreateLecture: undefined;
   LecturePlayer: {
     lectureId: string;
-    audioUrl?: string | null;
-    title?: string;
-    script?: string;
-    duration?: number;
-    difficulty?: string;
     citations?: Array<{ label?: string; source_uri?: string; note?: string }>;
     sourceContext?: {
       source_uri?: string | null;
@@ -345,13 +338,8 @@ const CreateLectureScreen: React.FC = () => {
                 // Navigate to lecture player
                 navigation.navigate('LecturePlayer', {
                   lectureId: generatedLectureId,
-                  audioUrl: response.data?.audio_url,
-                  title: response.data?.title,
-                  script: response.data?.script,
                   citations: response.data?.citations,
                   sourceContext: response.data?.source_metadata || response.data?.metadata?.source_context,
-                  duration: formData.duration,
-                  difficulty: formData.difficulty,
                 });
               },
             },
@@ -803,27 +791,36 @@ const CreateLectureScreen: React.FC = () => {
           </View>
         ) : null}
 
-        <PremiumButton
+        <TouchableOpacity
           testID="create-lecture-button"
-          title={
-            isLoading
-              ? 'Generating your lecture...'
-              : sourceMode === 'url' && !isUrlGenerationEnabled
+          style={[styles.createButton, isLoading && styles.createButtonDisabled]}
+          onPress={handleCreateLecture}
+          accessibilityRole="button"
+          accessibilityLabel={scriptPreview?.dry_run ? 'Confirm and generate audio' : 'Preview script'}
+          accessibilityHint="Generates a script preview first, then confirms audio generation"
+          accessibilityState={{
+            disabled: isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready')),
+          }}
+          disabled={isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready'))}>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="#ffffff" />
+              <Text style={styles.loadingText}>Generating your lecture...</Text>
+            </View>
+          ) : (
+            <Text style={styles.createButtonText}>
+              {sourceMode === 'url' && !isUrlGenerationEnabled
                 ? 'URL Generation Disabled By Feature Flag'
                 : sourceMode === 'url' && urlDiagnostics?.outcome !== 'ready'
                   ? 'Run Diagnostics Until URL Is Ready'
                   : scriptPreview?.dry_run
                     ? 'Confirm And Generate Audio'
-                    : sourceMode === 'url'
-                      ? 'Preview Script From URL'
-                      : 'Preview Script'
-          }
-          onPress={handleCreateLecture}
-          disabled={isLoading || (sourceMode === 'url' && (!isUrlGenerationEnabled || urlDiagnostics?.outcome !== 'ready'))}
-          loading={isLoading}
-          accessibilityLabel={scriptPreview?.dry_run ? 'Confirm and generate audio' : 'Preview script'}
-          style={{ marginTop: spacing.xl }}
-        />
+                  : sourceMode === 'url'
+                    ? 'Preview Script From URL'
+                    : 'Preview Script'}
+            </Text>
+          )}
+        </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -833,11 +830,11 @@ const CreateLectureScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.canvas,
+    backgroundColor: '#06070b',
   },
   contentContainer: {
     padding: 18,
-    paddingBottom: spacing.xl,
+    paddingBottom: 24,
   },
   backgroundGlowA: {
     position: 'absolute',
@@ -845,7 +842,7 @@ const styles = StyleSheet.create({
     left: -70,
     width: 260,
     height: 260,
-    backgroundColor: colors.effect.glowA,
+    backgroundColor: 'rgba(198, 168, 106, 0.08)',
   },
   backgroundGlowB: {
     position: 'absolute',
@@ -853,7 +850,7 @@ const styles = StyleSheet.create({
     right: -100,
     width: 290,
     height: 290,
-    backgroundColor: colors.effect.glowB,
+    backgroundColor: 'rgba(155, 166, 197, 0.08)',
   },
   shell: {
     width: '100%',
@@ -861,157 +858,157 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     borderWidth: 1,
-    borderColor: colors.border.dark,
+    borderColor: '#242a37',
     backgroundColor: '#0b0d12',
   },
   headerRail: {
     flex: 0.9,
     borderRightWidth: Platform.OS === 'web' ? 1 : 0,
     borderBottomWidth: Platform.OS === 'web' ? 0 : 1,
-    borderRightColor: colors.border.dark,
-    borderBottomColor: colors.border.dark,
-    backgroundColor: colors.bg.rail,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
+    borderRightColor: '#242a37',
+    borderBottomColor: '#242a37',
+    backgroundColor: '#0f131b',
+    paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   eyebrow: {
-    color: colors.accent.brass,
-    fontSize: typography.size.label,
-    letterSpacing: typography.letterSpacing.wide,
+    color: '#d7bf89',
+    fontSize: 12,
+    letterSpacing: 1.8,
     textTransform: 'uppercase',
     fontWeight: '700',
     marginBottom: 10,
   },
   pageTitle: {
-    color: colors.text.primaryDark,
-    fontSize: typography.size.display,
-    lineHeight: typography.lineHeight.display,
+    color: '#f4efe4',
+    fontSize: 46,
+    lineHeight: 50,
     fontWeight: '600',
-    fontFamily: typography.family.display,
+    fontFamily: 'Cormorant Garamond',
     marginBottom: 10,
   },
   pageSubtitle: {
-    color: colors.text.secondaryDark,
+    color: '#aeb6c7',
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 22,
   },
   metaBlock: {
     borderTopWidth: 1,
-    borderTopColor: colors.border.medium,
-    paddingTop: spacing.sm,
+    borderTopColor: '#2a3140',
+    paddingTop: 12,
   },
   metaLabel: {
-    color: colors.text.muted,
-    fontSize: typography.size.caption,
+    color: '#7e8798',
+    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
   metaValue: {
-    color: colors.text.secondaryDark,
-    fontSize: typography.size.body,
+    color: '#d6dbe6',
+    fontSize: 14,
     fontWeight: '600',
   },
   formPanel: {
     flex: 1.1,
-    backgroundColor: colors.bg.panel,
-    padding: spacing.lg,
+    backgroundColor: '#f2f0ea',
+    padding: 20,
   },
   label: {
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.border.medium,
-    letterSpacing: typography.letterSpacing.normal,
+    color: '#2b3240',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
-    marginBottom: spacing.xs,
-    marginTop: spacing.md,
+    marginBottom: 8,
+    marginTop: 16,
   },
   textInput: {
-    backgroundColor: colors.bg.cardLight,
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: colors.border.light,
-    padding: spacing.md,
-    fontSize: typography.size.bodyLg,
+    borderColor: '#b7bcc8',
+    padding: 16,
+    fontSize: 16,
     color: '#0d1119',
     textAlignVertical: 'top',
     minHeight: 80,
   },
   sourceSwitchRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    gap: 8,
+    marginTop: 8,
   },
   sourceSwitchButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.bg.cardLight,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
     paddingVertical: 11,
     alignItems: 'center',
   },
   sourceSwitchButtonActive: {
-    backgroundColor: colors.bg.cardDark,
-    borderColor: colors.bg.cardDark,
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   sourceSwitchButtonText: {
     color: '#2f3644',
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
   sourceSwitchButtonTextActive: {
-    color: colors.text.primaryDark,
+    color: '#f2efe8',
   },
   sourceHelperText: {
-    marginTop: spacing.xs,
+    marginTop: 8,
     color: '#5a6272',
-    fontSize: typography.size.label,
+    fontSize: 12,
     lineHeight: 16,
   },
   fileCard: {
-    marginTop: spacing.sm,
+    marginTop: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.bg.cardLight,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
   },
   fileLabel: {
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.border.medium,
+    color: '#2b3240',
     textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.normal,
+    letterSpacing: 0.8,
     marginBottom: 4,
   },
   fileSubtle: {
     color: '#616979',
-    fontSize: typography.size.label,
+    fontSize: 12,
     marginBottom: 10,
   },
   filePickButton: {
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: colors.bg.cardDark,
-    paddingVertical: spacing.xs,
+    borderColor: '#111722',
+    paddingVertical: 8,
     paddingHorizontal: 14,
-    backgroundColor: colors.bg.cardDark,
+    backgroundColor: '#111722',
   },
   filePickButtonText: {
-    color: colors.text.primaryDark,
-    fontSize: typography.size.label,
+    color: '#f2efe8',
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.normal,
+    letterSpacing: 0.8,
   },
   fileMeta: {
-    marginTop: spacing.xs,
+    marginTop: 8,
     color: '#2f3644',
-    fontSize: typography.size.label,
+    fontSize: 12,
   },
   fileResetButton: {
-    marginTop: spacing.xs,
+    marginTop: 8,
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: '#939aa8',
@@ -1021,59 +1018,59 @@ const styles = StyleSheet.create({
   },
   fileResetButtonText: {
     color: '#2f3644',
-    fontSize: typography.size.caption,
+    fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   urlCard: {
-    marginTop: spacing.sm,
+    marginTop: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.bg.cardLight,
+    borderColor: '#b7bcc8',
+    backgroundColor: '#f8f7f3',
   },
   urlLabel: {
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.border.medium,
+    color: '#2b3240',
     textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.normal,
-    marginBottom: spacing.xs,
+    letterSpacing: 0.8,
+    marginBottom: 8,
   },
   urlInput: {
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: '#b7bcc8',
     backgroundColor: '#ffffff',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    color: colors.bg.cardDark,
-    fontSize: typography.size.body,
+    color: '#111722',
+    fontSize: 14,
   },
   urlDiagnosticsButton: {
     marginTop: 10,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: colors.bg.cardDark,
-    backgroundColor: colors.bg.cardDark,
-    paddingVertical: spacing.xs,
+    borderColor: '#111722',
+    backgroundColor: '#111722',
+    paddingVertical: 8,
     paddingHorizontal: 14,
   },
   urlDiagnosticsButtonText: {
-    color: colors.text.primaryDark,
-    fontSize: typography.size.label,
+    color: '#f2efe8',
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.7,
   },
   fieldError: {
     color: '#a93d2a',
-    fontSize: typography.size.label,
+    fontSize: 12,
     marginTop: 6,
     fontWeight: '600',
   },
   formError: {
-    marginTop: spacing.sm,
+    marginTop: 12,
     borderWidth: 1,
     borderColor: '#c06b5d',
     backgroundColor: '#f8e7e3',
@@ -1084,93 +1081,111 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   charCount: {
-    fontSize: typography.size.label,
+    fontSize: 12,
     color: '#616979',
     textAlign: 'right',
     marginTop: 4,
   },
   durationScroll: {
-    marginTop: spacing.xs,
+    marginTop: 8,
   },
   durationButton: {
-    backgroundColor: colors.bg.cardLight,
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: colors.border.light,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.xs,
+    borderColor: '#b7bcc8',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 8,
     minWidth: 60,
     alignItems: 'center',
   },
   durationButtonActive: {
-    backgroundColor: colors.bg.cardDark,
-    borderColor: colors.bg.cardDark,
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   durationButtonText: {
-    fontSize: typography.size.body,
+    fontSize: 14,
     fontWeight: '600',
     color: '#2f3644',
   },
   durationButtonTextActive: {
-    color: colors.text.primaryDark,
+    color: '#f2efe8',
   },
   difficultyContainer: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    gap: 8,
+    marginTop: 8,
   },
   difficultyButton: {
     flex: 1,
-    backgroundColor: colors.bg.cardLight,
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: colors.border.light,
-    paddingVertical: spacing.sm,
+    borderColor: '#b7bcc8',
+    paddingVertical: 12,
     alignItems: 'center',
   },
   difficultyButtonActive: {
-    backgroundColor: colors.bg.cardDark,
-    borderColor: colors.bg.cardDark,
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   difficultyButtonText: {
-    fontSize: typography.size.body,
+    fontSize: 14,
     fontWeight: '600',
     color: '#2f3644',
   },
   difficultyButtonTextActive: {
-    color: colors.text.primaryDark,
+    color: '#f2efe8',
   },
   infoCard: {
     backgroundColor: '#ece9df',
-    padding: spacing.md,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#c3b188',
-    marginTop: spacing.lg,
+    marginTop: 20,
   },
   infoTitle: {
-    fontSize: typography.size.body,
+    fontSize: 14,
     fontWeight: '700',
     color: '#3e3525',
-    marginBottom: spacing.xs,
+    marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.normal,
+    letterSpacing: 0.8,
   },
   infoText: {
-    fontSize: typography.size.body,
+    fontSize: 14,
     color: '#4f4635',
-    lineHeight: typography.lineHeight.body,
+    lineHeight: 20,
+  },
+  createButton: {
+    backgroundColor: '#d7bf89',
+    borderWidth: 1,
+    borderColor: '#a9905d',
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  createButtonDisabled: {
+    opacity: 0.6,
+  },
+  createButtonText: {
+    color: '#11151e',
+    fontSize: 14,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   modeCard: {
-    marginTop: spacing.md,
+    marginTop: 16,
     padding: 14,
-    backgroundColor: colors.bg.cardLight,
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: '#b7bcc8',
   },
   modeTitle: {
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.border.medium,
-    letterSpacing: typography.letterSpacing.normal,
+    color: '#2b3240',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
@@ -1184,19 +1199,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: colors.border.light,
+    borderColor: '#b7bcc8',
     backgroundColor: '#f1efe7',
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
   modeTooltipLinkText: {
     color: '#2f3644',
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '600',
   },
   modeActions: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: 8,
   },
   modeButton: {
     flex: 1,
@@ -1206,56 +1221,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modeButtonActive: {
-    backgroundColor: colors.bg.cardDark,
-    borderColor: colors.bg.cardDark,
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   modeButtonText: {
     color: '#2f3644',
     fontWeight: '600',
-    fontSize: typography.size.label,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   modeButtonTextActive: {
-    color: colors.text.primaryDark,
+    color: '#f2efe8',
   },
+  // Voice Selection Styles
   voiceScroll: {
-    marginTop: spacing.xs,
+    marginTop: 8,
   },
   voiceButton: {
-    backgroundColor: colors.bg.cardLight,
+    backgroundColor: '#f8f7f3',
     borderWidth: 1,
-    borderColor: colors.border.light,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginRight: spacing.xs,
+    borderColor: '#b7bcc8',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 8,
     minWidth: 140,
     alignItems: 'center',
   },
   voiceButtonActive: {
-    backgroundColor: colors.bg.cardDark,
-    borderColor: colors.bg.cardDark,
+    backgroundColor: '#111722',
+    borderColor: '#111722',
   },
   voiceButtonText: {
-    fontSize: typography.size.label,
+    fontSize: 12,
     fontWeight: '600',
     color: '#2f3644',
     textAlign: 'center',
   },
   voiceButtonTextActive: {
-    color: colors.text.primaryDark,
+    color: '#f2efe8',
   },
+  // Loading Styles
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 8,
   },
   loadingText: {
-    color: colors.accent.brassText,
-    fontSize: typography.size.body,
+    color: '#11151e',
+    fontSize: 14,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: typography.letterSpacing.normal,
+    letterSpacing: 0.8,
   },
 });
 
