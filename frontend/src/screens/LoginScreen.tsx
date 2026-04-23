@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg.canvas,
+    overflow: 'hidden',
   },
   backgroundGlowA: {
     position: 'absolute',
