@@ -22,6 +22,12 @@ interface LoginScreenProps {
   navigation: any;
 }
 
+const baseContainerStyle = {
+  flex: 1,
+  backgroundColor: colors.bg.canvas,
+  overflow: 'hidden',
+};
+
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -73,15 +79,114 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    (Platform.OS === 'web' ? (
-      <View style={styles.container}>
+    Platform.OS === 'web' ? (
+      <View style={[styles.container, { minHeight: '100vh' }]}> 
         <View style={styles.backgroundGlowA} />
         <View style={styles.backgroundGlowB} />
         <View style={styles.gridLineVertical} />
         <View style={styles.gridLineHorizontal} />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.shell}>
-  ) : (
+            <View style={styles.brandRail}>
+              <Text style={styles.brand}>LearnOnTheGo</Text>
+              <Text style={styles.brandSubhead}>Private Learning Intelligence</Text>
+              <Text style={styles.heroTitle}>Member Access</Text>
+              <Text style={styles.heroCopy}>
+                Access your personalized lecture intelligence system and continue building high-fidelity
+                learning workflows.
+              </Text>
+
+              <View style={styles.metricBlock}>
+                <Text style={styles.metricLabel}>Platform Positioning</Text>
+                <Text style={styles.metricValue}>Exclusive AI Learning Suite</Text>
+              </View>
+
+              <View style={styles.metricBlock}>
+                <Text style={styles.metricLabel}>Experience</Text>
+                <Text style={styles.metricValue}>Precision Audio + Research Depth</Text>
+              </View>
+            </View>
+            {/* ...rest of the formPanel and footer code... */}
+            <View style={styles.formPanel}>
+              <View style={styles.header}>
+                <Text style={styles.eyebrow}>Secure Sign-In</Text>
+                <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.subtitle}>Enter your credentials to access your workspace.</Text>
+              </View>
+
+              <View style={styles.form}>
+                <PremiumField
+                  label="Email"
+                  testID="login-email-input"
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Email address"
+                  accessibilityHint="Enter the email for your LearnOnTheGo account"
+                  placeholder="name@company.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+
+                <PremiumField
+                  label="Password"
+                  testID="login-password-input"
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Password"
+                  accessibilityHint="Enter your account password"
+                  placeholder="Enter your password"
+                  secureToggle
+                  editable={!isLoading}
+                />
+
+                {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={handleForgotPassword}
+                  accessibilityRole="button"
+                  accessibilityLabel="Forgot password"
+                  accessibilityHint="Opens password recovery guidance"
+                  disabled={isLoading}>
+                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+
+                <PremiumButton
+                  testID="login-submit-button"
+                  title="Enter Workspace"
+                  onPress={handleLogin}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  accessibilityLabel="Enter workspace"
+                />
+              </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>No account yet?</Text>
+                <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+                  <Text accessibilityRole="link" style={styles.footerLink}>Request Access</Text>
+                </TouchableOpacity>
+              </View>
+              {isWeb ? (
+                <Text style={styles.disclaimer}>Protected by enterprise-grade encryption and session controls.</Text>
+              ) : null}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    ) : (
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -91,116 +196,117 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <View style={styles.gridLineHorizontal} />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.shell}>
-  ))
-          <View style={styles.brandRail}>
-            <Text style={styles.brand}>LearnOnTheGo</Text>
-            <Text style={styles.brandSubhead}>Private Learning Intelligence</Text>
-            <Text style={styles.heroTitle}>Member Access</Text>
-            <Text style={styles.heroCopy}>
-              Access your personalized lecture intelligence system and continue building high-fidelity
-              learning workflows.
-            </Text>
+            <View style={styles.brandRail}>
+              <Text style={styles.brand}>LearnOnTheGo</Text>
+              <Text style={styles.brandSubhead}>Private Learning Intelligence</Text>
+              <Text style={styles.heroTitle}>Member Access</Text>
+              <Text style={styles.heroCopy}>
+                Access your personalized lecture intelligence system and continue building high-fidelity
+                learning workflows.
+              </Text>
 
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Platform Positioning</Text>
-              <Text style={styles.metricValue}>Exclusive AI Learning Suite</Text>
+              <View style={styles.metricBlock}>
+                <Text style={styles.metricLabel}>Platform Positioning</Text>
+                <Text style={styles.metricValue}>Exclusive AI Learning Suite</Text>
+              </View>
+
+              <View style={styles.metricBlock}>
+                <Text style={styles.metricLabel}>Experience</Text>
+                <Text style={styles.metricValue}>Precision Audio + Research Depth</Text>
+              </View>
             </View>
+            {/* ...rest of the formPanel and footer code... */}
+            <View style={styles.formPanel}>
+              <View style={styles.header}>
+                <Text style={styles.eyebrow}>Secure Sign-In</Text>
+                <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.subtitle}>Enter your credentials to access your workspace.</Text>
+              </View>
 
-            <View style={styles.metricBlock}>
-              <Text style={styles.metricLabel}>Experience</Text>
-              <Text style={styles.metricValue}>Precision Audio + Research Depth</Text>
+              <View style={styles.form}>
+                <PremiumField
+                  label="Email"
+                  testID="login-email-input"
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Email address"
+                  accessibilityHint="Enter the email for your LearnOnTheGo account"
+                  placeholder="name@company.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+
+                <PremiumField
+                  label="Password"
+                  testID="login-password-input"
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  accessibilityLabel="Password"
+                  accessibilityHint="Enter your account password"
+                  placeholder="Enter your password"
+                  secureToggle
+                  editable={!isLoading}
+                />
+
+                {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={handleForgotPassword}
+                  accessibilityRole="button"
+                  accessibilityLabel="Forgot password"
+                  accessibilityHint="Opens password recovery guidance"
+                  disabled={isLoading}>
+                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+
+                <PremiumButton
+                  testID="login-submit-button"
+                  title="Enter Workspace"
+                  onPress={handleLogin}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  accessibilityLabel="Enter workspace"
+                />
+              </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>No account yet?</Text>
+                <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+                  <Text accessibilityRole="link" style={styles.footerLink}>Request Access</Text>
+                </TouchableOpacity>
+              </View>
+              {isWeb ? (
+                <Text style={styles.disclaimer}>Protected by enterprise-grade encryption and session controls.</Text>
+              ) : null}
             </View>
           </View>
-
-          <View style={styles.formPanel}>
-            <View style={styles.header}>
-              <Text style={styles.eyebrow}>Secure Sign-In</Text>
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Enter your credentials to access your workspace.</Text>
-            </View>
-
-            <View style={styles.form}>
-              <PremiumField
-                label="Email"
-                testID="login-email-input"
-                value={email}
-                onChangeText={(value) => {
-                  setEmail(value);
-                  if (errorMessage) {
-                    setErrorMessage(null);
-                  }
-                }}
-                accessibilityLabel="Email address"
-                accessibilityHint="Enter the email for your LearnOnTheGo account"
-                placeholder="name@company.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-
-              <PremiumField
-                label="Password"
-                testID="login-password-input"
-                value={password}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  if (errorMessage) {
-                    setErrorMessage(null);
-                  }
-                }}
-                accessibilityLabel="Password"
-                accessibilityHint="Enter your account password"
-                placeholder="Enter your password"
-                secureToggle
-                editable={!isLoading}
-              />
-
-              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-              <TouchableOpacity
-                style={styles.forgotPassword}
-                onPress={handleForgotPassword}
-                accessibilityRole="button"
-                accessibilityLabel="Forgot password"
-                accessibilityHint="Opens password recovery guidance"
-                disabled={isLoading}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-              </TouchableOpacity>
-
-              <PremiumButton
-                testID="login-submit-button"
-                title="Enter Workspace"
-                onPress={handleLogin}
-                disabled={isLoading}
-                loading={isLoading}
-                accessibilityLabel="Enter workspace"
-              />
-            </View>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>No account yet?</Text>
-              <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
-                <Text accessibilityRole="link" style={styles.footerLink}>Request Access</Text>
-              </TouchableOpacity>
-            </View>
-
-            {isWeb ? (
-              <Text style={styles.disclaimer}>Protected by enterprise-grade encryption and session controls.</Text>
-            ) : null}
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    )
   );
+
+// Duplicate unreachable JSX block removed
 };
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg.canvas,
     overflow: 'hidden',
-    ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}),
   },
   backgroundGlowA: {
     position: 'absolute',
